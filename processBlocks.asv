@@ -13,8 +13,8 @@ function R = processBlocks(blocks, aux_plots)
         peakThreshold = blocks(b).peakThreshold;
 
         % find peaks (sd of 3 seems to work very well after percentile based cull)
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)) , 'MinPeakHeight' , peakThreshold , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
-        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , peakThreshold , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)) , 'MinPeakHeight' , peakThreshold{b} , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , peakThreshold{b} , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
 
         % plot peak detection for each photodiode as a sanity check
         if aux_plots
@@ -40,25 +40,25 @@ function R = processBlocks(blocks, aux_plots)
 
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
-        badLOCS = find(diff(LOCS) > 1.5*ISI*resampleFreq) + 1; % index of trials where gap was longer than ISI
+        badLOCS = find(diff(LOCS) > 1.5*ISI{b}*resampleFreq) + 1; % index of trials where gap was longer than ISI
         badLOCS = LOCS(badLOCS);
         badTrials = zeros(size(PHOT(1,:)));
         badTrials(badLOCS) = 1;
 
         % infer random sequence (0 - left; 1 - right)
-        randomSequence = zeros(size(PHOT(1,:)));
-        randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
-        badTrials = badTrials(logical(randomSequence)); % careful order is important here
-        randomSequence = randomSequence(logical(randomSequence)) - 1;
+        randomSequence = zeros(size(PHOT{b}(1,:)));
+        randomSequence(LOCS_PHOT1) = 2; randomSequence{b}(LOCS_PHOT2) = 1;
+        badTrials = badTrials{b}(logical(randomSequence{b})); % careful order is important here
+        randomSequence{ = randomSequence{b}(logical(randomSequence{b})) - 1;
 
         %remove 4 trials after a bad one
-        badTrialsIndex = find(badTrials);
-        badTrials([badTrialsIndex+1 badTrialsIndex+2 badTrialsIndex+3 badTrialsIndex+4]) = 1;
+        badTrialsIndex = find(badTrials{b});
+        badTrials{b}([badTrialsIndex+1 badTrialsIndex+2 badTrialsIndex+3 badTrialsIndex+4]) = 1;
 
         % histogram of interval between peaks (should have one tight peak)
 %         if aux_plots
             figure;
-            histogram(diff(LOCS));
+            histogram(diff(LOCS{b}));
 %         end
     
         % add processed data to original blocks structure
