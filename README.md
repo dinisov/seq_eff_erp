@@ -1,1 +1,3 @@
-Sequential Effects in ERP
+# Sequential Effects in ERP
+
+This code analyses sequential dependencies in the ERP of flies.
