@@ -16,28 +16,28 @@ homeDirectory = 'D:\group_swinderen\Dinis';
 fly_record = readtable('fly_record');
 
 %% restrict to 1.25 Hz case
-fly_record = fly_record(fly_record.Frequency == 1.25,:);
+% fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
 %remove dead flies and flies with legs; also DARK block of fly 13
-fly_record = fly_record([1:15 17:30],:);
+% fly_record = fly_record([1:15 17:30],:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
-% chosenFlies = [13];
-chosenFlies = flySet; % choose all flies
+chosenFlies = [20];
+% chosenFlies = flySet; % choose all flies
 
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [17];
-chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [24];
+% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
 %% experimental parameters and window calculation
-ISI = fly_record.ISI;
+ISI = fly_record.ISI + fly_record.SDT;
 
 time_before_peak = fly_record.SDT/2;
 time_after_peak = ISI/3;
@@ -47,7 +47,7 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
 
 %% whether to plot auxiliary plots
-aux_plots = 0;
+aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -80,22 +80,22 @@ for b = find(chosenOnes)
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
     
-    % remove outliers based on percentile
-    % this has to be done separately because rmoutliers()
-    % removes the entire row
-    [~,tf1] = rmoutliers(PHOT(1,:),'percentiles',[.5 99.5]);
-    [~,tf2] = rmoutliers(PHOT(2,:),'percentiles',[.5 99.5]);
-    PHOT(1,tf1) = 0;
-    PHOT(2,tf2) = 0;
-
     % butterworth level 4 filter (low pass) for both LFP and PHOT
     % data
     [b_f,a_f] = butter(9,50/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
     
-    [b_f,a_f] = butter(9,20/resampleFreq*2);
+    [b_f,a_f] = butter(9,50/resampleFreq*2);
     PHOT = filter(b_f,a_f,PHOT.').';
     
+    % remove outliers based on percentile
+    % this has to be done separately because rmoutliers()
+    % removes the entire row
+%     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[.001 99.999]);
+%     [out2,tf2] = rmoutliers(PHOT(2,:),'percentiles',[.001 99.999]);
+%     PHOT(1,tf1) = 0;
+%     PHOT(2,tf2) = 0;
+        
     BLOCKS(b).LFP = LFP;
     BLOCKS(b).PHOT = PHOT;
     BLOCKS(b).rawPHOT = rawPHOT;
@@ -115,7 +115,6 @@ end
 
 %% if some block requires specific parameters, set them here
 % careful index here is that of the fly_record table *not* the block number
-
 
 %% analyse data per fly and whether experiment is lit or unlit
 
