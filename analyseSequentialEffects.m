@@ -46,7 +46,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
         n_sd = 3;
 
-        % remove ERPs beyond n_sd (TODO: OPTIMISE)
+        % remove ERPs beyond n_sd
         outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);
 
         good_erps = ~logical(sum(outliers));

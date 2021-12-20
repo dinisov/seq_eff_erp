@@ -16,31 +16,33 @@ homeDirectory = 'D:\group_swinderen\Dinis';
 fly_record = readtable('fly_record');
 
 %% restrict to 1.25 Hz case
-% fly_record = fly_record(fly_record.Frequency == 1.25,:);
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
-%remove dead flies and flies with legs; also DARK block of fly 13
-% fly_record = fly_record([1:15 17:30],:);
+% remove flies to be expluded
+fly_record = fly_record(fly_record.Exclude == 0,:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
-chosenFlies = [20];
+chosenFlies = [7];
 % chosenFlies = flySet; % choose all flies
 
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [24];
-% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+% chosenBlocks = [10];
+chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
 %% experimental parameters and window calculation
 ISI = fly_record.ISI + fly_record.SDT;
 
+SDT = fly_record.SDT;
+
 time_before_peak = fly_record.SDT/2;
-time_after_peak = ISI/3;
+time_after_peak = fly_record.ISI;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
@@ -85,17 +87,15 @@ for b = find(chosenOnes)
     [b_f,a_f] = butter(9,50/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
     
-    [b_f,a_f] = butter(9,50/resampleFreq*2);
+    [b_f,a_f] = butter(9,40/resampleFreq*2);
     PHOT = filter(b_f,a_f,PHOT.').';
     
-    % remove outliers based on percentile
-    % this has to be done separately because rmoutliers()
-    % removes the entire row
-%     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[.001 99.999]);
-%     [out2,tf2] = rmoutliers(PHOT(2,:),'percentiles',[.001 99.999]);
-%     PHOT(1,tf1) = 0;
-%     PHOT(2,tf2) = 0;
-        
+    % remove outliers on PHOT
+%     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[0.001 99.999]);
+%     [out2,tf2] = rmoutliers(PHOT(2,:),'percentiles',[0.001 99.999]);
+%     PHOT(1,tf1) = max(out1);
+%     PHOT(2,tf2) = max(out2);
+
     BLOCKS(b).LFP = LFP;
     BLOCKS(b).PHOT = PHOT;
     BLOCKS(b).rawPHOT = rawPHOT;
@@ -106,10 +106,11 @@ for b = find(chosenOnes)
     BLOCKS(b).time_before_peak = time_before_peak(b);
     BLOCKS(b).time_after_peak = time_after_peak(b);
     BLOCKS(b).ISI = ISI(b);
+    BLOCKS(b).SDT = SDT(b);
     
     % 2.5 seems to work in most cases and after removing outliers via
     % percentiles it should work in a fairly uniform way across blocks
-    BLOCKS(b).peakThreshold = 2.5;
+%     BLOCKS(b).peakThreshold = 2.5;
 
 end
 
