@@ -5,12 +5,13 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     n_back = 5; n_seq = 2^n_back; %TODO: make n_back variable
     
     n_blocks = length(blocks);
-
+    
     for b = 1:n_blocks
         
         LOCS = blocks(b).LOCS;
         LFP = blocks(b).LFP;
         PHOT = blocks(b).PHOT;
+%         rawPHOT = blocks(b).rawPHOT;
         randomSequence = blocks(b).randomSequence;
         time_before_peak = blocks(b).time_before_peak;
         time_after_peak = blocks(b).time_after_peak;
@@ -27,13 +28,13 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         for n = n_back:sequenceLength
 
             % decimal value of binary sequence of length n_back
-            seq = bin2dec(num2str(randomSequence(n-n_back+1:n)))+1;
+            seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
 
             % stack ERPs and PHOTs along third dimension (first two dims are sequence and
             % time respectively)
             ERPS(:, seq, n) = LFP(LOCS(n) + window(1) : LOCS(n) + window(2));
             seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), LOCS(n) + window(1) : LOCS(n) + window(2) ));
-       
+
         end
 
         % matrix with all ERPs irrespective of sequence
@@ -45,8 +46,8 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
         n_sd = 3;
 
-        % remove ERPs beyond n_sd (TODO: OPTIMISE)
-        outliers = all_erps < meanERP - n_sd*STDs | all_erps > meanERP + n_sd*STDs;
+        % remove ERPs beyond n_sd
+        outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);
 
         good_erps = ~logical(sum(outliers));
 
@@ -54,8 +55,12 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         ERPS = ERPS(:,:,good_erps);
         seqPHOT = seqPHOT(:,:,good_erps);
         badTrials = badTrials(good_erps);
-
-        % onion plot showing all ERPs
+        
+        blocks(b).ERPS = ERPS;
+        blocks(b).badTrials = badTrials;
+        blocks(b).seqPHOT = seqPHOT;
+        
+        % onion plot showing all ERPs for this block
         all_erps = all_erps(:,good_erps);
         if aux_plots
             figure;
@@ -66,12 +71,12 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     
     end
 
-    %% sequential effects analysis
+    %% sequential effects analysis across all blocks
 
     total_length = 0;
 
     for b = 1:n_blocks
-        total_length = total_length + size(ERPS,3);
+        total_length = total_length + size(blocks(b).ERPS,3);
     end 
     
     % concatenate ERPs from different "experiments" (blocks)
@@ -84,10 +89,10 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     % it is only necessary to stack along third dimension
     for b = 1:n_blocks
 
-        allERPs(:,:,start_index:start_index + size(ERPS,3) - 1) = ERPS;
-        allPHOTs(:,:,start_index:start_index + size(ERPS,3) - 1) = seqPHOT;
+        allERPs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).ERPS;
+        allPHOTs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).seqPHOT;
 
-        start_index = start_index + size(ERPS,3);
+        start_index = start_index + size(blocks(b).ERPS,3);
 
         goodTrials = [goodTrials 1-badTrials];
 
@@ -153,6 +158,9 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
     semERPs = semERPs(:,seq_eff_order(n_back));
     
+    figure;
+    plot(meanERPs)
+    
     % get the maxima and minima for all 16 sequences
     [max_erp, ind_max_erp] = max(meanERPs);
     [min_erp, ind_min_erp] = min(meanERPs);
@@ -164,7 +172,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
     semMin = semERPs(sub2ind(size(semERPs),ind_min_erp,1:16));
     
-    % plot ERPs for each sequence seaprately in a 4x4 plot
+    % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 
 %     if aux_plots
         figure;
