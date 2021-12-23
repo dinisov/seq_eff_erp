@@ -1,6 +1,6 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
-% and con
+% and conditions (LIT/DARK)
 function R = processBlocks(blocks, aux_plots)
     
     n_blocks = length(blocks);
@@ -12,8 +12,8 @@ function R = processBlocks(blocks, aux_plots)
         ISI = blocks(b).ISI;
 
         % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)), 'MinPeakHeight' , 2 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
-        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , 2 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)), 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
         
         % remove peak outliers
         peakSD = 3;
@@ -30,6 +30,9 @@ function R = processBlocks(blocks, aux_plots)
         LOCS(LOCS_PHOT1) = LOCS_PHOT1; LOCS(LOCS_PHOT2) = LOCS_PHOT2;
         LOCS = LOCS(logical(LOCS));
         
+        % 
+        LOCS = LOCS(2:end-1);
+        
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
         badLOCS = find(diff(LOCS) > (1.2*ISI*resampleFreq) | diff(LOCS) < (0.8*ISI*resampleFreq)) + 1; % index of trials where gap was too long or too short
@@ -42,6 +45,8 @@ function R = processBlocks(blocks, aux_plots)
         randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
         badTrials = badTrials(logical(randomSequence)); % careful order is important here
         randomSequence = randomSequence(logical(randomSequence)) - 1;
+        
+        randomSequence = randomSequence(2:end-1);
 
 %         randomSequence = zeros(size(PHOT(1,:)));
 %         randomSequence(stimulusOnset1) = 2; randomSequence(stimulusOnset2) = 1;
@@ -57,8 +62,8 @@ function R = processBlocks(blocks, aux_plots)
         
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
-        figure;
-        histogram(diff(LOCS(~badTrials)));
+%         figure;
+%         histogram(diff(LOCS(~badTrials)));
     
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
