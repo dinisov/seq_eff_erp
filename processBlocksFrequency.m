@@ -1,7 +1,7 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
 % and conditions (LIT/DARK)
-function R = processBlocks(blocks, aux_plots)
+function R = processBlocksFrequency(blocks, aux_plots)
     
     n_blocks = length(blocks);
 
@@ -14,6 +14,9 @@ function R = processBlocks(blocks, aux_plots)
         % find peaks
         [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)), 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
         [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        
+        stimulusOnset1 = find(diff(normalize(PHOT(1,:)) > 1) > 0 );
+        stimulusOnset2 = find(diff(normalize(PHOT(2,:)) > 1) > 0 );
         
         % remove peak outliers
         peakSD = 3;
@@ -62,8 +65,8 @@ function R = processBlocks(blocks, aux_plots)
         
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
-        figure;
-        histogram(diff(LOCS(~badTrials(2:end-1))));
+%         figure;
+%         histogram(diff(LOCS(~badTrials)));
     
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
@@ -85,11 +88,11 @@ function R = processBlocks(blocks, aux_plots)
 %             scatter(LOCS(logical(randomSequence)), 0,40,'r','filled');
 %             scatter(LOCS(~logical(randomSequence)), 0,40,'b','filled');
 
-%             scatter([stimulusOnset1 stimulusOnset2], 0,40,'r','filled');
+            scatter([stimulusOnset1 stimulusOnset2], 0,40,'r','filled');
 %             scatter([stimulusEnd1 stimulusEnd2], 0,40,'b','filled');
             scatter(badLOCS, 0,40,'m','filled');
         end
             
     end
 
-R = analyseSequentialEffects(blocks, aux_plots);
+R = analyseSequentialEffectsFrequency(blocks, aux_plots);
