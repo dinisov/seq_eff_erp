@@ -13,12 +13,12 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
 
-resultsDirectory = [homeDirectory '\Results_40Hz'];
+resultsDirectory = [homeDirectory '\Results_12dot5Hz'];
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 40,:);
+% fly_record = fly_record(fly_record.Frequency == 25,:);
 
 % remove flies to be excluded
 fly_record = fly_record(fly_record.Exclude == 0,:);
@@ -28,15 +28,15 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [20];
+chosenFlies = [19];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [3];
-chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [14];
+% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -47,8 +47,8 @@ ISI = fly_record.ISI + fly_record.SDT;
 SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
-time_before_peak = fly_record.SDT;
-time_after_peak = fly_record.ISI;
+time_before_peak = fly_record.SDT*2;
+time_after_peak = fly_record.ISI*2/3;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
@@ -90,7 +90,7 @@ for b = find(chosenOnes)
     
     % butterworth filter for both LFP and PHOT
     % data
-    [b_f,a_f] = butter(9,50/resampleFreq*2);
+    [b_f,a_f] = butter(9,40/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
     
     [b_f,a_f] = butter(9,40/resampleFreq*2);

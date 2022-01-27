@@ -1,4 +1,4 @@
-function R = analyseSequentialEffects(blocks, aux_plots)
+function R = analyseSequentialEffectsFrequency(blocks, aux_plots)
 
     %% sort data according to previous sequence
 
@@ -94,7 +94,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
         start_index = start_index + size(blocks(b).ERPS,3);
 
-        goodTrials = [goodTrials 1-badTrials];
+        goodTrials = [goodTrials 1-badTrials]; %#ok<AGROW>
 
     end
     
@@ -129,13 +129,13 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     nERPs = sum(~isnan(allERPs(1,:,:)), 3);
     
     % SEM for each sequence (before grouping in pairs, so 32 sequences)
-    sdERPs = std(allERPs,[],3,'omitnan');
-    semERPs = sdERPs ./ sqrt(nERPs);
+%     sdERPs = std(allERPs,[],3,'omitnan');
+%     semERPs = sdERPs ./ sqrt(nERPs);
     
     % propagate the SEM for the pairs of sequences
     % according to sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
-    semERPs = sqrt(((nERPs.^2 .* semERPs.^2) + fliplr(nERPs.^2 .*semERPs.^2))./((nERPs + fliplr(nERPs)).^2));
-    semERPs(:,n_seq/2 + 1:end) = [];
+%     semERPs = sqrt(((nERPs.^2 .* semERPs.^2) + fliplr(nERPs.^2 .*semERPs.^2))./((nERPs + fliplr(nERPs)).^2));
+%     semERPs(:,n_seq/2 + 1:end) = [];
     
     % in order to calculate weighted mean (broadcasting here)
     meanERPs = meanERPs .* nERPs;
@@ -156,75 +156,51 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     % reorder according to the literature
     meanERPs = meanERPs(:,seq_eff_order(n_back));
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
-    semERPs = semERPs(:,seq_eff_order(n_back));
-    
-    figure;
-    plot(meanERPs)
-    
-    % get the maxima and minima for all 16 sequences
-    [max_erp, ind_max_erp] = max(meanERPs);
-    [min_erp, ind_min_erp] = min(meanERPs);
-    
-    % get the maxima of the diff of the PHOT to mark stimulus onset
-    [~, stim_onset] = max(diff(meanPHOTs));
+%     semERPs = semERPs(:,seq_eff_order(n_back));
+
+%     figure;
+%     plot(meanERPs)
 
     %standard errors of the mean for the maxima (use of linear indexing here)
-    semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
-    semMin = semERPs(sub2ind(size(semERPs),ind_min_erp,1:16));
+%     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
     
     % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 
-%     if aux_plots
-        figure;
-
-        load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
-
-        %this is just to help turn horizontal sequences into vertical ones
-        ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]);
-
-        for i = 1:16
-           subplot(4,4,i);
-           plot(normalize(meanERPs(:,i)));
-           hold on;
-           scatter(ind_max_erp(i), 0,40,'r','filled');
-           scatter(ind_min_erp(i), 0,40,'b','filled');
-           plot(normalize(meanPHOTs(:,i)));
-           plot([stim_onset(i) stim_onset(i)],ylim,'r');
-           title(binomial_x_labels_latex{i}(ind_horiz));
-        end
+%     figure;
+% 
+%     load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
+% 
+%     %this is just to help turn horizontal sequences into vertical ones
+%     ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]);
+% 
+%     for i = 1:16
+%        subplot(4,4,i);
+%        plot(normalize(meanERPs(:,i)));
+%        hold on;
+%        scatter(ind_max_erp(i), 0,40,'r','filled');
+%        scatter(ind_min_erp(i), 0,40,'b','filled');
+%        plot(normalize(meanPHOTs(:,i)));
+%        plot([stim_onset(i) stim_onset(i)],ylim,'r');
+%        title(binomial_x_labels_latex{i}(ind_horiz));
 %     end
         
     % amplitude SEs and propagated SEM
-    amplitudeSEs = max_erp - min_erp;
-    semAmplSEs = sqrt(semMax.^2 + semMin.^2);
-    
-    % latency from stimulus onset to peak (not feasible to calculate error here)
-    latencySEs = zeros(1,16);
-    for i = 1:16
-        latencySEs(i) = (ind_max_erp(i) - stim_onset(i))/blocks(1).resampleFreq;%this assumes for now that resampleFreq is always the same
-    end
-        
-    % positive amplitude SEs and propagated SEM
-    positiveAmplitudeSEs =  max_erp - meanERPs(1,:);
-    semPosAmplSEs = sqrt(semMax.^2 + semERPs(1,:).^2);
-    
-    % negative amplitude and propagated SEM
-    negativeAmplitudeSEs =  min_erp - meanERPs(1,:);
-    semNegAmplSEs = sqrt(semMin.^2 + semERPs(1,:).^2);
+%     amplitudeSEs = max_erp - min_erp;
+%     semAmplSEs = sqrt(semMax.^2 + semMin.^2);
+
+    fftERPs = fft(meanERPs);
+
+    magnitudeSEs = abs(fftERPs);
+    phaseSEs = angle(fftERPs);
     
     % put all results into a neat structure
     R = struct;
     
-    R.amplitudeSEs = amplitudeSEs;
-    R.semAmplSEs = semAmplSEs;
+    R.magnitudeSEs = magnitudeSEs;
+    R.phaseSEs = phaseSEs;
     
-    R.latencySEs = latencySEs;
-    
-    R.positiveAmplitudeSEs = positiveAmplitudeSEs;
-    R.semPosAmplSEs = semPosAmplSEs;
-    
-    R.negativeAmplitudeSEs = negativeAmplitudeSEs;
-    R.semNegAmplSEs = semNegAmplSEs;
+%     R.amplitudeSEs = amplitudeSEs;
+%     R.semAmplSEs = semAmplSEs;
     
     R.meanERPs = meanERPs;
     R.meanPHOTs = meanPHOTs;
