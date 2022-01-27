@@ -31,7 +31,7 @@ function R = processBlocks(blocks, aux_plots)
         LOCS = LOCS(logical(LOCS));
         
         % 
-        LOCS = LOCS(2:end-1);
+%         LOCS = LOCS(2:end-1);
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials

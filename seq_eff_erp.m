@@ -28,14 +28,14 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [26];
+chosenFlies = [19];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [6];
+chosenBlocks = [14];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -90,7 +90,7 @@ for b = find(chosenOnes)
     
     % butterworth filter for both LFP and PHOT
     % data
-    [b_f,a_f] = butter(9,50/resampleFreq*2);
+    [b_f,a_f] = butter(9,40/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
     
     [b_f,a_f] = butter(9,40/resampleFreq*2);
