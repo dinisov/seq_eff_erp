@@ -13,13 +13,12 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
 
-%resultsDirectory = [homeDirectory '\Results_25Hz'];
-resultsDirectory = 'D:\group_swinderen\Dinis\Results_25Hz';
+resultsDirectory = [homeDirectory '\Results_12dot5Hz'];
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-% fly_record = fly_record(fly_record.Frequency == 12.5,:);
+% fly_record = fly_record(fly_record.Frequency == 25,:);
 
 % remove flies to be excluded
 fly_record = fly_record(fly_record.Exclude == 0,:);
@@ -29,14 +28,14 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [29];
+chosenFlies = [24];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [14];
+chosenBlocks = [5];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -74,25 +73,24 @@ for b = find(chosenOnes)
     load([homeDirectory '/Output/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
-    LFP = EEG.LFP1.data(1,:);
+    LFP = EEG.LFP1.data;
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
     
     % correct for the fact that the left photodiode is inverted
     % such that peaks are always upward for peak detection
-%     if light_on_dark(b)
-%         PHOT(2,:) = -PHOT(2,:);
-%         rawPHOT(2,:) = -rawPHOT(2,:);
-%     else
-%         PHOT(1,:) = -PHOT(1,:); 
-%         rawPHOT(1,:) = -rawPHOT(1,:);
-%     end
-    PHOT = -PHOT;
+    if light_on_dark(b)
+        PHOT(2,:) = -PHOT(2,:);
+        rawPHOT(2,:) = -rawPHOT(2,:);
+    else
+        PHOT(1,:) = -PHOT(1,:); 
+        rawPHOT(1,:) = -rawPHOT(1,:);
+    end
     
     % butterworth filter for both LFP and PHOT
     % data
-    [b_f,a_f] = butter(9,40/resampleFreq*2);
+    [b_f,a_f] = butter(9,50/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
     
     [b_f,a_f] = butter(9,40/resampleFreq*2);
@@ -104,14 +102,14 @@ for b = find(chosenOnes)
 %     PHOT(1,tf1) = 0;
 %     PHOT(2,tf2) = 0;
 
-%     PHOT = normalize(PHOT.').';
-% 
-%     % trim horrible outliers from photodiode data
-%     photSD = 5;
-%     PHOT(1,PHOT(1,:) > photSD) = photSD;
-%     PHOT(1,PHOT(1,:) < -photSD) = -photSD;
-%     PHOT(2,PHOT(2,:) > photSD) = photSD;
-%     PHOT(2,PHOT(2,:) < -photSD) = -photSD;
+    PHOT = normalize(PHOT.').';
+
+    % trim horrible outliers from photodiode data
+    photSD = 5;
+    PHOT(1,PHOT(1,:) > photSD) = photSD;
+    PHOT(1,PHOT(1,:) < -photSD) = -photSD;
+    PHOT(2,PHOT(2,:) > photSD) = photSD;
+    PHOT(2,PHOT(2,:) < -photSD) = -photSD;
     
 %     figure; plot(PHOT(1,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
 %     figure; plot(PHOT(2,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);

@@ -25,15 +25,15 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         
-        for n = n_back+1:sequenceLength
+        for n = n_back:sequenceLength
 
             % decimal value of binary sequence of length n_back
-            seq = bin2dec(num2str(randomSequence(n-n_back:n-1))) + 1;
+            seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
 
             % stack ERPs and PHOTs along third dimension (first two dims are sequence and
             % time respectively)
             ERPS(:, seq, n) = LFP(LOCS(n) + window(1) : LOCS(n) + window(2));
-            seqPHOT(:, seq, n) = normalize(PHOT(3, LOCS(n) + window(1) : LOCS(n) + window(2) ));
+            seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), LOCS(n) + window(1) : LOCS(n) + window(2) ));
 
         end
 

@@ -1,7 +1,6 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
 % and conditions (LIT/DARK)
-%JITTER VERSION (1 channel)
 function R = processBlocks(blocks, aux_plots)
     
     n_blocks = length(blocks);
@@ -13,11 +12,8 @@ function R = processBlocks(blocks, aux_plots)
         ISI = blocks(b).ISI;
 
         % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(3,:)), 'MinPeakHeight' , 2.5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); %just one stimulus
-        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(3,:)) , 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); %all stimuli
-
-        [LOCS_PHOT2, ind_locs_1] = setdiff(LOCS_PHOT2, LOCS_PHOT1);
-        PKS_PHOT2 = PKS_PHOT2(ind_locs_1);
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)), 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
         
         % remove peak outliers
         peakSD = 3;
@@ -35,7 +31,7 @@ function R = processBlocks(blocks, aux_plots)
         LOCS = LOCS(logical(LOCS));
         
         % 
-        LOCS = LOCS(2:end-1);
+%         LOCS = LOCS(2:end-1);
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
@@ -66,8 +62,8 @@ function R = processBlocks(blocks, aux_plots)
         
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
-%         figure;
-%         histogram(diff(LOCS(~badTrials)));
+        figure;
+        histogram(diff(LOCS(~badTrials(2:end-1))));
     
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
@@ -78,11 +74,11 @@ function R = processBlocks(blocks, aux_plots)
         if aux_plots
             figure
             hold on
-            plot(normalize(PHOT(3,:)));% PHOT3
-            scatter(LOCS_PHOT1,PKS_PHOT1); % 
+            plot(normalize(PHOT(1,:)));% PHOT1
+            scatter(LOCS_PHOT1,PKS_PHOT1); % PHOT1 peaks
             
-%             plot(normalize(PHOT(2,:)));% PHOT2
-            scatter(LOCS_PHOT2,PKS_PHOT2);
+            plot(normalize(PHOT(2,:)));% PHOT2
+            scatter(LOCS_PHOT2,PKS_PHOT2); %PHOT2 peaks
 
             % sanity check of where peaks were detected and which stimlus
             % (left or right)
