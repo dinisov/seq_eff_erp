@@ -46,7 +46,7 @@ function R = processBlocks(blocks, aux_plots)
         badTrials = badTrials(logical(randomSequence)); % careful order is important here
         randomSequence = randomSequence(logical(randomSequence)) - 1;
         
-        randomSequence = randomSequence(2:end-1);
+%         randomSequence = randomSequence(2:end-1);
 
 %         randomSequence = zeros(size(PHOT(1,:)));
 %         randomSequence(stimulusOnset1) = 2; randomSequence(stimulusOnset2) = 1;
@@ -63,7 +63,7 @@ function R = processBlocks(blocks, aux_plots)
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
         figure;
-        histogram(diff(LOCS(~badTrials(2:end-1))));
+        histogram(diff(LOCS(~badTrials)));
     
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
