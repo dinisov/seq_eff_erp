@@ -25,10 +25,10 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         
-        for n = n_back+1:sequenceLength
+        for n = n_back:sequenceLength
 
             % decimal value of binary sequence of length n_back
-            seq = bin2dec(num2str(randomSequence(n-n_back:n-1))) + 1;
+            seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
 
             % stack ERPs and PHOTs along third dimension (first two dims are sequence and
             % time respectively)
@@ -166,7 +166,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     [min_erp, ind_min_erp] = min(meanERPs);
     
     % get the maxima of the diff of the PHOT to mark stimulus onset
-    [~, stim_onset] = max(diff(meanPHOTs));
+    [~, stim_onset] = max(meanPHOTs);
 
     %standard errors of the mean for the maxima (use of linear indexing here)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));

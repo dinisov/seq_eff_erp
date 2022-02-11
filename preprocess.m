@@ -41,12 +41,12 @@ if calibMode == 1
 end
 dataIsFromSynapse = 1; %Whether data was collected from Synapse
 if dataIsFromSynapse == 1
-    specialSubsampleFields = [{'ARAA'}]; %These fields will be subsampled with a coordinate technique, rather than resampled
+    specialSubsampleFields = []; %These fields will be subsampled with a coordinate technique, rather than resampled
         %This is intended for TTL and TTL-like fields that react...poorly to traditional resampling methods
 end
 blockConvention = 'block'; %This is the string that will be searched for in folders (e.g. if your convention is 'C:\TDT\Tanks\290421\block1' etc, then the blockConvention is 'block' and the value immediately after is the block number)
-reSampleFreq = 3000; % Desired Sampling Frequency (Set as NaN to use source framerate)
-skipExistingFiles = 1; %Whether to skip analysis of already processed files
+reSampleFreq = NaN; % Desired Sampling Frequency (Set as NaN to use source framerate)
+skipExistingFiles = 0; %Whether to skip analysis of already processed files
 %-------------------------------------------------
 
 %cd(dataPath)
@@ -450,7 +450,8 @@ for fly_number = 1:length(fly_list)
                 catch
                     disp(['TDTbin2mat read failed; Retrying (in 10s)...'])
                     pause(10)
-                    a = a + 1;TDTbin2mat
+                    a = a + 1;
+                    %TDTbin2mat
                     %{
                     warning('TDTbin2mat read unsuccessful. Trying again in 30 seconds...')
                     pause(30)

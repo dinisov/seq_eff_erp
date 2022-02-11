@@ -8,23 +8,26 @@ function R = processBlocks(blocks, aux_plots)
 
     for b = 1:n_blocks
         
-        PHOT = blocks(b).PHOT; 
+        PHOT = blocks(b).PHOT(3,:)/max(blocks(b).PHOT(3,:)); 
         resampleFreq = blocks(b).resampleFreq;
         ISI = blocks(b).ISI;
 
-        % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(3,:)), 'MinPeakHeight' , 2.5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); %just one stimulus
-        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(3,:)) , 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); %all stimuli
+        PHOT = movmax(PHOT,[20 20]);
+        blocks(b).PHOT(3,:) = PHOT;
 
-        [LOCS_PHOT2, ind_locs_1] = setdiff(LOCS_PHOT2, LOCS_PHOT1);
-        PKS_PHOT2 = PKS_PHOT2(ind_locs_1);
+        % find peaks
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .1 , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); %just one stimulus
+        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(PHOT , 'MinPeakHeight' , .6 , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); %all stimuli
+
+        [LOCS_PHOT1, ind_locs_phot1] = setdiff(LOCS_PHOT1, LOCS_PHOT2);
+        PKS_PHOT1 = PKS_PHOT1(ind_locs_phot1);
         
         % remove peak outliers
-        peakSD = 3;
-        LOCS_PHOT1 = LOCS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
-        LOCS_PHOT2 = LOCS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
-        PKS_PHOT1 = PKS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
-        PKS_PHOT2 = PKS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
+%         peakSD = 3;
+%         LOCS_PHOT1 = LOCS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
+%         LOCS_PHOT2 = LOCS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
+%         PKS_PHOT1 = PKS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
+%         PKS_PHOT2 = PKS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
         
         figure; histogram(PKS_PHOT1);
         figure; histogram(PKS_PHOT2);
@@ -39,7 +42,7 @@ function R = processBlocks(blocks, aux_plots)
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
-        badLOCS = find(diff(LOCS) > (1.2*ISI*resampleFreq) | diff(LOCS) < (0.8*ISI*resampleFreq)) + 1; % index of trials where gap was too long or too short
+        badLOCS = find((diff(LOCS) > (1.2*ISI*resampleFreq)) | (diff(LOCS) < (0.8*ISI*resampleFreq))) + 1; % index of trials where gap was too long or too short
         badLOCS = LOCS(badLOCS);
         badTrials = zeros(size(PHOT(1,:)));
         badTrials(badLOCS) = 1;
@@ -51,11 +54,6 @@ function R = processBlocks(blocks, aux_plots)
         randomSequence = randomSequence(logical(randomSequence)) - 1;
         
 %         randomSequence = randomSequence(2:end-1);
-
-%         randomSequence = zeros(size(PHOT(1,:)));
-%         randomSequence(stimulusOnset1) = 2; randomSequence(stimulusOnset2) = 1;
-%         badTrials = badTrials(logical(randomSequence)); % careful order is important here
-%         randomSequence = randomSequence(logical(randomSequence)) - 1;
 
         %remove 4 trials after a bad one
         badTrialsIndex = find(badTrials);
@@ -78,7 +76,7 @@ function R = processBlocks(blocks, aux_plots)
         if aux_plots
             figure
             hold on
-            plot(normalize(PHOT(3,:)));% PHOT3
+            plot(PHOT);% PHOT3
             scatter(LOCS_PHOT1,PKS_PHOT1); % 
             
 %             plot(normalize(PHOT(2,:)));% PHOT2

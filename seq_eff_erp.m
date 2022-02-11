@@ -36,7 +36,7 @@ chosenFlies = [29];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [6];
+chosenBlocks = [5 12];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -48,8 +48,8 @@ ISI = fly_record.ISI + fly_record.SDT;
 SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
-time_before_peak = fly_record.SDT*2;
-time_after_peak = fly_record.ISI*2/3;
+time_before_peak = fly_record.SDT*0;
+time_after_peak = fly_record.ISI*1.1;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
@@ -95,8 +95,8 @@ for b = find(chosenOnes)
     [b_f,a_f] = butter(9,40/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
     
-    [b_f,a_f] = butter(9,40/resampleFreq*2);
-    PHOT = filter(b_f,a_f,PHOT.').';
+%     [b_f,a_f] = butter(9,100/resampleFreq*2);
+%     PHOT = filter(b_f,a_f,PHOT.').';
     
     % remove outliers on PHOT
 %     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[0.05 99.95]);
