@@ -30,35 +30,26 @@ function R = processBlocks(blocks, aux_plots)
         LOCS(LOCS_PHOT1) = LOCS_PHOT1; LOCS(LOCS_PHOT2) = LOCS_PHOT2;
         LOCS = LOCS(logical(LOCS));
         
-        % 
+        % this is a hack to remove the end LOCS if they are bad
 %         LOCS = LOCS(2:end-1);
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
         badLOCS = find(diff(LOCS) > (1.2*ISI*resampleFreq) | diff(LOCS) < (0.8*ISI*resampleFreq)) + 1; % index of trials where gap was too long or too short
-        badLOCS = LOCS(badLOCS);
-        badTrials = zeros(size(PHOT(1,:)));
-        badTrials(badLOCS) = 1;
 
         % infer random sequence (0 - left; 1 - right)
         randomSequence = zeros(size(PHOT(1,:)));
         randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
-        badTrials = badTrials(logical(randomSequence)); % careful order is important here
         randomSequence = randomSequence(logical(randomSequence)) - 1;
         
 %         randomSequence = randomSequence(2:end-1);
 
-%         randomSequence = zeros(size(PHOT(1,:)));
-%         randomSequence(stimulusOnset1) = 2; randomSequence(stimulusOnset2) = 1;
-%         badTrials = badTrials(logical(randomSequence)); % careful order is important here
-%         randomSequence = randomSequence(logical(randomSequence)) - 1;
-
         %remove 4 trials after a bad one
-        badTrialsIndex = find(badTrials);
-        badTrials([badTrialsIndex+1 badTrialsIndex+2 badTrialsIndex+3 badTrialsIndex+4]) = 1;
+        badTrials = zeros(size(LOCS));
+        badTrials([badLOCS badLOCS+1 badLOCS+2 badLOCS+3 badLOCS+4]) = 1;
         
         percentDataLost = nnz(badTrials)/length(badTrials);
-        disp(['Data lost: ' num2str(percentDataLost*100) '%']);
+        disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
         
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
@@ -80,14 +71,7 @@ function R = processBlocks(blocks, aux_plots)
             plot(normalize(PHOT(2,:)));% PHOT2
             scatter(LOCS_PHOT2,PKS_PHOT2); %PHOT2 peaks
 
-            % sanity check of where peaks were detected and which stimlus
-            % (left or right)
-%             scatter(LOCS(logical(randomSequence)), 0,40,'r','filled');
-%             scatter(LOCS(~logical(randomSequence)), 0,40,'b','filled');
-
-%             scatter([stimulusOnset1 stimulusOnset2], 0,40,'r','filled');
-%             scatter([stimulusEnd1 stimulusEnd2], 0,40,'b','filled');
-            scatter(badLOCS, 0,40,'m','filled');
+            scatter(LOCS(badLOCS), 0,40,'m','filled');%badLOCS
         end
             
     end
