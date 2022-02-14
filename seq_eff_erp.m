@@ -29,14 +29,14 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [29];
+chosenFlies = [22];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [5 12];
+chosenBlocks = [17];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -49,7 +49,7 @@ SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
 time_before_peak = fly_record.SDT*0;
-time_after_peak = fly_record.ISI*1.1;
+time_after_peak = fly_record.ISI*.5;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
@@ -81,14 +81,15 @@ for b = find(chosenOnes)
     
     % correct for the fact that the left photodiode is inverted
     % such that peaks are always upward for peak detection
-%     if light_on_dark(b)
-%         PHOT(2,:) = -PHOT(2,:);
-%         rawPHOT(2,:) = -rawPHOT(2,:);
-%     else
-%         PHOT(1,:) = -PHOT(1,:); 
-%         rawPHOT(1,:) = -rawPHOT(1,:);
-%     end
-    PHOT = -PHOT;
+    if light_on_dark(b)
+        PHOT(2,:) = -PHOT(2,:);
+        rawPHOT(2,:) = -rawPHOT(2,:);
+    else
+        PHOT(1,:) = -PHOT(1,:); 
+        rawPHOT(1,:) = -rawPHOT(1,:);
+    end
+
+%     PHOT = -PHOT;
     
     % butterworth filter for both LFP and PHOT
     % data
@@ -104,15 +105,20 @@ for b = find(chosenOnes)
 %     PHOT(1,tf1) = 0;
 %     PHOT(2,tf2) = 0;
 
+%       PHOT(PHOT < 0) = 0;
+
 %     PHOT = normalize(PHOT.').';
-% 
-%     % trim horrible outliers from photodiode data
+
+    % trim horrible outliers from photodiode data
 %     photSD = 5;
 %     PHOT(1,PHOT(1,:) > photSD) = photSD;
 %     PHOT(1,PHOT(1,:) < -photSD) = -photSD;
 %     PHOT(2,PHOT(2,:) > photSD) = photSD;
 %     PHOT(2,PHOT(2,:) < -photSD) = -photSD;
-    
+
+%     figure; plot(rawPHOT(2,:)); hold on; plot(PHOT(2,:));
+     
+
 %     figure; plot(PHOT(1,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
 %     figure; plot(PHOT(2,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
 
