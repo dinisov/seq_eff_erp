@@ -47,23 +47,19 @@ function R = processBlocks(blocks, aux_plots)
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
-        badLOCS = find((diff(LOCS) > (1.2*ISI*resampleFreq)) | (diff(LOCS) < (0.8*ISI*resampleFreq))) + 1; % index of trials where gap was too long or too short
-        badLOCS = LOCS(badLOCS);
-        badTrials = zeros(size(PHOT1));
-        badTrials(badLOCS) = 1;
+        badLOCS = find(diff(LOCS) > (1.2*ISI*resampleFreq) | diff(LOCS) < (0.8*ISI*resampleFreq)) + 1; % index of trials where gap was too long or too short
 
         % infer random sequence (0 - left; 1 - right)
-        randomSequence = zeros(size(PHOT1));
+        randomSequence = zeros(size(PHOT1(1,:)));
         randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
-        badTrials = badTrials(logical(randomSequence)); % careful order is important here
         randomSequence = randomSequence(logical(randomSequence)) - 1;
 
         %remove 4 trials after a bad one
-        badTrialsIndex = find(badTrials);
-        badTrials([badTrialsIndex+1 badTrialsIndex+2 badTrialsIndex+3 badTrialsIndex+4]) = 1;
+        badTrials = zeros(size(LOCS));
+        badTrials([badLOCS badLOCS+1 badLOCS+2 badLOCS+3 badLOCS+4]) = 1;
         
         percentDataLost = nnz(badTrials)/length(badTrials);
-        disp(['Data lost: ' num2str(percentDataLost*100) '%']);
+        disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
         
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
