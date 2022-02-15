@@ -49,7 +49,7 @@ SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
 time_before_peak = fly_record.SDT*0;
-time_after_peak = fly_record.ISI*1.5;
+time_after_peak = fly_record.ISI*1;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';

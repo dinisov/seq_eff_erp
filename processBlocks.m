@@ -12,7 +12,7 @@ function R = processBlocks(blocks, aux_plots)
         PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); 
         resampleFreq = blocks(b).resampleFreq;
         ISI = blocks(b).ISI;
-        disp(resampleFreq);
+%         disp(resampleFreq);
         PHOT1 = movmax(PHOT1,[20 20]);
         PHOT2 = movmax(PHOT2,[20 20]);
         blocks(b).PHOT(1,:) = PHOT1;
@@ -26,19 +26,6 @@ function R = processBlocks(blocks, aux_plots)
 
         figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'filled');
         figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'filled'); 
-
-%         [LOCS_PHOT1, ind_locs_phot1] = setdiff(LOCS_PHOT1, LOCS_PHOT2);
-%         PKS_PHOT1 = PKS_PHOT1(ind_locs_phot1);
-        
-        % remove peak outliers
-%         peakSD = 3;
-%         LOCS_PHOT1 = LOCS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
-%         LOCS_PHOT2 = LOCS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
-%         PKS_PHOT1 = PKS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
-%         PKS_PHOT2 = PKS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
-        
-%         figure; histogram(PKS_PHOT1);
-%         figure; histogram(PKS_PHOT2);
         
         % fuse locations of PHOT1 and PHOT2 (I figured this was quicker than concatenating and sorting)
         LOCS = zeros(size(PHOT1));
@@ -72,24 +59,15 @@ function R = processBlocks(blocks, aux_plots)
         blocks(b).randomSequence = randomSequence;
         
         % peak detection figure
-%         if aux_plots
-%             figure
-%             hold on
-%             plot(PHOT);% PHOT3
-%             scatter(LOCS_PHOT1,PKS_PHOT1); % 
-%             
-% %             plot(normalize(PHOT(2,:)));% PHOT2
-%             scatter(LOCS_PHOT2,PKS_PHOT2);
-% 
-%             % sanity check of where peaks were detected and which stimlus
-%             % (left or right)
-% %             scatter(LOCS(logical(randomSequence)), 0,40,'r','filled');
-% %             scatter(LOCS(~logical(randomSequence)), 0,40,'b','filled');
-% 
-% %             scatter([stimulusOnset1 stimulusOnset2], 0,40,'r','filled');
-% %             scatter([stimulusEnd1 stimulusEnd2], 0,40,'b','filled');
-%             scatter(badLOCS, 0,40,'m','filled');
-%         end
+        if aux_plots
+            figure
+            hold on
+            plot(PHOT1); plot(PHOT2);
+            scatter(LOCS_PHOT1,0);
+            scatter(LOCS_PHOT2,0);
+
+            scatter(badLOCS, 0,40,'m','filled');
+        end
             
     end
 

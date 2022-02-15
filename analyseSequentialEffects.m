@@ -49,6 +49,8 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         % remove ERPs beyond n_sd
         outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);
 
+        disp(['Data lost due to outliers: ' num2str(nnz(sum(outliers))/length(outliers)*100) '%']);
+
         good_erps = ~logical(sum(outliers));
 
         % remove ERP outliers
@@ -97,10 +99,6 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         goodTrials = [goodTrials 1-blocks(b).badTrials];
 
     end
-
-    disp(length(goodTrials));
-    disp(length(allERPs));
-    %%
 
     % get rid of bad trials (trials with too long gaps between peaks)
     allERPs = allERPs(:,:,logical(goodTrials));
