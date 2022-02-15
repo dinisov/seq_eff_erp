@@ -12,7 +12,7 @@ function R = processBlocks(blocks, aux_plots)
         PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); 
         resampleFreq = blocks(b).resampleFreq;
         ISI = blocks(b).ISI;
-
+        disp(resampleFreq);
         PHOT1 = movmax(PHOT1,[20 20]);
         PHOT2 = movmax(PHOT2,[20 20]);
         blocks(b).PHOT(1,:) = PHOT1;

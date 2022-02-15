@@ -25,10 +25,10 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         
-        for n = n_back+1:sequenceLength
+        for n = n_back:sequenceLength
 
             % decimal value of binary sequence of length n_back
-            seq = bin2dec(num2str(randomSequence(n-n_back:n-1))) + 1;
+            seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
 
             % stack ERPs and PHOTs along third dimension (first two dims are sequence and
             % time respectively)
@@ -83,21 +83,23 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     allERPs = zeros(length(window(1):window(2)), n_seq, total_length);
     allPHOTs = zeros(length(window(1):window(2)), n_seq, total_length);
     
-    start_index = 1; goodTrials = [];
+    start_index = 0; goodTrials = [];
 
     % these are already separated by sequence so in order to group by block
     % it is only necessary to stack along third dimension
     for b = 1:n_blocks
 
-        allERPs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).ERPS;
-        allPHOTs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).seqPHOT;
+        allERPs(:,:,start_index + 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).ERPS;
+        allPHOTs(:,:,start_index+ 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).seqPHOT;
 
         start_index = start_index + size(blocks(b).ERPS,3);
 
-        goodTrials = [goodTrials 1-badTrials];
+        goodTrials = [goodTrials 1-blocks(b).badTrials];
 
     end
-    
+
+    disp(length(goodTrials));
+    disp(length(allERPs));
     %%
 
     % get rid of bad trials (trials with too long gaps between peaks)
@@ -201,7 +203,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     % latency from stimulus onset to peak (not feasible to calculate error here)
     latencySEs = zeros(1,16);
     for i = 1:16
-        latencySEs(i) = (ind_max_erp(i) - stim_onset(i))/blocks(1).resampleFreq;%this assumes for now that resampleFreq is always the same
+        latencySEs(i) = (ind_min_erp(i) - stim_onset(i))/blocks(1).resampleFreq;%this assumes for now that resampleFreq is always the same
     end
         
     % positive amplitude SEs and propagated SEM
