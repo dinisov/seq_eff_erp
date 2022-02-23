@@ -28,14 +28,14 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [23];
+chosenFlies = [22];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [13];
+chosenBlocks = [17];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -75,11 +75,11 @@ for b = find(chosenOnes)
     load([homeDirectory '/Output/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
-    LFP = EEG.LFP1.data;
+    LFP = EEG.LFP1.data(1,:);
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
-    
+    plot(LFP); hold on;
     % correct for the fact that the left photodiode is inverted
     % such that peaks are always upward for peak detection
     if light_on_dark(b)
@@ -89,14 +89,17 @@ for b = find(chosenOnes)
         PHOT(1,:) = -PHOT(1,:); 
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
+
+%     PHOT = -PHOT;
     
     % butterworth filter for both LFP and PHOT
     % data
-%     [b_f,a_f] = butter(9,50/resampleFreq*2);
+%     [b_f,a_f] = butter(9,40/resampleFreq*2);
 %     LFP = filter(b_f,a_f,LFP.').';
-    
-    [b_f,a_f] = butter(9,40/resampleFreq*2);
-    PHOT = filter(b_f,a_f,PHOT.').';
+    LFP = smoothdata(LFP,'sgolay');
+    plot(LFP);
+%     [b_f,a_f] = butter(9,100/resampleFreq*2);
+%     PHOT = filter(b_f,a_f,PHOT.').';
     
     % remove outliers on PHOT
 %     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[0.05 99.95]);
@@ -104,15 +107,20 @@ for b = find(chosenOnes)
 %     PHOT(1,tf1) = 0;
 %     PHOT(2,tf2) = 0;
 
-    PHOT = normalize(PHOT.').';
+%       PHOT(PHOT < 0) = 0;
+
+%     PHOT = normalize(PHOT.').';
 
     % trim horrible outliers from photodiode data
-    photSD = 10;
-    PHOT(1,PHOT(1,:) > photSD) = photSD;
-    PHOT(1,PHOT(1,:) < -photSD) = -photSD;
-    PHOT(2,PHOT(2,:) > photSD) = photSD;
-    PHOT(2,PHOT(2,:) < -photSD) = -photSD;
-    
+%     photSD = 5;
+%     PHOT(1,PHOT(1,:) > photSD) = photSD;
+%     PHOT(1,PHOT(1,:) < -photSD) = -photSD;
+%     PHOT(2,PHOT(2,:) > photSD) = photSD;
+%     PHOT(2,PHOT(2,:) < -photSD) = -photSD;
+
+%     figure; plot(rawPHOT(2,:)); hold on; plot(PHOT(2,:));
+     
+
 %     figure; plot(PHOT(1,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
 %     figure; plot(PHOT(2,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
 

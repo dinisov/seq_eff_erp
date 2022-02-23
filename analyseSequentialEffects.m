@@ -96,7 +96,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
         start_index = start_index + size(blocks(b).ERPS,3);
 
-        goodTrials = [goodTrials 1-blocks(b).badTrials];
+        goodTrials = [goodTrials 1-blocks(b).badTrials]; %#ok<AGROW> 
 
     end
 

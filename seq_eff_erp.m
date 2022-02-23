@@ -3,8 +3,8 @@ close all;
 clear;
 
 %% load peak finder (Matt's code)
-toolPath = 'D:\group_swinderen\Matthew\Scripts\toolboxes';
-addpath([toolPath filesep 'basefindpeaks']);
+% toolPath = 'D:\group_swinderen\Matthew\Scripts\toolboxes';
+% addpath([toolPath filesep 'basefindpeaks']);
 
 %% load auxiliary functions (Dinis' code)
 addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
@@ -14,30 +14,33 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 homeDirectory = 'D:\group_swinderen\Dinis';
 
 %resultsDirectory = [homeDirectory '\Results_25Hz'];
-resultsDirectory = 'D:\group_swinderen\Dinis\Results_25Hz';
+resultsDirectory = 'D:\group_swinderen\Dinis\Results_1dot25Hz';
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-% fly_record = fly_record(fly_record.Frequency == 12.5,:);
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
+
+%% restrict to LIT or DARK
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
 % remove flies to be excluded
-fly_record = fly_record(fly_record.Exclude == 0,:);
+fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [24 25];
+chosenFlies = [6];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [3 29];
-% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+% chosenBlocks = [8];
+chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -48,8 +51,8 @@ ISI = fly_record.ISI + fly_record.SDT;
 SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
-time_before_peak = fly_record.SDT*0;
-time_after_peak = fly_record.ISI*1;
+time_before_peak = fly_record.SDT*fly_record.Window1;
+time_after_peak = fly_record.ISI*fly_record.Window1;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
@@ -78,7 +81,7 @@ for b = find(chosenOnes)
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
-    
+%     plot(LFP); hold on;
     % correct for the fact that the left photodiode is inverted
     % such that peaks are always upward for peak detection
     if light_on_dark(b)
@@ -93,9 +96,10 @@ for b = find(chosenOnes)
     
     % butterworth filter for both LFP and PHOT
     % data
-    [b_f,a_f] = butter(9,40/resampleFreq*2);
-    LFP = filter(b_f,a_f,LFP.').';
-    
+%     [b_f,a_f] = butter(9,40/resampleFreq*2);
+%     LFP = filter(b_f,a_f,LFP.').';
+    LFP = smoothdata(LFP,'sgolay');
+%     plot(LFP);
 %     [b_f,a_f] = butter(9,100/resampleFreq*2);
 %     PHOT = filter(b_f,a_f,PHOT.').';
     
@@ -107,17 +111,16 @@ for b = find(chosenOnes)
 
 %       PHOT(PHOT < 0) = 0;
 
-%     PHOT = normalize(PHOT.').';
+    PHOT = normalize(PHOT.').';
 
-    % trim horrible outliers from photodiode data
-%     photSD = 5;
-%     PHOT(1,PHOT(1,:) > photSD) = photSD;
-%     PHOT(1,PHOT(1,:) < -photSD) = -photSD;
-%     PHOT(2,PHOT(2,:) > photSD) = photSD;
-%     PHOT(2,PHOT(2,:) < -photSD) = -photSD;
+%     trim horrible outliers from photodiode data
+    photSD = 5;
+    PHOT(1,PHOT(1,:) > photSD) = photSD;
+    PHOT(1,PHOT(1,:) < -photSD) = -photSD;
+    PHOT(2,PHOT(2,:) > photSD) = photSD;
+    PHOT(2,PHOT(2,:) < -photSD) = -photSD;
 
 %     figure; plot(rawPHOT(2,:)); hold on; plot(PHOT(2,:));
-     
 
 %     figure; plot(PHOT(1,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
 %     figure; plot(PHOT(2,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);

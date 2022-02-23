@@ -25,10 +25,10 @@ function R = analyseSequentialEffectsFrequency(blocks, aux_plots)
         ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         
-        for n = n_back:sequenceLength
+        for n = n_back+1:sequenceLength
 
             % decimal value of binary sequence of length n_back
-            seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
+            seq = bin2dec(num2str(randomSequence(n-n_back:n-1))) + 1;
 
             % stack ERPs and PHOTs along third dimension (first two dims are sequence and
             % time respectively)
@@ -89,12 +89,12 @@ function R = analyseSequentialEffectsFrequency(blocks, aux_plots)
     % it is only necessary to stack along third dimension
     for b = 1:n_blocks
 
-        allERPs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).ERPS;
-        allPHOTs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).seqPHOT;
+        allERPs(:,:,start_index + 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).ERPS;
+        allPHOTs(:,:,start_index+ 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).seqPHOT;
 
         start_index = start_index + size(blocks(b).ERPS,3);
 
-        goodTrials = [goodTrials 1-badTrials]; %#ok<AGROW>
+        goodTrials = [goodTrials 1-blocks(b).badTrials]; %#ok<AGROW> 
 
     end
     
@@ -127,15 +127,6 @@ function R = analyseSequentialEffectsFrequency(blocks, aux_plots)
 
     %number of ERPs for each of 32 sequence (also number of PHOTs)
     nERPs = sum(~isnan(allERPs(1,:,:)), 3);
-    
-    % SEM for each sequence (before grouping in pairs, so 32 sequences)
-%     sdERPs = std(allERPs,[],3,'omitnan');
-%     semERPs = sdERPs ./ sqrt(nERPs);
-    
-    % propagate the SEM for the pairs of sequences
-    % according to sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
-%     semERPs = sqrt(((nERPs.^2 .* semERPs.^2) + fliplr(nERPs.^2 .*semERPs.^2))./((nERPs + fliplr(nERPs)).^2));
-%     semERPs(:,n_seq/2 + 1:end) = [];
     
     % in order to calculate weighted mean (broadcasting here)
     meanERPs = meanERPs .* nERPs;
@@ -184,9 +175,6 @@ function R = analyseSequentialEffectsFrequency(blocks, aux_plots)
 %        title(binomial_x_labels_latex{i}(ind_horiz));
 %     end
         
-    % amplitude SEs and propagated SEM
-%     amplitudeSEs = max_erp - min_erp;
-%     semAmplSEs = sqrt(semMax.^2 + semMin.^2);
 
     fftERPs = fft(meanERPs);
 
@@ -198,9 +186,6 @@ function R = analyseSequentialEffectsFrequency(blocks, aux_plots)
     
     R.magnitudeSEs = magnitudeSEs;
     R.phaseSEs = phaseSEs;
-    
-%     R.amplitudeSEs = amplitudeSEs;
-%     R.semAmplSEs = semAmplSEs;
     
     R.meanERPs = meanERPs;
     R.meanPHOTs = meanPHOTs;

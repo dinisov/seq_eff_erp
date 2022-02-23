@@ -1,7 +1,6 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
 % and conditions (LIT/DARK)
-%JITTER VERSION (1 channel)
 function R = processBlocks(blocks, aux_plots)
     
     n_blocks = length(blocks);
@@ -20,12 +19,12 @@ function R = processBlocks(blocks, aux_plots)
 
 %         figure; plot(PHOT2); hold on; plot(PHOT1);
 
-        %find peaks by taking
-        LOCS_PHOT1 = find(diff(PHOT1 > .2) > 0) + 1;
-        LOCS_PHOT2 = find(diff(PHOT2 > .2) > 0) + 1;
+        %find beginning of stimuli
+        LOCS_PHOT1 = find(diff(PHOT1 > .4) > 0) + 1;
+        LOCS_PHOT2 = find(diff(PHOT2 > .4) > 0) + 1;
 
-        figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'filled');
-        figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'filled'); 
+%         figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'filled');
+%         figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'filled'); 
         
         % fuse locations of PHOT1 and PHOT2 (I figured this was quicker than concatenating and sorting)
         LOCS = zeros(size(PHOT1));
@@ -34,16 +33,22 @@ function R = processBlocks(blocks, aux_plots)
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
-        badLOCS = find(diff(LOCS) > (1.2*ISI*resampleFreq) | diff(LOCS) < (0.8*ISI*resampleFreq)) + 1; % index of trials where gap was too long or too short
+        badLOCS = LOCS([false diff(LOCS) > (1.2*ISI*resampleFreq)] | [false diff(LOCS) < (0.8*ISI*resampleFreq)]); % index of trials where gap was too long or too short
 
         % infer random sequence (0 - left; 1 - right)
         randomSequence = zeros(size(PHOT1(1,:)));
         randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
+
+        %create logical vector of which trials are bad
+        badTrials = zeros(size(PHOT1(1,:)));
+        badTrials(badLOCS) = 1;
+
+        badTrials = badTrials(logical(randomSequence));
         randomSequence = randomSequence(logical(randomSequence)) - 1;
 
-        %remove 4 trials after a bad one
-        badTrials = zeros(size(LOCS));
-        badTrials([badLOCS badLOCS+1 badLOCS+2 badLOCS+3 badLOCS+4]) = 1;
+        %add four trials subsequent to the bad trials vector
+%         indBadTrials = find(badTrials);
+%         badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
         
         percentDataLost = nnz(badTrials)/length(badTrials);
         disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
@@ -51,7 +56,7 @@ function R = processBlocks(blocks, aux_plots)
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
         figure;
-        histogram(diff(LOCS(~badTrials)));
+        histogram(diff(LOCS));
     
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
@@ -63,10 +68,10 @@ function R = processBlocks(blocks, aux_plots)
             figure
             hold on
             plot(PHOT1); plot(PHOT2);
-            scatter(LOCS_PHOT1,0);
-            scatter(LOCS_PHOT2,0);
+            scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled');
+            scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled');
 
-            scatter(badLOCS, 0,40,'m','filled');
+            scatter(badLOCS, zeros(size(badLOCS)),40,'m','filled');
         end
             
     end
