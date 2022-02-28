@@ -158,8 +158,10 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
     semERPs = semERPs(:,seq_eff_order(n_back));
     
-    figure;
-    plot(meanERPs)
+    if aux_plots
+        figure;
+        plot(meanERPs)
+    end
     
     % get the maxima and minima for all 16 sequences
     [max_erp, ind_max_erp] = max(meanERPs);
@@ -174,7 +176,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     
     % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 
-%     if aux_plots
+    if aux_plots
         figure;
 
         load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
@@ -192,7 +194,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
            plot([stim_onset(i) stim_onset(i)],ylim,'r');
            title(binomial_x_labels_latex{i}(ind_horiz));
         end
-%     end
+    end
         
     % amplitude SEs and propagated SEM
     amplitudeSEs = max_erp - min_erp;
