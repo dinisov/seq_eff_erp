@@ -14,7 +14,7 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 homeDirectory = 'D:\group_swinderen\Dinis';
 
 %resultsDirectory = [homeDirectory '\Results_25Hz'];
-resultsDirectory = 'D:\group_swinderen\Dinis\Results_25Hz';
+resultsDirectory = 'D:\group_swinderen\Dinis\Results\Bin';
 
 fly_record = readtable('fly_record');
 
@@ -92,11 +92,7 @@ for b = find(chosenOnes)
     
     % butterworth filter for both LFP and PHOT
     % data
-    [b_f,a_f] = butter(9,40/resampleFreq*2);
-    LFP = filter(b_f,a_f,LFP.').';
-    
-%     [b_f,a_f] = butter(9,100/resampleFreq*2);
-%     PHOT = filter(b_f,a_f,PHOT.').';
+    LFP = smoothdata(LFP,'sgolay');
     
     % remove outliers on PHOT
 %     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[0.05 99.95]);

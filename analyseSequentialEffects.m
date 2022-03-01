@@ -89,12 +89,12 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     % it is only necessary to stack along third dimension
     for b = 1:n_blocks
 
-        allERPs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).ERPS;
-        allPHOTs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).seqPHOT;
+        allERPs(:,:,start_index + 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).ERPS;
+        allPHOTs(:,:,start_index+ 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).seqPHOT;
 
         start_index = start_index + size(blocks(b).ERPS,3);
 
-        goodTrials = [goodTrials 1-badTrials];
+        goodTrials = [goodTrials 1-blocks(b).badTrials]; %#ok<AGROW> 
 
     end
     
