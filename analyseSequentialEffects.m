@@ -168,7 +168,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     [min_erp, ind_min_erp] = min(meanERPs);
     
     % get the maxima of the diff of the PHOT to mark stimulus onset
-    [~, stim_onset] = max(diff(meanPHOTs));
+%     [~, stim_onset] = max(diff(meanPHOTs));
 
     %standard errors of the mean for the maxima (use of linear indexing here)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
@@ -191,7 +191,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
            scatter(ind_max_erp(i), 0,40,'r','filled');
            scatter(ind_min_erp(i), 0,40,'b','filled');
            plot(normalize(meanPHOTs(:,i)));
-           plot([stim_onset(i) stim_onset(i)],ylim,'r');
+%            plot([window(1) window(1)],ylim,'r');
            title(binomial_x_labels_latex{i}(ind_horiz));
         end
     end
@@ -201,9 +201,15 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     semAmplSEs = sqrt(semMax.^2 + semMin.^2);
     
     % latency from stimulus onset to peak (not feasible to calculate error here)
-    latencySEs = zeros(1,16);
+    % this assumes for now that resampleFreq is the same for all blocks
+    % the entire window is defined by the stimulus onset so all we need to
+    % do is use the left side of the window to correct the time to
+    % peak/trough
+    latencyToPeakSEs = zeros(1,16);
+    latencyToTroughSEs = zeros(1,16);
     for i = 1:16
-        latencySEs(i) = (ind_min_erp(i) - stim_onset(i))/blocks(1).resampleFreq;%this assumes for now that resampleFreq is always the same
+        latencyToPeakSEs(i) = (ind_max_erp(i)-window(1))/blocks(1).resampleFreq;
+        latencyToTroughSEs(i) = (ind_min_erp(i)-window(1))/blocks(1).resampleFreq;
     end
         
     % positive amplitude SEs and propagated SEM
@@ -220,7 +226,8 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     R.amplitudeSEs = amplitudeSEs;
     R.semAmplSEs = semAmplSEs;
     
-    R.latencySEs = latencySEs;
+    R.latencyToPeakSEs = latencyToPeakSEs;
+    R.latencyToTroughSEs = latencyToTroughSEs;
     
     R.positiveAmplitudeSEs = positiveAmplitudeSEs;
     R.semPosAmplSEs = semPosAmplSEs;
