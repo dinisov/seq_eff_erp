@@ -10,14 +10,14 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 homeDirectory = 'D:\group_swinderen\Dinis';
 
 %resultsDirectory = [homeDirectory '\Results_25Hz'];
-resultsDirectory = 'D:\group_swinderen\Dinis\Results\Bin';
+resultsDirectory = 'D:\group_swinderen\Dinis\Results\25Hz';
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 1.25,:);
+fly_record = fly_record(fly_record.Frequency == 25,:);
 
-%% restrict to LIT or DARK
+%% restrict to LIT or DARK 
 fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 
 % remove flies to be excluded
@@ -31,7 +31,8 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [23];
+chosenFlies = [29];
+% chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
@@ -39,7 +40,7 @@ chosenFlies = [23];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [5];
+chosenBlocks = [4 13];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -141,6 +142,9 @@ end
 
 FLIES = struct;
 
+% fit options (choices here are historical but keeping them for now)
+options = optimset('Algorithm','interior-point','FinDiffType','central');
+
 for fly = chosenFlies
     
     lit_dark = {'DARK','LIT'};
@@ -154,6 +158,8 @@ for fly = chosenFlies
        % in case there are no LIT/DARK blocks for this fly, or they were
        % not selected
        if ~isempty(thisFlyBlocks)
+
+           disp(['Processing fly #' num2str(fly)]);
        
            R = processBlocks(thisFlyBlocks, aux_plots);
 
@@ -173,7 +179,11 @@ for fly = chosenFlies
            FLIES(fly).(lit_dark{lit+1}).nERPs = R.nERPs;
            FLIES(fly).(lit_dark{lit+1}).meanERPs = R.meanERPs;
            FLIES(fly).(lit_dark{lit+1}).meanPHOTs = R.meanPHOTs;
-           
+
+           % perform fits to a simple exponential filter
+           [x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
+           FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = exp_filter(x(1),x(2),x(3));
+
        end
        
    end
@@ -199,7 +209,7 @@ for lit = [0 1]
             
             %amplitude sequential effects
             figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.');
+            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.');
             saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
             
             %positive amplitude SEs
@@ -222,6 +232,8 @@ for lit = [0 1]
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToTroughSEs.',[]);
             saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_trough.png']);
 
+%             close all
+
         end
         
     end
@@ -230,90 +242,90 @@ end
 
 %% calculate SEs for all flies by averaging SE profiles
 
-if length(chosenFlies) > 1
-
-    lit_dark = {'DARK','LIT'};
-
-    for lit = [0 1]
-
-        % if DARK/LIT field is not empty
-        if isfield(FLIES,lit_dark{lit+1})
-
-            amplitudeSEs = zeros(16,length(chosenFlies));
-            negativeAmplitudeSEs = zeros(16,length(chosenFlies));
-            positiveAmplitudeSEs = zeros(16,length(chosenFlies));
-            latencyToPeakSEs = zeros(16,length(chosenFlies));
-            latencyToTroughSEs = zeros(16,length(chosenFlies));
-            nERPsFly = zeros(1,length(chosenFlies));
-    
-            semAmplSEs = zeros(16,length(chosenFlies));
-            semPosAmplSEs = zeros(16,length(chosenFlies));
-            semNegAmplSEs = zeros(16,length(chosenFlies));
-
-            for fly = 1:length(chosenFlies)
-
-                if ~isempty(FLIES(chosenFlies(fly)).(lit_dark{lit+1})) %&& isfield(FLIES(chosenFlies(fly)),lit_dark{lit+1})
-
-                    %sequential effects results
-                    amplitudeSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).amplitudeSEs.');
-                    negativeAmplitudeSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).negativeAmplitudeSEs.');
-                    positiveAmplitudeSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).positiveAmplitudeSEs.');
-                    latencyToPeakSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).latencyToPeakSEs.');
-                    latencyToTroughSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).latencyToTroughSEs.');
-    
-                    %standard errors
-                    semAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semAmplSEs;
-                    semPosAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semPosAmplSEs;
-                    semNegAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semNegAmplSEs; 
-    
-                    nERPsFly(fly) = sum(FLIES(chosenFlies(fly)).(lit_dark{lit+1}).nERPs);
-    
-                    amplitudeSEs(:,fly) = amplitudeSEs(:,fly)*nERPsFly(fly);
-                    positiveAmplitudeSEs(:,fly) = positiveAmplitudeSEs(:,fly)*nERPsFly(fly);
-                    negativeAmplitudeSEs(:,fly) = negativeAmplitudeSEs(:,fly)*nERPsFly(fly);
-                    latencyToPeakSEs(:,fly) = latencyToPeakSEs(:,fly)*nERPsFly(fly);
-                    latencyToTroughSEs(:,fly) = latencyToTroughSEs(:,fly)*nERPsFly(fly);
-    
-                    % part of the error propagation calculation (n_A^2*sem_A^2)
-                    semAmplSEs(:,fly) = semAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
-                    semPosAmplSEs(:,fly) = semPosAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
-                    semNegAmplSEs(:,fly) = semNegAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
-    
-                    %finish calculating error propagation
-                    % sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
-                    semAmplSEs = sqrt(sum(semAmplSEs/(sum(nERPsFly)^2),2));
-                    semPosAmplSEs = sqrt(sum(semPosAmplSEs/(sum(nERPsFly)^2),2));
-                    semNegAmplSEs = sqrt(sum(semNegAmplSEs/(sum(nERPsFly)^2),2));
-
-                end
-
-            end
-
-            figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(amplitudeSEs,2)/sum(nERPsFly),[],'errors',semAmplSEs);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
-    
-            figure('Name',['Positive_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(positiveAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semPosAmplSEs);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_positive_amplitude.png']);
-    
-            figure('Name',['Negative_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(negativeAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semNegAmplSEs);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} 'negative_amplitude.png']);
-    
-            figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(latencyToPeakSEs,2)/sum(nERPsFly),[]);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
-
-            figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(latencyToTroughSEs,2)/sum(nERPsFly),[]);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
-
-        end
-
-    end
-
-end
+% if length(chosenFlies) > 1
+% 
+%     lit_dark = {'DARK','LIT'};
+% 
+%     for lit = [0 1]
+% 
+%         % if DARK/LIT field is not empty
+%         if isfield(FLIES,lit_dark{lit+1})
+% 
+%             amplitudeSEs = zeros(16,length(chosenFlies));
+%             negativeAmplitudeSEs = zeros(16,length(chosenFlies));
+%             positiveAmplitudeSEs = zeros(16,length(chosenFlies));
+%             latencyToPeakSEs = zeros(16,length(chosenFlies));
+%             latencyToTroughSEs = zeros(16,length(chosenFlies));
+%             nERPsFly = zeros(1,length(chosenFlies));
+%     
+%             semAmplSEs = zeros(16,length(chosenFlies));
+%             semPosAmplSEs = zeros(16,length(chosenFlies));
+%             semNegAmplSEs = zeros(16,length(chosenFlies));
+% 
+%             for fly = 1:length(chosenFlies)
+% 
+%                 if ~isempty(FLIES(chosenFlies(fly)).(lit_dark{lit+1})) %&& isfield(FLIES(chosenFlies(fly)),lit_dark{lit+1})
+% 
+%                     %sequential effects results
+%                     amplitudeSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).amplitudeSEs.');
+%                     negativeAmplitudeSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).negativeAmplitudeSEs.');
+%                     positiveAmplitudeSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).positiveAmplitudeSEs.');
+%                     latencyToPeakSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).latencyToPeakSEs.');
+%                     latencyToTroughSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).latencyToTroughSEs.');
+%     
+%                     %standard errors
+%                     semAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semAmplSEs;
+%                     semPosAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semPosAmplSEs;
+%                     semNegAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semNegAmplSEs; 
+%     
+%                     nERPsFly(fly) = sum(FLIES(chosenFlies(fly)).(lit_dark{lit+1}).nERPs);
+%     
+%                     amplitudeSEs(:,fly) = amplitudeSEs(:,fly)*nERPsFly(fly);
+%                     positiveAmplitudeSEs(:,fly) = positiveAmplitudeSEs(:,fly)*nERPsFly(fly);
+%                     negativeAmplitudeSEs(:,fly) = negativeAmplitudeSEs(:,fly)*nERPsFly(fly);
+%                     latencyToPeakSEs(:,fly) = latencyToPeakSEs(:,fly)*nERPsFly(fly);
+%                     latencyToTroughSEs(:,fly) = latencyToTroughSEs(:,fly)*nERPsFly(fly);
+%     
+%                     % part of the error propagation calculation (n_A^2*sem_A^2)
+%                     semAmplSEs(:,fly) = semAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
+%                     semPosAmplSEs(:,fly) = semPosAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
+%                     semNegAmplSEs(:,fly) = semNegAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
+%     
+%                     %finish calculating error propagation
+%                     % sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
+%                     semAmplSEs = sqrt(sum(semAmplSEs/(sum(nERPsFly)^2),2));
+%                     semPosAmplSEs = sqrt(sum(semPosAmplSEs/(sum(nERPsFly)^2),2));
+%                     semNegAmplSEs = sqrt(sum(semNegAmplSEs/(sum(nERPsFly)^2),2));
+% 
+%                 end
+% 
+%             end
+% 
+%             figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+%             create_seq_eff_plot(sum(amplitudeSEs,2)/sum(nERPsFly),[],'errors',semAmplSEs);
+%             saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
+%     
+%             figure('Name',['Positive_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+%             create_seq_eff_plot(sum(positiveAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semPosAmplSEs);
+%             saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_positive_amplitude.png']);
+%     
+%             figure('Name',['Negative_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+%             create_seq_eff_plot(sum(negativeAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semNegAmplSEs);
+%             saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} 'negative_amplitude.png']);
+%     
+%             figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+%             create_seq_eff_plot(sum(latencyToPeakSEs,2)/sum(nERPsFly),[]);
+%             saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
+% 
+%             figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+%             create_seq_eff_plot(sum(latencyToTroughSEs,2)/sum(nERPsFly),[]);
+%             saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
+% 
+%         end
+% 
+%     end
+% 
+% end
         
 %% calculate SEs for all flies by stacking all ERPs (this is probably not sound)
 

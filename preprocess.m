@@ -46,7 +46,7 @@ if dataIsFromSynapse == 1
 end
 blockConvention = 'block'; %This is the string that will be searched for in folders (e.g. if your convention is 'C:\TDT\Tanks\290421\block1' etc, then the blockConvention is 'block' and the value immediately after is the block number)
 reSampleFreq = NaN; % Desired Sampling Frequency (Set as NaN to use source framerate)
-skipExistingFiles = 0; %Whether to skip analysis of already processed files
+skipExistingFiles = 1; %Whether to skip analysis of already processed files
 %-------------------------------------------------
 
 %cd(dataPath)
@@ -61,6 +61,8 @@ addpath(genpath(['D:\group_swinderen\Dinis\Scripts\Toolboxes\basefindpeaks']))
 %fly_list = dir('*290520*'); % changed from Analyzed*
 fly_list = dir([dataPath, filesep, '*']); % changed from Analyzed*
 %expName = '*290421*';
+
+fly_list = fly_list(convertCharsToStrings({fly_list.name}) == '200122',:);
 
 if length(fly_list) == 0
     ['## ERROR: NO DATA FOUND ##']
