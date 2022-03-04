@@ -49,7 +49,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         % remove ERPs beyond n_sd (broadcasting here)
         outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);
 
-        disp(['Data lost due to outliers: ' num2str(nnz(sum(outliers))/length(sum(outliers))*100) '%']);
+        disp(['Data lost due to outliers: ' num2str(nnz(sum(outliers))/length(outliers)*100) '%']);
 
         good_erps = ~logical(sum(outliers));
 
@@ -85,22 +85,20 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     allERPs = zeros(length(window(1):window(2)), n_seq, total_length);
     allPHOTs = zeros(length(window(1):window(2)), n_seq, total_length);
     
-    start_index = 1; goodTrials = [];
+    start_index = 0; goodTrials = [];
 
     % these are already separated by sequence so in order to group by block
     % it is only necessary to stack along third dimension
     for b = 1:n_blocks
 
-        allERPs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).ERPS;
-        allPHOTs(:,:,start_index:start_index + size(blocks(b).ERPS,3) - 1) = blocks(b).seqPHOT;
+        allERPs(:,:,start_index + 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).ERPS;
+        allPHOTs(:,:,start_index+ 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).seqPHOT;
 
         start_index = start_index + size(blocks(b).ERPS,3);
 
-        goodTrials = [goodTrials 1-badTrials];
+        goodTrials = [goodTrials 1-blocks(b).badTrials]; %#ok<AGROW> 
 
     end
-    
-    %%
 
     % get rid of bad trials (trials with too long gaps between peaks)
     allERPs = allERPs(:,:,logical(goodTrials));
@@ -160,15 +158,17 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
     semERPs = semERPs(:,seq_eff_order(n_back));
     
-    figure;
-    plot(meanERPs)
+    if aux_plots
+        figure;
+        plot(meanERPs)
+    end
     
     % get the maxima and minima for all 16 sequences
     [max_erp, ind_max_erp] = max(meanERPs);
     [min_erp, ind_min_erp] = min(meanERPs);
     
     % get the maxima of the diff of the PHOT to mark stimulus onset
-    [~, stim_onset] = max(diff(meanPHOTs));
+%     [~, stim_onset] = max(diff(meanPHOTs));
 
     %standard errors of the mean for the maxima (use of linear indexing here)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
@@ -176,7 +176,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     
     % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 
-%     if aux_plots
+    if aux_plots
         figure;
 
         load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
@@ -191,19 +191,25 @@ function R = analyseSequentialEffects(blocks, aux_plots)
            scatter(ind_max_erp(i), 0,40,'r','filled');
            scatter(ind_min_erp(i), 0,40,'b','filled');
            plot(normalize(meanPHOTs(:,i)));
-           plot([stim_onset(i) stim_onset(i)],ylim,'r');
+%            plot([window(1) window(1)],ylim,'r');
            title(binomial_x_labels_latex{i}(ind_horiz));
         end
-%     end
+    end
         
     % amplitude SEs and propagated SEM
     amplitudeSEs = max_erp - min_erp;
     semAmplSEs = sqrt(semMax.^2 + semMin.^2);
     
     % latency from stimulus onset to peak (not feasible to calculate error here)
-    latencySEs = zeros(1,16);
+    % this assumes for now that resampleFreq is the same for all blocks
+    % the entire window is defined by the stimulus onset so all we need to
+    % do is use the left side of the window to correct the time to
+    % peak/trough
+    latencyToPeakSEs = zeros(1,16);
+    latencyToTroughSEs = zeros(1,16);
     for i = 1:16
-        latencySEs(i) = (ind_max_erp(i) - stim_onset(i))/blocks(1).resampleFreq;%this assumes for now that resampleFreq is always the same
+        latencyToPeakSEs(i) = (ind_max_erp(i)-window(1))/blocks(1).resampleFreq;
+        latencyToTroughSEs(i) = (ind_min_erp(i)-window(1))/blocks(1).resampleFreq;
     end
         
     % positive amplitude SEs and propagated SEM
@@ -220,7 +226,8 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     R.amplitudeSEs = amplitudeSEs;
     R.semAmplSEs = semAmplSEs;
     
-    R.latencySEs = latencySEs;
+    R.latencyToPeakSEs = latencyToPeakSEs;
+    R.latencyToTroughSEs = latencyToTroughSEs;
     
     R.positiveAmplitudeSEs = positiveAmplitudeSEs;
     R.semPosAmplSEs = semPosAmplSEs;

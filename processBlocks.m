@@ -7,55 +7,64 @@ function R = processBlocks(blocks, aux_plots)
 
     for b = 1:n_blocks
         
-        PHOT = blocks(b).PHOT; 
+        PHOT1 = blocks(b).PHOT(1,:)/max(blocks(b).PHOT(1,:));
+        PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); 
         resampleFreq = blocks(b).resampleFreq;
         ISI = blocks(b).ISI;
+        PHOT1 = movmax(PHOT1,[20 20]);
+        PHOT2 = movmax(PHOT2,[20 20]);
+        blocks(b).PHOT(1,:) = PHOT1;
+        blocks(b).PHOT(2,:) = PHOT2;
+        peakThreshold = blocks(b).peakThreshold;
 
-        % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(normalize(PHOT(1,:)), 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
-        [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(normalize(PHOT(2,:)) , 'MinPeakHeight' , .5 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
-        
-        % remove peak outliers
-        peakSD = 3;
-        LOCS_PHOT1 = LOCS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
-        LOCS_PHOT2 = LOCS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
-        PKS_PHOT1 = PKS_PHOT1(abs(normalize(PKS_PHOT1)) < peakSD);
-        PKS_PHOT2 = PKS_PHOT2(abs(normalize(PKS_PHOT2)) < peakSD);
-        
-        figure; histogram(PKS_PHOT1);
-        figure; histogram(PKS_PHOT2);
+%         figure; plot(PHOT2); hold on; plot(PHOT1);
+
+        %find beginning of stimuli
+        LOCS_PHOT1 = find(diff(PHOT1 > peakThreshold) > 0) + 1;
+        LOCS_PHOT2 = find(diff(PHOT2 > peakThreshold) > 0) + 1;
+
+        %first round of double peak detection
+        badLOCS_PHOT1 = LOCS_PHOT1([false diff(LOCS_PHOT1) < (0.8*ISI*resampleFreq)]);
+        badLOCS_PHOT2 = LOCS_PHOT2([false diff(LOCS_PHOT2) < (0.8*ISI*resampleFreq)]);
+
+        if aux_plots
+            figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); 
+            figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); 
+        end
         
         % fuse locations of PHOT1 and PHOT2 (I figured this was quicker than concatenating and sorting)
-        LOCS = zeros(size(PHOT(1,:)));
+        LOCS = zeros(size(PHOT1));
         LOCS(LOCS_PHOT1) = LOCS_PHOT1; LOCS(LOCS_PHOT2) = LOCS_PHOT2;
         LOCS = LOCS(logical(LOCS));
         
-        % this is a hack to remove the end LOCS if they are bad
-%         LOCS = LOCS(2:end-1);
-        
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
-        badLOCS = find(diff(LOCS) > (1.2*ISI*resampleFreq) | diff(LOCS) < (0.8*ISI*resampleFreq)) + 1; % index of trials where gap was too long or too short
+        badLOCS = LOCS([false diff(LOCS) > (1.2*ISI*resampleFreq)] | [false diff(LOCS) < (0.8*ISI*resampleFreq)]); % index of trials where gap was too long or too short
 
         % infer random sequence (0 - left; 1 - right)
-        randomSequence = zeros(size(PHOT(1,:)));
+        randomSequence = zeros(size(PHOT1(1,:)));
         randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
-        randomSequence = randomSequence(logical(randomSequence)) - 1;
-        
-%         randomSequence = randomSequence(2:end-1);
 
-        %remove 4 trials after a bad one
-        badTrials = zeros(size(LOCS));
-        badTrials([badLOCS badLOCS+1 badLOCS+2 badLOCS+3 badLOCS+4]) = 1;
+        %create logical vector of which trials are bad
+        badTrials = zeros(size(PHOT1(1,:)));
+        badTrials(badLOCS) = 1;
+
+        badTrials = badTrials(logical(randomSequence));
+        randomSequence = randomSequence(logical(randomSequence)) - 1;
+
+        %add four trials subsequent to the bad trials vector
+        indBadTrials = find(badTrials);
+        badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
         
         percentDataLost = nnz(badTrials)/length(badTrials);
         disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
         
         % histogram of interval between peaks (should have one tight peak)
-        % this is a critical check so it is always plotted
-        figure;
-        histogram(diff(LOCS(~badTrials)));
-    
+        if aux_plots
+            figure;
+            histogram(diff(LOCS));
+        end
+
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
         blocks(b).LOCS = LOCS;
@@ -65,13 +74,11 @@ function R = processBlocks(blocks, aux_plots)
         if aux_plots
             figure
             hold on
-            plot(normalize(PHOT(1,:)));% PHOT1
-            scatter(LOCS_PHOT1,PKS_PHOT1); % PHOT1 peaks
-            
-            plot(normalize(PHOT(2,:)));% PHOT2
-            scatter(LOCS_PHOT2,PKS_PHOT2); %PHOT2 peaks
+            plot(PHOT1); plot(PHOT2);
+            scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled');
+            scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled');
 
-            scatter(LOCS(badLOCS), 0,40,'m','filled');%badLOCS
+            scatter(badLOCS, zeros(size(badLOCS)),40,'m','filled');
         end
             
     end
