@@ -46,7 +46,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
         n_sd = 3;
 
-        % remove ERPs beyond n_sd
+        % remove ERPs beyond n_sd (broadcasting here)
         outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);
 
         disp(['Data lost due to outliers: ' num2str(nnz(sum(outliers))/length(outliers)*100) '%']);
