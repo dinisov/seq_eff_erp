@@ -280,13 +280,14 @@ if length(chosenFlies) > 1
                     latencyToPeakSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).latencyToPeakSEs.');
                     latencyToTroughSEs(:,fly) = (FLIES(chosenFlies(fly)).(lit_dark{lit+1}).latencyToTroughSEs.');
     
-                    %standard errors
+                    %standard errors for each fly
                     semAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semAmplSEs;
                     semPosAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semPosAmplSEs;
                     semNegAmplSEs(:,fly) = FLIES(chosenFlies(fly)).(lit_dark{lit+1}).semNegAmplSEs; 
     
                     nERPsFly(fly) = sum(FLIES(chosenFlies(fly)).(lit_dark{lit+1}).nERPs);
     
+                    % SEs weighted by how many ERPs were in each fly
                     amplitudeSEs(:,fly) = amplitudeSEs(:,fly)*nERPsFly(fly);
                     positiveAmplitudeSEs(:,fly) = positiveAmplitudeSEs(:,fly)*nERPsFly(fly);
                     negativeAmplitudeSEs(:,fly) = negativeAmplitudeSEs(:,fly)*nERPsFly(fly);
@@ -309,7 +310,7 @@ if length(chosenFlies) > 1
             end
             
 %             [x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),sum(amplitudeSEs,2)/sum(nERPsFly).'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
-            [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf - inf],[inf inf inf],[],options);
+            [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
            
             figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(sum(amplitudeSEs,2)/sum(nERPsFly),x(3) + x(1)*slrp + x(2)*lrpr,'errors',semAmplSEs);
