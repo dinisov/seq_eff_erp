@@ -187,7 +187,7 @@ for fly = chosenFlies
 
            % perform fits to a simple exponential filter
            %[x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
-           [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,R.amplitudeSEs.'),[1 1 0],[],[],[],[],[-inf  -inf - inf],[inf inf inf],[],options);
+           [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,R.amplitudeSEs.'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
            
            FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = x(3) + x(1)*slrp + x(2)*lrpr;
 
