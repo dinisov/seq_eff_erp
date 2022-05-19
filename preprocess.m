@@ -62,7 +62,7 @@ addpath(genpath(['D:\group_swinderen\Dinis\Scripts\Toolboxes\basefindpeaks']))
 fly_list = dir([dataPath, filesep, '*']); % changed from Analyzed*
 %expName = '*290421*';
 
-fly_list = fly_list(convertCharsToStrings({fly_list.name}) == '200122',:);
+fly_list = fly_list(convertCharsToStrings({fly_list.name}) == '010422',:);
 
 if length(fly_list) == 0
     ['## ERROR: NO DATA FOUND ##']
