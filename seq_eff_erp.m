@@ -14,7 +14,7 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 homeDirectory = 'D:\group_swinderen\Dinis';
 
 %resultsDirectory = [homeDirectory '\Results_25Hz'];
-resultsDirectory = 'D:\group_swinderen\Dinis\Results\Bin';
+resultsDirectory = 'D:\group_swinderen\Dinis\Results\Jitter';
 
 fly_record = readtable('fly_record');
 
@@ -36,7 +36,7 @@ chosenFlies = [29];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [5 12];
+chosenBlocks = [14];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);

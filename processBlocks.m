@@ -76,7 +76,7 @@ function R = processBlocks(blocks, aux_plots)
 
 %             scatter([stimulusOnset1 stimulusOnset2], 0,40,'r','filled');
 %             scatter([stimulusEnd1 stimulusEnd2], 0,40,'b','filled');
-            scatter(badLOCS, 0,40,'m','filled');
+            scatter(badLOCS, zeros(size(badLOCS)),40,'m','filled');
         end
             
     end
