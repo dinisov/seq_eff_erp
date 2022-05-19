@@ -8,16 +8,21 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 
 load slrp_lrpr
 
+load results
+
+lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
+
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
 
-%resultsDirectory = [homeDirectory '\Results_25Hz'];
-resultsDirectory = 'D:\group_swinderen\Dinis\Results\6dot25Hz';
+resultsDirectory = [homeDirectory '\Results\1dot25Hz'];
+
+struct_name = 'freq1dot25hz';
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 6.25,:);
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
 %% restrict to LIT or DARK 
 fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
@@ -36,7 +41,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-% chosenFlies = [12];
+% chosenFlies = [19];
 % chosenFlies = setdiff(flySet, [24 25]);
 chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -45,7 +50,7 @@ chosenFlies = flySet; % choose all flies
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [6];
+% chosenBlocks = [11];
 chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -150,6 +155,8 @@ FLIES = struct;
 % fit options (choices here are historical but keeping them for now)
 options = optimset('Algorithm','interior-point','FinDiffType','central');
 
+n_fly = 1;
+
 for fly = chosenFlies
     
     lit_dark = {'DARK','LIT'};
@@ -169,7 +176,7 @@ for fly = chosenFlies
            R = processBlocks(thisFlyBlocks, aux_plots);
 
            % sequential effects results
-           FLIES(fly).(lit_dark{lit+1}).amplitudeSEs = R.amplitudeSEs;
+           FLIES(fly).(lit_dark{lit+1}).amplitudeSEs = normalize(R.amplitudeSEs);
            FLIES(fly).(lit_dark{lit+1}).negativeAmplitudeSEs = R.negativeAmplitudeSEs;
            FLIES(fly).(lit_dark{lit+1}).latencyToPeakSEs = R.latencyToPeakSEs;
            FLIES(fly).(lit_dark{lit+1}).latencyToTroughSEs = R.latencyToTroughSEs;
@@ -187,15 +194,25 @@ for fly = chosenFlies
 
            % perform fits to a simple exponential filter
            %[x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
-           [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,R.amplitudeSEs.'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
+           [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,normalize(R.amplitudeSEs).'),[1 1 1 0],[],[],[],[],[-inf  -inf -inf -inf],[inf inf inf inf],[],options);
            
-           FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = x(3) + x(1)*slrp + x(2)*lrpr;
+           FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
+           FLIES(fly).(lit_dark{lit+1}).FITS.fit_params = x;
+           
+           % dump results in a structure to be saved in the end (may need to improve this)
+           results.(struct_name)(n_fly).seq_eff_profile = normalize(R.amplitudeSEs).';
+           results.(struct_name)(n_fly).model_fit = FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude;
+           results.(struct_name)(n_fly).fit_params = x;
 
        end
        
    end
  
+   n_fly = n_fly + 1;
+   
 end
+
+save('results','results');
 
 %% plot sequential dependencies per fly
 
@@ -216,7 +233,7 @@ for lit = [0 1]
             
             %amplitude sequential effects
             figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.');
+            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.','scores',FLIES(fly).(lit_dark{lit+1}).FITS.fit_params(1:3));
             saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
             
             %positive amplitude SEs
@@ -309,11 +326,13 @@ if length(chosenFlies) > 1
 
             end
             
-%             [x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),sum(amplitudeSEs,2)/sum(nERPsFly).'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
-            [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
+            [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(sum(amplitudeSEs,2)/sum(nERPsFly))),[1 1 1 0],[],[],[],[],[-inf  -inf -inf -inf],[inf inf inf inf],[],options);
+%             [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
            
             figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(amplitudeSEs,2)/sum(nERPsFly),x(3) + x(1)*slrp + x(2)*lrpr,'errors',semAmplSEs);
+            best_fit = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
+            create_seq_eff_plot(normalize(sum(amplitudeSEs,2)/sum(nERPsFly)),best_fit,'errors',semAmplSEs,'scores',x(1:3));
+            
             saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
     
             figure('Name',['Positive_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
