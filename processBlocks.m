@@ -1,7 +1,7 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
 % and conditions (LIT/DARK)
-function R = processBlocks(blocks, aux_plots)
+function R = processBlocks(blocks, aux_plots, frequency)
     
     n_blocks = length(blocks);
 
@@ -83,4 +83,8 @@ function R = processBlocks(blocks, aux_plots)
             
     end
 
-R = analyseSequentialEffects(blocks, aux_plots);
+if ~frequency 
+    R = analyseSequentialEffects(blocks, aux_plots);
+else
+    R = analyseSequentialEffectsFrequency(blocks, aux_plots);
+end

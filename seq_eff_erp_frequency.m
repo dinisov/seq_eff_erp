@@ -2,13 +2,10 @@
 close all;
 clear;
 
-%% load peak finder (Matt's code)
-toolPath = 'D:\group_swinderen\Matthew\Scripts\toolboxes';
-addpath([toolPath filesep 'basefindpeaks']);
-
-%% load auxiliary functions (Dinis' code)
+%% load auxiliary functions
 addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
 addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
+addpath('./Functions');
 
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
@@ -18,25 +15,38 @@ resultsDirectory = [homeDirectory '\Results_Frequency'];
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-% fly_record = fly_record(fly_record.Frequency == 25,:);
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
-% remove flies to be excluded
-fly_record = fly_record(fly_record.Exclude == 0,:);
+%% restrict to LIT or DARK 
+fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
+
+% remove flies to be excluded (usually because data is unsound for some obvious reason)
+fly_record = fly_record(~logical(fly_record.Exclude),:);
+
+%remove jittering flies
+fly_record = fly_record(~contains(fly_record.Comments,'jittering','IgnoreCase',true),:);
+
+%remove red light flies
+fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
+
+%% frequency bounds to calculate profiles for
+
+frequency_bounds = [0 60];
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [22];
-% chosenFlies = flySet; % choose all flies
+% chosenFlies = [6];
+chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [17];
-% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+% chosenBlocks = [8 10];
+chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -47,17 +57,18 @@ ISI = fly_record.ISI + fly_record.SDT;
 SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
-% time_before_peak = fly_record.SDT*2;
-% time_after_peak = fly_record.ISI*2/3;
-time_before_peak = fly_record.SDT*0;
-time_after_peak = fly_record.ISI;
+time_before_peak = zeros(size(ISI));
+time_after_peak = fly_record.SDT;
+
+%peak detection threshold
+peak_threshold = fly_record.Threshold;
 
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
 
 %% whether to plot auxiliary plots
-aux_plots = 1;
+aux_plots = 0;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -79,7 +90,7 @@ for b = find(chosenOnes)
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
-    plot(LFP); hold on;
+    
     % correct for the fact that the left photodiode is inverted
     % such that peaks are always upward for peak detection
     if light_on_dark(b)
@@ -90,39 +101,7 @@ for b = find(chosenOnes)
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
 
-%     PHOT = -PHOT;
-    
-    % butterworth filter for both LFP and PHOT
-    % data
-%     [b_f,a_f] = butter(9,40/resampleFreq*2);
-%     LFP = filter(b_f,a_f,LFP.').';
-    LFP = smoothdata(LFP,'sgolay');
-    plot(LFP);
-%     [b_f,a_f] = butter(9,100/resampleFreq*2);
-%     PHOT = filter(b_f,a_f,PHOT.').';
-    
-    % remove outliers on PHOT
-%     [out1,tf1] = rmoutliers(PHOT(1,:),'percentiles',[0.05 99.95]);
-%     [out2,tf2] = rmoutliers(PHOT(2,:),'percentiles',[0.05 99.95]);
-%     PHOT(1,tf1) = 0;
-%     PHOT(2,tf2) = 0;
-
-%       PHOT(PHOT < 0) = 0;
-
-%     PHOT = normalize(PHOT.').';
-
-    % trim horrible outliers from photodiode data
-%     photSD = 5;
-%     PHOT(1,PHOT(1,:) > photSD) = photSD;
-%     PHOT(1,PHOT(1,:) < -photSD) = -photSD;
-%     PHOT(2,PHOT(2,:) > photSD) = photSD;
-%     PHOT(2,PHOT(2,:) < -photSD) = -photSD;
-
-%     figure; plot(rawPHOT(2,:)); hold on; plot(PHOT(2,:));
-     
-
-%     figure; plot(PHOT(1,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
-%     figure; plot(PHOT(2,:)); hold on; plot(xlim, [photSD photSD]); plot(xlim, [-photSD -photSD]);
+    PHOT = trim_phot_outliers(PHOT, 5);
 
     BLOCKS(b).LFP = LFP;
     BLOCKS(b).PHOT = PHOT;
@@ -135,15 +114,9 @@ for b = find(chosenOnes)
     BLOCKS(b).time_after_peak = time_after_peak(b);
     BLOCKS(b).ISI = ISI(b);
     BLOCKS(b).SDT = SDT(b);
-    
-    % 2.5 seems to work in most cases and after removing outliers via
-    % percentiles it should work in a fairly uniform way across blocks
-%     BLOCKS(b).peakThreshold = 2.5;
+    BLOCKS(b).peakThreshold = peak_threshold(b);
 
 end
-
-%% if some block requires specific parameters, set them here
-% careful index here is that of the fly_record table *not* the block number
 
 %% analyse data per fly and whether experiment is lit or unlit
 
@@ -163,7 +136,7 @@ for fly = chosenFlies
        % not selected
        if ~isempty(thisFlyBlocks)
        
-           R = processBlocksFrequency(thisFlyBlocks, aux_plots);
+           R = processBlocks(thisFlyBlocks, aux_plots, true);
 
            % sequential effects results
            FLIES(fly).(lit_dark{lit+1}).magnitudeSEs = R.magnitudeSEs;
@@ -185,46 +158,62 @@ for fly = chosenFlies
  
 end
 
+save('data_flies_frequency','FLIES');
+
 %% plot sequential dependencies per fly
 
-lit_dark = {'DARK','LIT'};
-
-for lit = [0 1]
-
-    seq_eff_amplitude = zeros(16,length(chosenFlies));
-    seq_eff_negative_amplitude = zeros(16,length(chosenFlies));
-    n = zeros(1,length(chosenFlies));
-    
-    for fly = chosenFlies
-    
-        % if DARK/LIT field is not empty for this fly
-        if isfield(FLIES(fly),lit_dark{lit+1}) && ~isempty(FLIES(fly).(lit_dark{lit+1}))
-            
-            L = size(FLIES(fly).(lit_dark{lit+1}).magnitudeSEs,1);
-            
-            for coeff = 1:ceil(L/2)
-            
-                freq = resampleFreq*(coeff-1)/L;
-                
-                %magnitude sequential effects
-                figure('Name',['Magnitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).magnitudeSEs(coeff,:).',[]);%FLIES(fly).(lit_dark{lit+1}).amplitudeSEs
-                saveas(gcf,[resultsDirectory '\Magnitude\fly_' num2str(fly) '_' lit_dark{lit+1} '__magnitude_' num2str(freq) 'Hz.png']);
-
-                %phase sequential effects
-                figure('Name',['Phase_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).phaseSEs(coeff,:).',[]);
-                saveas(gcf,[resultsDirectory '\Phase\fly_' num2str(fly) '_' lit_dark{lit+1} '_phase_' num2str(freq) 'Hz.png']);
-                
-                close all;
-
-            end
-                
-        end
-        
-    end
-    
-end
+% lit_dark = {'DARK','LIT'};
+% 
+% for lit = [0 1]
+% 
+%     seq_eff_amplitude = zeros(16,length(chosenFlies));
+%     seq_eff_negative_amplitude = zeros(16,length(chosenFlies));
+%     n = zeros(1,length(chosenFlies));
+%     
+%     for fly = chosenFlies
+%         
+%         resultsDirectoryFly = [resultsDirectory '\Fly' num2str(fly)];
+%         
+%         if ~exist(resultsDirectoryFly, 'dir')
+%             mkdir([resultsDirectoryFly '\Magnitude']);
+%             mkdir([resultsDirectoryFly '\Phase']);
+%         end
+%         
+%         delete([resultsDirectoryFly '\Magnitude\*']);
+%         delete([resultsDirectoryFly '\Phase\*']);
+%     
+%         % if DARK/LIT field is not empty for this fly
+%         if isfield(FLIES(fly),lit_dark{lit+1}) && ~isempty(FLIES(fly).(lit_dark{lit+1}))
+%             
+%             L = size(FLIES(fly).(lit_dark{lit+1}).magnitudeSEs,1);
+%             
+%             for coeff = 1:ceil(L/2)
+%             
+%                 freq = resampleFreq*(coeff-1)/L;
+%                 
+%                 if freq > frequency_bounds(1) && freq < frequency_bounds(2)
+%                 
+%                     %magnitude sequential effects
+%                     figure('Name',['Magnitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+%                     create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).magnitudeSEs(coeff,:).',[]);%FLIES(fly).(lit_dark{lit+1}).amplitudeSEs
+%                     saveas(gcf,[resultsDirectoryFly '\Magnitude\fly_' num2str(fly) '_' lit_dark{lit+1} '_magnitude_' num2str(freq) 'Hz.png']);
+% 
+%                     %phase sequential effects
+%                     figure('Name',['Phase_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+%                     create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).phaseSEs(coeff,:).',[]);
+%                     saveas(gcf,[resultsDirectoryFly '\Phase\fly_' num2str(fly) '_' lit_dark{lit+1} '_phase_' num2str(freq) 'Hz.png']);
+% 
+%                     close all;
+%                 
+%                 end
+% 
+%             end
+%                 
+%         end
+%         
+%     end
+%     
+% end
 
 %% calculate SEs for all flies by averaging SE profiles
 
@@ -314,7 +303,7 @@ end
 % 
 %         if ~isempty(whichBlocks)
 % 
-%             R = processBlocksFrequency(whichBlocks, aux_plots);
+%             R = processBlocks(whichBlocks, aux_plots);
 % 
 %             figure('Name',['Amplitude_all_flies_' lit_dark{lit+1}],'NumberTitle','off');
 %             create_seq_eff_plot(R.amplitudeSEs.',[],'errors',R.semAmplSEs.');

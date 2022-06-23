@@ -2,9 +2,10 @@
 close all;
 clear;
 
-%% load auxiliary functions (Dinis' code)
+%% load auxiliary functions
 addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
 addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
+addpath('./Functions');
 
 load slrp_lrpr
 
@@ -15,14 +16,14 @@ lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
 
-resultsDirectory = [homeDirectory '\Results\6dot25Hz'];
+resultsDirectory = [homeDirectory '\Results\1dot25Hz'];
 
-struct_name = 'freq6dot25hz';
+struct_name = 'freq1dot25hz';
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 6.25,:);
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
 %% restrict to LIT or DARK 
 fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
@@ -41,17 +42,17 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-% chosenFlies = [29];
+chosenFlies = [6];
 % chosenFlies = setdiff(flySet, [24 25]);
-chosenFlies = flySet; % choose all flies
+% chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [11];
-chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [8 10];
+% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -73,7 +74,7 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
 
 %% whether to plot auxiliary plots
-aux_plots = 0;
+aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -116,14 +117,7 @@ for b = find(chosenOnes)
 %     [b_f,a_f] = butter(9,100/resampleFreq*2);
 %     PHOT = filter(b_f,a_f,PHOT.').';
 
-    PHOT = normalize(PHOT.').';
-
-%     trim horrible outliers from photodiode data
-    photSD = 5;
-    PHOT(1,PHOT(1,:) > photSD) = photSD;
-    PHOT(1,PHOT(1,:) < -photSD) = -photSD;
-    PHOT(2,PHOT(2,:) > photSD) = photSD;
-    PHOT(2,PHOT(2,:) < -photSD) = -photSD;
+    PHOT = trim_phot_outliers(PHOT, 5);
 
 %     figure; plot(rawPHOT(2,:)); hold on; plot(PHOT(2,:));
 
@@ -173,7 +167,7 @@ for fly = chosenFlies
 
            disp(['Processing fly #' num2str(fly)]);
        
-           R = processBlocks(thisFlyBlocks, aux_plots);
+           R = processBlocks(thisFlyBlocks, aux_plots, false);
 
            % sequential effects results
            FLIES(fly).(lit_dark{lit+1}).amplitudeSEs = (R.amplitudeSEs);

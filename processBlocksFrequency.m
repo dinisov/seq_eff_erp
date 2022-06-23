@@ -1,8 +1,7 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
 % and conditions (LIT/DARK)
-%JITTER VERSION (1 channel)
-function R = processBlocksFrequency(blocks, aux_plots)
+function R = processBlocks(blocks, aux_plots)
     
     n_blocks = length(blocks);
 
@@ -12,20 +11,26 @@ function R = processBlocksFrequency(blocks, aux_plots)
         PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); 
         resampleFreq = blocks(b).resampleFreq;
         ISI = blocks(b).ISI;
-%         disp(resampleFreq);
         PHOT1 = movmax(PHOT1,[20 20]);
         PHOT2 = movmax(PHOT2,[20 20]);
         blocks(b).PHOT(1,:) = PHOT1;
         blocks(b).PHOT(2,:) = PHOT2;
+        peakThreshold = blocks(b).peakThreshold;
 
 %         figure; plot(PHOT2); hold on; plot(PHOT1);
 
         %find beginning of stimuli
-        LOCS_PHOT1 = find(diff(PHOT1 > .4) > 0) + 1;
-        LOCS_PHOT2 = find(diff(PHOT2 > .4) > 0) + 1;
+        LOCS_PHOT1 = find(diff(PHOT1 > peakThreshold) > 0) + 1;
+        LOCS_PHOT2 = find(diff(PHOT2 > peakThreshold) > 0) + 1;
 
-%         figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'filled');
-%         figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'filled'); 
+        %first round of double peak detection
+        badLOCS_PHOT1 = LOCS_PHOT1([false diff(LOCS_PHOT1) < (0.8*ISI*resampleFreq)]);
+        badLOCS_PHOT2 = LOCS_PHOT2([false diff(LOCS_PHOT2) < (0.8*ISI*resampleFreq)]);
+
+        if aux_plots
+            figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); 
+            figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); 
+        end
         
         % fuse locations of PHOT1 and PHOT2 (I figured this was quicker than concatenating and sorting)
         LOCS = zeros(size(PHOT1));
@@ -48,17 +53,18 @@ function R = processBlocksFrequency(blocks, aux_plots)
         randomSequence = randomSequence(logical(randomSequence)) - 1;
 
         %add four trials subsequent to the bad trials vector
-%         indBadTrials = find(badTrials);
-%         badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
+        indBadTrials = find(badTrials);
+        badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
         
         percentDataLost = nnz(badTrials)/length(badTrials);
         disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
         
         % histogram of interval between peaks (should have one tight peak)
-        % this is a critical check so it is always plotted
-        figure;
-        histogram(diff(LOCS));
-    
+        if aux_plots
+            figure;
+            histogram(diff(LOCS));
+        end
+
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
         blocks(b).LOCS = LOCS;

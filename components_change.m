@@ -1,3 +1,7 @@
+% this script calculates the mean coefficient as a function of
+% frequency for the model d + a*SLPR + b*LRPR + c*WEIRD where the
+% components are from Jentzsch 2002
+
 close all; clear;
 
 load results
