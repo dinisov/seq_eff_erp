@@ -38,15 +38,15 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-% chosenFlies = [6];
-chosenFlies = flySet; % choose all flies
+chosenFlies = [6];
+% chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [8 10];
-chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [8 10];
+% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -68,7 +68,7 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
 
 %% whether to plot auxiliary plots
-aux_plots = 0;
+aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -136,7 +136,7 @@ for fly = chosenFlies
        % not selected
        if ~isempty(thisFlyBlocks)
        
-           R = processBlocks(thisFlyBlocks, aux_plots, true);
+           R = processBlocks(thisFlyBlocks, aux_plots, 'frequency');
 
            % sequential effects results
            FLIES(fly).(lit_dark{lit+1}).magnitudeSEs = R.magnitudeSEs;

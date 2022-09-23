@@ -23,9 +23,9 @@ struct_name = 'freq1dot25hz';
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 1.25,:);
+% fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
-%% restrict to LIT or DARK 
+%% restrict to LIT or DARK
 fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 
 % remove flies to be excluded (usually because data is unsound for some obvious reason)
@@ -42,7 +42,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [6];
+chosenFlies = [36];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -51,7 +51,7 @@ chosenFlies = [6];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [8 10];
+chosenBlocks = [41];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -111,9 +111,17 @@ for b = find(chosenOnes)
     
     % butterworth filter for both LFP and PHOT
     % data
-%     [b_f,a_f] = butter(9,40/resampleFreq*2);
-%     LFP = filter(b_f,a_f,LFP.').';
+    [b_f,a_f] = butter(6,100/resampleFreq*2);
+    LFP = filter(b_f,a_f,LFP.').';
+
+    wo = 50/(resampleFreq/2);  
+    bw = wo/10;
+    [b_f,a_f] = iirnotch(wo,bw);
+
+    LFP = filter(b_f,a_f,LFP.').';
+        
     LFP = smoothdata(LFP,'sgolay');
+    
 %     [b_f,a_f] = butter(9,100/resampleFreq*2);
 %     PHOT = filter(b_f,a_f,PHOT.').';
 
@@ -167,7 +175,7 @@ for fly = chosenFlies
 
            disp(['Processing fly #' num2str(fly)]);
        
-           R = processBlocks(thisFlyBlocks, aux_plots, false);
+           R = processBlocksOneChannel(thisFlyBlocks, aux_plots);
 
            % sequential effects results
            FLIES(fly).(lit_dark{lit+1}).amplitudeSEs = (R.amplitudeSEs);
@@ -188,7 +196,7 @@ for fly = chosenFlies
 
            % perform fits to a simple exponential filter
            %[x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
-           [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(R.amplitudeSEs).'),[1 1 1 0],[],[],[],[],[-inf  -inf -inf -inf],[inf inf inf inf],[],options);
+           [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(R.amplitudeSEs).'),[1 1 0 0],[],[],[],[],[-inf  -inf 0 -inf],[inf inf 0 inf],[],options);
            
            FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
            FLIES(fly).(lit_dark{lit+1}).FITS.fit_params = x;
@@ -206,7 +214,7 @@ for fly = chosenFlies
    
 end
 
-save('results','results');
+% save('results','results');
 
 %% plot sequential dependencies per fly
 

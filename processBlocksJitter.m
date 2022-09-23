@@ -3,6 +3,10 @@
 % and conditions (LIT/DARK)
 %JITTER VERSION (1 channel)
 function R = processBlocksJitter(blocks, aux_plots)
+
+    %% load peak finder (Matt's code)
+    toolPath = 'D:\group_swinderen\Matthew\Scripts\toolboxes';
+    addpath([toolPath filesep 'basefindpeaks']);
     
     n_blocks = length(blocks);
 
@@ -81,4 +85,4 @@ function R = processBlocksJitter(blocks, aux_plots)
             
     end
 
-R = analyseSequentialEffectsJitter(blocks, aux_plots);
+R = analyseSequentialEffects(blocks, aux_plots);

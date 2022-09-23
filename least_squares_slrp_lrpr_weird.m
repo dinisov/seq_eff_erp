@@ -3,7 +3,7 @@
 %it returns a sum of least square errors between the data and the model
 function [least2] = least_squares_slrp_lrpr_weird(a,b,c,d,slrp,lrpr,weird,data)
 
-rt_prediction = d + a*slrp + b*lrpr + c*weird;
+rt_prediction = a*slrp + b*lrpr + c*weird + d;
 
 least2 = sum((rt_prediction-data).^2);
     

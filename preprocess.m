@@ -45,7 +45,7 @@ if dataIsFromSynapse == 1
         %This is intended for TTL and TTL-like fields that react...poorly to traditional resampling methods
 end
 blockConvention = 'block'; %This is the string that will be searched for in folders (e.g. if your convention is 'C:\TDT\Tanks\290421\block1' etc, then the blockConvention is 'block' and the value immediately after is the block number)
-reSampleFreq = NaN; % Desired Sampling Frequency (Set as NaN to use source framerate)
+reSampleFreq = 3000; % Desired Sampling Frequency (Set as NaN to use source framerate)
 skipExistingFiles = 1; %Whether to skip analysis of already processed files
 %-------------------------------------------------
 
@@ -62,7 +62,8 @@ addpath(genpath(['D:\group_swinderen\Dinis\Scripts\Toolboxes\basefindpeaks']))
 fly_list = dir([dataPath, filesep, '*']); % changed from Analyzed*
 %expName = '*290421*';
 
-fly_list = fly_list(convertCharsToStrings({fly_list.name}) == '010422',:);
+%restrict to some date
+% fly_list = fly_list(convertCharsToStrings({fly_list.name}) == '010422',:);
 
 if length(fly_list) == 0
     ['## ERROR: NO DATA FOUND ##']

@@ -1,7 +1,7 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
 % and conditions (LIT/DARK)
-function R = processBlocks(blocks, aux_plots, frequency)
+function R = processBlocks(blocks, aux_plots, mode)
     
     n_blocks = length(blocks);
 
@@ -16,8 +16,6 @@ function R = processBlocks(blocks, aux_plots, frequency)
         blocks(b).PHOT(1,:) = PHOT1;
         blocks(b).PHOT(2,:) = PHOT2;
         peakThreshold = blocks(b).peakThreshold;
-
-%         figure; plot(PHOT2); hold on; plot(PHOT1);
 
         %find beginning of stimuli
         LOCS_PHOT1 = find(diff(PHOT1 > peakThreshold) > 0) + 1;
@@ -83,8 +81,11 @@ function R = processBlocks(blocks, aux_plots, frequency)
             
     end
 
-if ~frequency 
-    R = analyseSequentialEffects(blocks, aux_plots);
-else
-    R = analyseSequentialEffectsFrequency(blocks, aux_plots);
+switch mode
+    case 'time'
+        R = analyseSequentialEffects(blocks, aux_plots);
+    case 'frequency'
+        R = analyseSequentialEffectsFrequency(blocks, aux_plots);
+    case 'timefrequency'
+        R = analyseSequentialEffectsTimeFrequency(blocks, aux_plots);
 end
