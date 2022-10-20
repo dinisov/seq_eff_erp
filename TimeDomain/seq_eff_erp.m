@@ -3,15 +3,25 @@ close all;
 clear;
 
 %% load auxiliary functions
+addpath('../');
 addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
 addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
-addpath('./Functions');
+addpath('../Functions');
 
 load slrp_lrpr
 
 load results
 
+% these are the standard ALT/REP components from the literature (Jentzsch 2002)
 lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
+
+%% type of analysis
+
+% 1 - regular SEs; 2 - block experiments
+analysisType = 2;
+
+% if analysisType is 2, choose which stimulus to look in the train (starting at 5 up to train length)
+focusPeak = 5;
 
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
@@ -32,7 +42,7 @@ fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %remove jittering flies
-fly_record = fly_record(~contains(fly_record.Comments,'jittering','IgnoreCase',true),:);
+% fly_record = fly_record(~contains(fly_record.Comments,'jittering','IgnoreCase',true),:);
 
 %remove red light flies
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
@@ -42,7 +52,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [36];
+chosenFlies = [38];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -51,13 +61,15 @@ chosenFlies = [36];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [41];
+chosenBlocks = [66];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
 %% experimental parameters and window calculation
 ISI = fly_record.ISI + fly_record.SDT;
+interBlockPeriod = fly_record.InterBlockPeriod;
+blockLength = fly_record.BlockLength;
 
 % stimulus duration time
 SDT = fly_record.SDT;
@@ -109,8 +121,7 @@ for b = find(chosenOnes)
 
 %     PHOT = -PHOT;
     
-    % butterworth filter for both LFP and PHOT
-    % data
+    % butterworth filter LFP
     [b_f,a_f] = butter(6,100/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
 
@@ -138,6 +149,11 @@ for b = find(chosenOnes)
     
     BLOCKS(b).times = EEG.times;
     BLOCKS(b).resampleFreq = resampleFreq;
+    
+    % only for block experiments
+    BLOCKS(b).interBlockPeriod = interBlockPeriod(b);
+    BLOCKS(b).focusPeak = focusPeak;
+    BLOCKS(b).blockLength = blockLength(b);
     
     BLOCKS(b).time_before_peak = time_before_peak(b);
     BLOCKS(b).time_after_peak = time_after_peak(b);
@@ -174,9 +190,14 @@ for fly = chosenFlies
        if ~isempty(thisFlyBlocks)
 
            disp(['Processing fly #' num2str(fly)]);
-       
-           R = processBlocksOneChannel(thisFlyBlocks, aux_plots);
 
+           switch analysisType
+               case 1
+                    R = processBlocksOneChannel(thisFlyBlocks, aux_plots);
+               case 2
+                    R = processBlocksBlocksExp(thisFlyBlocks, aux_plots);
+           end
+                    
            % sequential effects results
            FLIES(fly).(lit_dark{lit+1}).amplitudeSEs = (R.amplitudeSEs);
            FLIES(fly).(lit_dark{lit+1}).negativeAmplitudeSEs = R.negativeAmplitudeSEs;

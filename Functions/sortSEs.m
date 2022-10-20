@@ -1,5 +1,5 @@
 function blocks = sortSEs(blocks, n_back, aux_plots)
-%this function sorts ERPs according to teh past sequence of events and 
+%this function sorts ERPs according to the past sequence of events and 
 
     n_seq = 2^n_back;
 
@@ -12,7 +12,10 @@ function blocks = sortSEs(blocks, n_back, aux_plots)
         randomSequence = blocks(b).randomSequence;
         resampleFreq = blocks(b).resampleFreq;
         badTrials = blocks(b).badTrials;
-    
+        if isfield(blocks,'focusPeaks')
+            focusPeaks = blocks.focusPeaks;
+        end
+            
         window = floor([-blocks(b).time_before_peak*resampleFreq, blocks(b).time_after_peak*resampleFreq]);
 
         sequenceLength = length(randomSequence);
@@ -52,6 +55,11 @@ function blocks = sortSEs(blocks, n_back, aux_plots)
         ERPS = ERPS(:,:,good_erps);
         seqPHOT = seqPHOT(:,:,good_erps);
         badTrials = badTrials(good_erps);
+        
+        if isfield(blocks,'focusPeaks')
+            focusPeaks = focusPeaks(good_erps);
+            blocks(b).focusPeaks = focusPeaks;
+        end
         
         blocks(b).ERPS = ERPS;
         blocks(b).badTrials = badTrials;
