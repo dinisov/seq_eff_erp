@@ -18,7 +18,7 @@ lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
 %% type of analysis
 
 % 1 - regular SEs; 2 - block experiments
-analysisType = 1;
+analysisType = 2;
 
 % if analysisType is 2, choose which stimulus to look in the train (starting at 5 up to train length)
 focusPeak = 5;
@@ -33,7 +33,7 @@ struct_name = 'freq12dot5hz';
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 12.5,:);
+% fly_record = fly_record(fly_record.Frequency == 12.5,:);
 
 %% restrictions on data of interest; always check this before running
 
@@ -50,14 +50,14 @@ fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
 
 %remove block paradigm flies
-fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
+% fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [21];
+chosenFlies = [39];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -66,7 +66,7 @@ chosenFlies = [21];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [31];
+chosenBlocks = [43];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -286,25 +286,25 @@ for lit = [0 1]
             figure('Name',['Positive_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).positiveAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semPosAmplSEs.');
             saveas(gcf,[resultsDirectory '/Positive amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_positive_amplitude.png']);
-            close(gcf);
+%             close(gcf);
             
             %negative amplitude SEs
             figure('Name',['Negative_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off')
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).negativeAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semNegAmplSEs.');
             saveas(gcf,[resultsDirectory '/Negative amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_negative_amplitude.png']);
-            close(gcf);
+%             close(gcf);
                 
             %latency to peak sequential effects
             figure('Name',['Latency_to_peak_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToPeakSEs.',[]);
             saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_peak.png']);
-            close(gcf);
+%             close(gcf);
             
             %latency to trough sequential effects
             figure('Name',['Latency_to_trough_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToTroughSEs.',[]);
             saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_trough.png']);
-            close(gcf);
+%             close(gcf);
 %             close all
 
         end

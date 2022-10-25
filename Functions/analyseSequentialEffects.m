@@ -55,18 +55,24 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         title('')
     end
     
+    % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
+    allERPs = allERPs + flip(allERPs,2);
+    allPHOTs = allPHOTs + flip(allPHOTs,2);
+    allERPs = allERPs(:,1:16,:);
+    allERPs = allERPs(:,1:16,:);
+    
     % in preparation for calculating the nan mean
     allERPs(allERPs == 0) = nan;
     allPHOTs(allPHOTs == 0) = nan;
-
+    
     % mean across third dimension (ERP or PHOT stack)
     meanERPs = mean(allERPs, 3, 'omitnan');
     meanPHOTs = mean(allPHOTs, 3, 'omitnan');
 
-    %number of ERPs for each of 32 sequence (also number of PHOTs)
+    %number of ERPs for each of 16 sequence (equal to number of PHOTs)
     nERPs = sum(~isnan(allERPs(1,:,:)), 3);
     
-    % SEM for each sequence (before grouping in pairs, so 32 sequences)
+    % SEM for each sequence
     sdERPs = std(allERPs,[],3,'omitnan');
     semERPs = sdERPs ./ sqrt(nERPs);
     
@@ -74,22 +80,6 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     % according to sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
     semERPs = sqrt(((nERPs.^2 .* semERPs.^2) + fliplr(nERPs.^2 .*semERPs.^2))./((nERPs + fliplr(nERPs)).^2));
     semERPs(:,n_seq/2 + 1:end) = [];
-    
-    % in order to calculate weighted mean (broadcasting here)
-    meanERPs = meanERPs .* nERPs;
-    meanPHOTs = meanPHOTs .* nERPs;
-    
-    %group sequences 2 by 2 (00001 is the same as 11110 and so on)
-    meanERPs = meanERPs + fliplr(meanERPs);
-    meanPHOTs = meanPHOTs + fliplr(meanPHOTs);
-    
-    nERPs = nERPs + fliplr(nERPs);
-    nERPs(:,n_seq/2 + 1:end) = [];
-    
-    meanERPs(:,n_seq/2 + 1:end) = []; 
-    meanPHOTs(:,n_seq/2 + 1:end) = [];
-    meanERPs = meanERPs ./ nERPs;
-    meanPHOTs = meanPHOTs ./ nERPs;
     
     % reorder according to the literature
     meanERPs = meanERPs(:,seq_eff_order(n_back));
