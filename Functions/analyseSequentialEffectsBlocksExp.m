@@ -38,8 +38,6 @@ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
         focusPeaks = [focusPeaks blocks(b).focusPeaks]; %#ok<AGROW> 
 
     end
-    disp(length(focusPeaks));
-    disp(size(allERPs,3));
     
     %get rid of all trials except the last one in each train
     allERPs = allERPs(:,:,logical(focusPeaks));

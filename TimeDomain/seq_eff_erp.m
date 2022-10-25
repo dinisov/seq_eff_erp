@@ -33,7 +33,7 @@ struct_name = 'freq12dot5hz';
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-% fly_record = fly_record(fly_record.Frequency == 12.5,:);
+fly_record = fly_record(fly_record.Frequency == 12.5,:);
 
 %% restrictions on data of interest; always check this before running
 
@@ -50,24 +50,24 @@ fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
 
 %remove block paradigm flies
-% fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
+fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [39];
+% chosenFlies = [39];
 % chosenFlies = setdiff(flySet, [24 25]);
-% chosenFlies = flySet; % choose all flies
+chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [43];
-% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+% chosenBlocks = [43];
+chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
