@@ -78,4 +78,3 @@ function blocks = sortSEs(blocks, n_back, aux_plots)
     end
     
 end
-

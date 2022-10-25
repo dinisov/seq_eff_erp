@@ -133,7 +133,7 @@ function R = analyseSequentialEffectsTimeFrequency(blocks, aux_plots)
 %        saveas(gcf,['seq_' num2str(s) '.png']);
 %        close;
     end
-
+    
     magnitudeSEs = abs(cwtERPs);
     phaseSEs = angle(cwtERPs);
     

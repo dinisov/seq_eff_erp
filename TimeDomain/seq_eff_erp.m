@@ -18,7 +18,7 @@ lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
 %% type of analysis
 
 % 1 - regular SEs; 2 - block experiments
-analysisType = 2;
+analysisType = 1;
 
 % if analysisType is 2, choose which stimulus to look in the train (starting at 5 up to train length)
 focusPeak = 5;
@@ -26,33 +26,38 @@ focusPeak = 5;
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
 
-resultsDirectory = [homeDirectory '\Results\1dot25Hz'];
+resultsDirectory = [homeDirectory '\Results\12dot5Hz'];
 
-struct_name = 'freq1dot25hz';
+struct_name = 'freq12dot5hz';
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-% fly_record = fly_record(fly_record.Frequency == 1.25,:);
+fly_record = fly_record(fly_record.Frequency == 12.5,:);
 
-%% restrict to LIT or DARK
+%% restrictions on data of interest; always check this before running
+
+% remove DARK flies
 fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 
 % remove flies to be excluded (usually because data is unsound for some obvious reason)
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %remove jittering flies
-% fly_record = fly_record(~contains(fly_record.Comments,'jittering','IgnoreCase',true),:);
+fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
 
 %remove red light flies
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
+
+%remove block paradigm flies
+fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [38];
+chosenFlies = [21];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -61,18 +66,29 @@ chosenFlies = [38];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [66];
+chosenBlocks = [31];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
-%% experimental parameters and window calculation
-ISI = fly_record.ISI + fly_record.SDT;
+%% experimental parameters in fly_record
+
+% inter-stimulus interval (ISI in fly_record is the stimulus-off period, 
+%i.e. the time between the end of the stimulus and the beginning of the
+%next one
+ISI = fly_record.ISI + fly_record.SDT; 
+SDT = fly_record.SDT; % stimulus duration time
+
+% relevant LFP channel
+LFPChannel = fly_record.LFPChannel;
+
+% whether to do a 1 or 2 photodiode analysis
+% 2 is better currently but 1 is more universal/convenient
+PHOTType = fly_record.PHOTType;
+
+% for block experiments
 interBlockPeriod = fly_record.InterBlockPeriod;
 blockLength = fly_record.BlockLength;
-
-% stimulus duration time
-SDT = fly_record.SDT;
 
 %this is the window to look at around each peak
 time_before_peak = fly_record.SDT.*fly_record.Window1;
@@ -104,7 +120,7 @@ for b = find(chosenOnes)
     load([homeDirectory '/Output/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
-    LFP = EEG.LFP1.data(1,:);
+    LFP = EEG.LFP1.data(LFPChannel(b),:);
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
@@ -131,10 +147,7 @@ for b = find(chosenOnes)
 
     LFP = filter(b_f,a_f,LFP.').';
         
-    LFP = smoothdata(LFP,'sgolay');
-    
-%     [b_f,a_f] = butter(9,100/resampleFreq*2);
-%     PHOT = filter(b_f,a_f,PHOT.').';
+%     LFP = smoothdata(LFP,'sgolay');
 
     PHOT = trim_phot_outliers(PHOT, 5);
 
@@ -160,6 +173,9 @@ for b = find(chosenOnes)
     BLOCKS(b).ISI = ISI(b);
     BLOCKS(b).SDT = SDT(b);
     BLOCKS(b).peakThreshold = peak_threshold(b);
+    
+    %type of photodiode analysis
+    BLOCKS(b).PHOTType = PHOTType(b);
 
 end
 
@@ -190,10 +206,16 @@ for fly = chosenFlies
        if ~isempty(thisFlyBlocks)
 
            disp(['Processing fly #' num2str(fly)]);
-
+           
            switch analysisType
                case 1
-                    R = processBlocksOneChannel(thisFlyBlocks, aux_plots);
+
+                   if thisFlyBlocks(1).PHOTType == 1
+                    R = processBlocksOneChannel(thisFlyBlocks, aux_plots,'time');
+                   elseif thisFlyBlocks(1).PHOTType == 2
+                    R = processBlocks(thisFlyBlocks, aux_plots,'time');  
+                   end
+                   
                case 2
                     R = processBlocksBlocksExp(thisFlyBlocks, aux_plots);
            end
@@ -258,27 +280,31 @@ for lit = [0 1]
             figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.','scores',FLIES(fly).(lit_dark{lit+1}).FITS.fit_params(1:3));
             saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
+            close(gcf);
             
             %positive amplitude SEs
             figure('Name',['Positive_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).positiveAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semPosAmplSEs.');
             saveas(gcf,[resultsDirectory '/Positive amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_positive_amplitude.png']);
+            close(gcf);
             
             %negative amplitude SEs
             figure('Name',['Negative_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off')
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).negativeAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semNegAmplSEs.');
             saveas(gcf,[resultsDirectory '/Negative amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_negative_amplitude.png']);
-
+            close(gcf);
+                
             %latency to peak sequential effects
             figure('Name',['Latency_to_peak_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToPeakSEs.',[]);
             saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_peak.png']);
-
+            close(gcf);
+            
             %latency to trough sequential effects
             figure('Name',['Latency_to_trough_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToTroughSEs.',[]);
             saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_trough.png']);
-
+            close(gcf);
 %             close all
 
         end

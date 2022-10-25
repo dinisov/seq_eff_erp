@@ -3,9 +3,10 @@ close all;
 clear;
 
 %% load auxiliary functions
+addpath('../');
 addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
 addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
-addpath('./Functions');
+addpath('../Functions');
 
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
@@ -15,23 +16,28 @@ resultsDirectory = [homeDirectory '\Results_Frequency'];
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 25,:);
+fly_record = fly_record(fly_record.Frequency == 12.5,:);
 
-%% restrict to LIT or DARK 
+%% restrictions on data of interest; always check this before running
+
+% remove DARK flies
 fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 
 % remove flies to be excluded (usually because data is unsound for some obvious reason)
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %remove jittering flies
-fly_record = fly_record(~contains(fly_record.Comments,'jittering','IgnoreCase',true),:);
+fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
 
 %remove red light flies
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
 
-%% frequency bounds to calculate profiles for
+%remove block paradigm flies
+fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
-frequency_bounds = [0 60];
+%% frequency bounds to plot profiles for
+
+% frequency_bounds = [0 60];
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
@@ -50,13 +56,27 @@ chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
-%% experimental parameters and window calculation
-ISI = fly_record.ISI + fly_record.SDT;
+%% experimental parameters in fly_record
 
-% stimulus duration time
-SDT = fly_record.SDT;
+% inter-stimulus interval (ISI in fly_record is the stimulus-off period, 
+%i.e. the time between the end of the stimulus and the beginning of the
+%next one
+ISI = fly_record.ISI + fly_record.SDT; 
+SDT = fly_record.SDT; % stimulus duration time
+
+% relevant LFP channel
+LFPChannel = fly_record.LFPChannel;
+
+% whether to do a 1 or 2 photodiode analysis
+% 2 is better currently but 1 is more universal/convenient
+PHOTType = fly_record.PHOTType;
+
+% for block experiments
+interBlockPeriod = fly_record.InterBlockPeriod;
+blockLength = fly_record.BlockLength;
 
 %this is the window to look at around each peak
+%for a time-frequency analysis this will always be the same
 time_before_peak = fly_record.SDT;
 time_after_peak = fly_record.ISI;
 
@@ -86,7 +106,7 @@ for b = find(chosenOnes)
     load([homeDirectory '/Output/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
-    LFP = EEG.LFP1.data(1,:);
+    LFP = EEG.LFP1.data(LFPChannel(b),:);
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
@@ -116,6 +136,9 @@ for b = find(chosenOnes)
     BLOCKS(b).SDT = SDT(b);
     BLOCKS(b).peakThreshold = peak_threshold(b);
 
+    %type of photodiode analysis
+    BLOCKS(b).PHOTType = PHOTType(b);
+    
 end
 
 %% analyse data per fly and whether experiment is lit or unlit
@@ -136,7 +159,11 @@ for fly = chosenFlies
        % not selected
        if ~isempty(thisFlyBlocks)
        
-           R = processBlocks(thisFlyBlocks, aux_plots, 'timefrequency');
+            if thisFlyBlocks(1).PHOTType == 1
+                R = processBlocksOneChannel(thisFlyBlocks, aux_plots,'timefrequency');
+            elseif thisFlyBlocks(1).PHOTType == 2
+                R = processBlocks(thisFlyBlocks, aux_plots,'timefrequency');  
+            end
 
            FLIES(fly).(lit_dark{lit+1}) = R;
            
@@ -160,7 +187,7 @@ for fly = chosenFlies
  
 end
 
-save('data_flies_time_frequency_wavelet_25','FLIES');
+save('data_flies_time_frequency_wavelet_12dot5','FLIES');
 
 %% plot sequential dependencies per fly
 

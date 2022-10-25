@@ -4,7 +4,7 @@ clear; close all;
 
 load slrp_lrpr.mat
 
-load data_flies_time_frequency_wavelet_25.mat
+load data_flies_time_frequency_wavelet_12dot5.mat
 
 FLIES = FLIES(~cellfun(@isempty,struct2cell(FLIES)));
 
@@ -16,7 +16,7 @@ n_flies = length(FLIES);
 
 % frequency_bounds = [0 60];
 
-time_bounds = [-5 35];
+time_bounds = [-10 70];
 
 options = optimset('Algorithm','interior-point','FinDiffType','central');
 
@@ -228,15 +228,15 @@ saveas(gcf,[resultsDirectory 'combined_minus_lrpr.png']);
 
 %% plot spectrograms
 
-for i = 1:16 
-
-    figure;
-    imagesc(squeeze(meanMagSEs(:,i,:)),'xdata',time_bounds); colorbar;
-    set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    saveas(gcf,[resultsDirectory 'spectrogram_' num2str(i) '.png']);
-    
-end
+% for i = 1:16 
+% 
+%     figure;
+%     imagesc(squeeze(meanMagSEs(:,i,:)),'xdata',time_bounds); colorbar;
+%     set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+%     xlabel('time (ms)'); ylabel('Frequency (Hz)');
+%     saveas(gcf,[resultsDirectory 'spectrogram_' num2str(i) '.png']);
+%     
+% end
 
 %% fit and plot some seq eff profiles of interest
 
@@ -246,19 +246,19 @@ end
 % type = [1 1 2 2 2 3 3 4 4];
 
 % 6.25 Hz case
-% profiles = [7 481; 32 1; 35 211; 37 55; 38 197; 33 293; 14 97; 19 481; 7 463];
+% profiles = [34 223;38 303;13 21;19 377];
 % 
-% type = [1 1 1 2 2 2 3 3 4];
+% type = [1 2 3 4];
 
 % 12.5 Hz
-% profiles = [13 193; 21 76; 28 236; 27 55; 12 212];
-% 
-% type = [1 1 2 3 4];
+profiles = [22 175;28 238;28 98;12 210];
+
+type = [1 2 3 4];
 
 % 25 Hz
-profiles = [16 49;6 60; 10 85; 7 92; 9 80];
-
-type = [1 2 2 3 4];
+% profiles = [16 49;6 60; 10 85; 7 92; 9 80];
+% 
+% type = [1 2 2 3 4];
 
 %25 Hz phase
 % profiles = [8 69];
