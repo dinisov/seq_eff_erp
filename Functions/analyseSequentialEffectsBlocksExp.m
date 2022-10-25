@@ -65,7 +65,7 @@ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
     allERPs = allERPs + flip(allERPs,2);
     allPHOTs = allPHOTs + flip(allPHOTs,2);
     allERPs = allERPs(:,1:16,:);
-    allERPs = allERPs(:,1:16,:);
+    allPHOTs = allPHOTs(:,1:16,:);
     
     % in preparation for calculating the nan mean
     allERPs(allERPs == 0) = nan;
