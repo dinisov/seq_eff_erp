@@ -140,22 +140,15 @@ function R = analyseSequentialEffectsTimeFrequency(blocks, aux_plots)
 %     R.t = t;
     R.f = f;
     
-    time_bounds = [-blocks(1).time_before_peak, blocks(1).time_after_peak];
-    
-    %make a tick every x steps
-    y_ticks = 1:2:length(f);
-    y_tick_labels = f(y_ticks);
-    
     % create 
-    figure; imagesc(squeeze(magnitudeSEs(:,16,:))-squeeze(magnitudeSEs(:,8,:)),'xdata',time_bounds); colorbar;
+    figure; imagesc(squeeze(meanMagSEs(:,16,:))-squeeze(meanMagSEs(:,8,:)),'xdata',time_bounds); colorbar;
     set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    title('AAAA_minus_AAAR');
+    saveas(gcf,[ resultsDirectory '/' 'AAAA_minus_AAAR.png']);
 
-    figure; imagesc(squeeze(magnitudeSEs(:,9,:))-squeeze(magnitudeSEs(:,1,:)),'xdata',time_bounds); colorbar;
+    figure; imagesc(squeeze(meanMagSEs(:,9,:))-squeeze(meanMagSEs(:,1,:)),'xdata',time_bounds); colorbar;
     set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    title('RRRR_minus_RRRA');
-    
+    saveas(gcf,[ resultsDirectory '/' 'RRRR_minus_RRRA.png']);
     
 end

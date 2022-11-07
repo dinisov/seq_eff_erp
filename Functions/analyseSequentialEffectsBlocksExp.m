@@ -84,8 +84,6 @@ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
     
     % propagate the SEM for the pairs of sequences
     % according to sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
-    semERPs = sqrt(((nERPs.^2 .* semERPs.^2) + fliplr(nERPs.^2 .*semERPs.^2))./((nERPs + fliplr(nERPs)).^2));
-    semERPs(:,n_seq/2 + 1:end) = [];
     
     % reorder according to the literature
     meanERPs = meanERPs(:,seq_eff_order(n_back));
@@ -107,6 +105,22 @@ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
     %standard errors of the mean for the maxima (use of linear indexing here)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
     semMin = semERPs(sub2ind(size(semERPs),ind_min_erp,1:16));
+    
+    %% ANOVA
+    allERPs = allERPs(:,seq_eff_order(n_back),:);
+    
+    % full data for maxima and minima across all stimuli
+    aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';
+    
+    % data tables for performing an ANOVA to check for the effect of
+    % sequence
+    dataMaxima = aux(:,sub2ind(size(semERPs),ind_max_erp,1:16));
+    dataMinima = aux(:,sub2ind(size(semERPs),ind_min_erp,1:16));
+    dataAmplitude = dataMaxima-dataMinima;
+    
+    anova1(dataAmplitude);
+    
+    %%
     
     % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 

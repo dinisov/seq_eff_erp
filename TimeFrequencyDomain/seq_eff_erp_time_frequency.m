@@ -19,7 +19,7 @@ fly_record = readtable('fly_record');
 
 frequency = '6dot25';%change this for the right file name
 
-fly_record = fly_record(fly_record.Frequency == 6.25,:);
+% fly_record = fly_record(fly_record.Frequency == 6.25,:);
 
 %% restrictions on data of interest; always check this before running
 
@@ -43,15 +43,15 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-% chosenFlies = [6];
-chosenFlies = flySet; % choose all flies
+chosenFlies = [6];
+% chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [8 10];
-chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [8];
+% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 

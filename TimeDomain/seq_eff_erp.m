@@ -33,7 +33,7 @@ struct_name = 'freq12dot5hz';
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 6.25,:);
+% fly_record = fly_record(fly_record.Frequency == 6.25,:);
 
 %% restrictions on data of interest; always check this before running
 
@@ -44,7 +44,7 @@ fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %remove jittering flies
-fly_record = fly_record(contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
+fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
 
 %remove red light flies
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
@@ -60,9 +60,9 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-% chosenFlies = [43];
+chosenFlies = [6];
 % chosenFlies = setdiff(flySet, [24 25]);
-chosenFlies = flySet; % choose all flies
+% chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
 % choose which blocks to run
