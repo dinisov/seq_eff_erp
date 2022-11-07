@@ -26,14 +26,14 @@ focusPeak = 5;
 %% load data
 homeDirectory = 'D:\group_swinderen\Dinis';
 
-resultsDirectory = [homeDirectory '\Results\12dot5Hz'];
+resultsDirectory = [homeDirectory '\Results\1dot25Hz'];
 
-struct_name = 'freq12dot5hz';
+struct_name = 'freq1dot25hz';
 
 fly_record = readtable('fly_record');
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 6.25,:);
+fly_record = fly_record(fly_record.Frequency == 1.25,:);
 
 %% restrictions on data of interest; always check this before running
 
@@ -44,7 +44,7 @@ fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %remove jittering flies
-fly_record = fly_record(contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
+fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
 
 %remove red light flies
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
@@ -52,25 +52,22 @@ fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:
 %remove block paradigm flies
 fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
-%% 
-% fly_record = fly_record(contains(fly_record.Comments,'adjfront','IgnoreCase',true),:);
-
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-% chosenFlies = [43];
+chosenFlies = [37];
 % chosenFlies = setdiff(flySet, [24 25]);
-chosenFlies = flySet; % choose all flies
+% chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-% chosenBlocks = [90];
-chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [4];
+% chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -105,7 +102,7 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
 
 %% whether to plot auxiliary plots
-aux_plots = 0;
+aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly

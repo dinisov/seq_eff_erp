@@ -4,8 +4,7 @@ clear; close all;
 
 load slrp_lrpr.mat
 
-%choose which dataset to load
-load data_flies_time_frequency_wavelet_6dot25.mat
+load data_flies_time_frequency_wavelet_1dot25.mat
 
 FLIES = FLIES(~cellfun(@isempty,struct2cell(FLIES)));
 
@@ -13,18 +12,17 @@ homeDirectory = 'D:\group_swinderen\Dinis';
 
 resultsDirectory = [homeDirectory '\Results_Time_Frequency\Wavelets\'];
 
-individualFlies = true;
-
 n_flies = length(FLIES);
 
-% time_bounds = [-100 700];%1.25 Hz
-time_bounds = [-20 140];%6.25 Hz
-% time_bounds = [-10 70];%12.5 Hz
-% time_bounds = [-5 35];%25 Hz
+% frequency_bounds = [0 60];
+
+time_bounds = [-100 700];
 
 options = optimset('Algorithm','interior-point','FinDiffType','central');
 
 resampleFreq = 3000;%CHECK
+
+fly_index = 1;
 
 f_limits = [0 300];
 
@@ -67,67 +65,63 @@ tSize = size(FLIES(1).LIT.magnitudeSEs,2);
 
 %% calculate fit to SLRP and LRPR to individual flies (this will take a loooong time)
 
-if individualFlies
-
-    r_squared_slrp = zeros(fSize,tSize,n_flies);
-    r_squared_lrpr = zeros(fSize,tSize,n_flies);
-    r_squared_overall = zeros(fSize,tSize,n_flies);
-    r_squared_weird = zeros(fSize,tSize,n_flies);
-
-    for fly = 1:n_flies
-
-            magSEs = FLIES(fly).LIT.magnitudeSEs; magSEs = magSEs(f > f_limits(1) & f < f_limits(2),:,:);
-
-            for f_ind = 1:size(magSEs,1)% frequency index
-
-                for t_ind = 1:size(magSEs,3)% time index
-
-                    seq_eff_pattern = magSEs(f_ind,:,t_ind).';
-
-                    %fit only to slrp or lrpr
-                   [x_slrp,sse_slrp] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[1 0 1 0],[],[],[],[],[-inf  0 0 -inf],[inf 0 0 inf],[],options);
-                   [x_lrpr,sse_lrpr] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[0 1 1 0],[],[],[],[],[0  -inf 0 -inf],[0 inf 0 inf],[],options);
-                   [x_weird,sse_weird] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[1 0 1 0],[],[],[],[],[0  0 -inf -inf],[0 0 inf inf],[],options);
-
-                   %fit overall
-                   [x_overall,sse_overall] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[1 1 0 0],[],[],[],[],[-inf  -inf 0 -inf],[inf inf 0 inf],[],options);
-
-                   sse_total = sum((seq_eff_pattern-mean(seq_eff_pattern)).^2);
-
-                   r_squared_slrp(f_ind,t_ind,fly) = 1-(sse_slrp/sse_total);
-                   r_squared_lrpr(f_ind,t_ind,fly) = 1-(sse_lrpr/sse_total);
-                   r_squared_weird(f_ind,t_ind,fly) = 1-(sse_weird/sse_total);
-                   r_squared_overall(f_ind,t_ind,fly) = 1-(sse_overall/sse_total);
-
-                end
-
-            end
-
-            figure; title(['SLRP Fly ' num2str(fly)]);
-            imagesc(r_squared_slrp(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
-            xlabel('time (ms)'); ylabel('Frequency (Hz)');
-            saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
-
-            figure; title(['LRPR Fly ' num2str(fly)]);
-            imagesc(r_squared_lrpr(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
-            xlabel('time (ms)'); ylabel('Frequency (Hz)');
-            saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
-
-            figure; title(['WEIRD Fly ' num2str(fly)]);
-            imagesc(r_squared_weird(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
-            xlabel('time (ms)'); ylabel('Frequency (Hz)');
-            saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
-
-            figure; title(['COMBINED Fly ' num2str(fly)]);
-            imagesc(r_squared_overall(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
-            xlabel('time (ms)'); ylabel('Frequency (Hz)');
-            saveas(gcf,[resultsDirectory 'combined_fly_' num2str(fly) '.png']);
-
-            close all;
-
-    end
-
-end
+% r_squared_slrp = zeros(fSize,tSize,n_flies);
+% r_squared_lrpr = zeros(fSize,tSize,n_flies);
+% r_squared_overall = zeros(fSize,tSize,n_flies);
+% r_squared_weird = zeros(fSize,tSize,n_flies);
+% 
+% for fly = 1:n_flies
+%         
+%         magSEs = FLIES(fly).LIT.magnitudeSEs; magSEs = magSEs(f > f_limits(1) & f < f_limits(2),:,:);
+% 
+%         for f_ind = 1:size(magSEs,1)% frequency index
+% 
+%             for t_ind = 1:size(magSEs,3)% time index
+% 
+%                 seq_eff_pattern = magSEs(f_ind,:,t_ind).';
+% 
+%                 %fit only to slrp or lrpr
+%                [x_slrp,sse_slrp] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[1 0 1 0],[],[],[],[],[-inf  0 0 -inf],[inf 0 0 inf],[],options);
+%                [x_lrpr,sse_lrpr] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[0 1 1 0],[],[],[],[],[0  -inf 0 -inf],[0 inf 0 inf],[],options);
+%                [x_weird,sse_weird] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[1 0 1 0],[],[],[],[],[0  0 -inf -inf],[0 0 inf inf],[],options);
+% 
+%                %fit overall
+%                [x_overall,sse_overall] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,seq_eff_pattern),[1 1 0 0],[],[],[],[],[-inf  -inf 0 -inf],[inf inf 0 inf],[],options);
+% 
+%                sse_total = sum((seq_eff_pattern-mean(seq_eff_pattern)).^2);
+% 
+%                r_squared_slrp(f_ind,t_ind,fly) = 1-(sse_slrp/sse_total);
+%                r_squared_lrpr(f_ind,t_ind,fly) = 1-(sse_lrpr/sse_total);
+%                r_squared_weird(f_ind,t_ind,fly) = 1-(sse_weird/sse_total);
+%                r_squared_overall(f_ind,t_ind,fly) = 1-(sse_overall/sse_total);
+% 
+%             end
+% 
+%         end
+%         
+%         figure; title(['SLRP Fly ' num2str(fly)]);
+%         imagesc(r_squared_slrp(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar;
+%         xlabel('time (ms)'); ylabel('Frequency (Hz)');
+%         saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
+%         
+%         figure; title(['LRPR Fly ' num2str(fly)]);
+%         imagesc(r_squared_lrpr(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar;
+%         xlabel('time (ms)'); ylabel('Frequency (Hz)');
+%         saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
+%         
+%         figure; title(['WEIRD Fly ' num2str(fly)]);
+%         imagesc(r_squared_weird(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar;
+%         xlabel('time (ms)'); ylabel('Frequency (Hz)');
+%         saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
+%         
+%         figure; title(['COMBINED Fly ' num2str(fly)]);
+%         imagesc(r_squared_overall(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar;
+%         xlabel('time (ms)'); ylabel('Frequency (Hz)');
+%         saveas(gcf,[resultsDirectory 'combined_fly_' num2str(fly) '.png']);
+%         
+%         close all;
+%     
+% end
  
 %% mean magnitude SEs across all flies
 meanMagSEs = FLIES(1).LIT.magnitudeSEs;
@@ -247,14 +241,14 @@ saveas(gcf,[resultsDirectory 'combined_minus_lrpr.png']);
 %% fit and plot some seq eff profiles of interest
 
 % 1.25 Hz cases
-% profiles = [32 411;37 1774;41 610;50 756;24 558];
-% 
-% type = [1 1 2 2 3];
+profiles = [32 411;37 1774;41 610;50 = 576];
+
+type = [1 1 2 2];
 
 % 6.25 Hz case
-profiles = [34 223;38 303;13 21;19 377];
-
-type = [1 2 3 4];
+% profiles = [34 223;38 303;13 21;19 377];
+% 
+% type = [1 2 3 4];
 
 % 12.5 Hz
 % profiles = [22 175;28 238;28 98;12 210];

@@ -56,6 +56,12 @@ function R = analyseSequentialEffectsTimeFrequency(blocks, aux_plots)
         plot(mean(squeeze(sum(allPHOTs,2)),2),'r');
     end
     
+    % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
+    allERPs = allERPs + flip(allERPs,2);
+    allPHOTs = allPHOTs + flip(allPHOTs,2);
+    allERPs = allERPs(:,1:16,:);
+    allPHOTs = allPHOTs(:,1:16,:);
+    
     % in preparation for calculating the nan mean
     allERPs(allERPs == 0) = nan;
     allPHOTs(allPHOTs == 0) = nan;
@@ -64,24 +70,8 @@ function R = analyseSequentialEffectsTimeFrequency(blocks, aux_plots)
     meanERPs = mean(allERPs, 3, 'omitnan');
     meanPHOTs = mean(allPHOTs, 3, 'omitnan');
 
-    %number of ERPs for each of 32 sequence (also number of PHOTs)
+    %number of ERPs for each of 16 sequence (equal to number of PHOTs)
     nERPs = sum(~isnan(allERPs(1,:,:)), 3);
-    
-    % in order to calculate weighted mean (broadcasting here)
-    meanERPs = meanERPs .* nERPs;
-    meanPHOTs = meanPHOTs .* nERPs;
-    
-    %group sequences 2 by 2 (00001 is the same as 11110 and so on)
-    meanERPs = meanERPs + fliplr(meanERPs);
-    meanPHOTs = meanPHOTs + fliplr(meanPHOTs);
-    
-    nERPs = nERPs + fliplr(nERPs);
-    nERPs(:,n_seq/2 + 1:end) = [];
-    
-    meanERPs(:,n_seq/2 + 1:end) = []; 
-    meanPHOTs(:,n_seq/2 + 1:end) = [];
-    meanERPs = meanERPs ./ nERPs;
-    meanPHOTs = meanPHOTs ./ nERPs;
     
     % reorder according to the literature
     meanERPs = meanERPs(:,seq_eff_order(n_back));
