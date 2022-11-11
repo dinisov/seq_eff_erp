@@ -76,11 +76,6 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     sdERPs = std(allERPs,[],3,'omitnan');
     semERPs = sdERPs ./ sqrt(nERPs);% broadcasting
     
-    % propagate the SEM for the pairs of sequences
-    % according to sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
-%     semERPs = sqrt(((nERPs.^2 .* semERPs.^2) + fliplr(nERPs.^2 .*semERPs.^2))./((nERPs + fliplr(nERPs)).^2));
-%     semERPs(:,n_seq/2 + 1:end) = [];
-    
     % reorder according to the literature
     meanERPs = meanERPs(:,seq_eff_order(n_back));
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));

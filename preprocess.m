@@ -23,8 +23,8 @@ networkMode = 0; %Whether to load data from network rather than local
 if networkMode == 0
     %dataPath = 'D:\group_swinderen\Bruno\Data\'
     %outPath = 'D:\group_swinderen\Bruno\Processed\'
-    dataPath = 'D:\group_swinderen\Dinis\Data\';
-    outPath = 'D:\group_swinderen\Dinis\Output\';
+    dataPath = '..\SEdata\';
+    outPath = '..\SEoutput\';
     %dataPath = 'D:\group_swinderen\Matthew\TDTs\Data\'
     %outPath = 'D:\group_swinderen\Matthew\TDTs\Processed\'
 else

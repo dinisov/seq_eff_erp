@@ -9,11 +9,11 @@ load data_flies_time_frequency_wavelet_6dot25.mat
 
 FLIES = FLIES(~cellfun(@isempty,struct2cell(FLIES)));
 
-homeDirectory = 'D:\group_swinderen\Dinis';
+homeDirectory = '../..';
 
 resultsDirectory = [homeDirectory '\Results_Time_Frequency\Wavelets\'];
 
-individualFlies = true;
+individualFlies = false;
 
 n_flies = length(FLIES);
 

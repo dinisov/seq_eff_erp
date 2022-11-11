@@ -9,11 +9,11 @@ addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 addpath('../Functions');
 
 %% load data
-homeDirectory = 'D:\group_swinderen\Dinis';
+homeDirectory = '../..';
 
 resultsDirectory = [homeDirectory '\Results_Time_Frequency'];
 
-fly_record = readtable('fly_record');
+fly_record = readtable([homeDirectory '\Fly record\fly_record']);
 
 %% restrict to some frequency
 
@@ -102,7 +102,7 @@ for b = find(chosenOnes)
     block = num2str(fly_record.Block(b));
 
     % load this block's data
-    load([homeDirectory '/Output/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
+    load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
     LFP = EEG.LFP1.data(LFPChannel(b),:);

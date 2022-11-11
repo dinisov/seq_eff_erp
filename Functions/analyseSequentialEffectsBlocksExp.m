@@ -82,9 +82,6 @@ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
     sdERPs = std(allERPs,[],3,'omitnan');
     semERPs = sdERPs ./ sqrt(nERPs);
     
-    % propagate the SEM for the pairs of sequences
-    % according to sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
-    
     % reorder according to the literature
     meanERPs = meanERPs(:,seq_eff_order(n_back));
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
@@ -98,9 +95,6 @@ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
     % get the maxima and minima for all 16 sequences
     [max_erp, ind_max_erp] = max(meanERPs);
     [min_erp, ind_min_erp] = min(meanERPs);
-    
-    % get the maxima of the diff of the PHOT to mark stimulus onset
-%     [~, stim_onset] = max(diff(meanPHOTs));
 
     %standard errors of the mean for the maxima (use of linear indexing here)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));

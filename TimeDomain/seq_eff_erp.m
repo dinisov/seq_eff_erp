@@ -24,13 +24,13 @@ analysisType = 1;
 focusPeak = 5;
 
 %% load data
-homeDirectory = 'D:\group_swinderen\Dinis';
+homeDirectory = '../..';
 
 resultsDirectory = [homeDirectory '\Results\12dot5Hz'];
 
 struct_name = 'freq12dot5hz';
 
-fly_record = readtable('fly_record');
+fly_record = readtable([homeDirectory '\Fly record\fly_record']);
 
 %% restrict to some frequency
 % fly_record = fly_record(fly_record.Frequency == 6.25,:);
@@ -105,7 +105,7 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
 
 %% whether to plot auxiliary plots
-aux_plots = 0;
+aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -120,7 +120,7 @@ for b = find(chosenOnes)
     block = num2str(fly_record.Block(b));
 
     % load this block's data
-    load([homeDirectory '/Output/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
+    load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
     LFP = EEG.LFP1.data(LFPChannel(b),:);
