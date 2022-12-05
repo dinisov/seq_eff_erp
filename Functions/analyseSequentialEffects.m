@@ -41,10 +41,17 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     allERPs = allERPs(:,:,logical(goodTrials));
     allPHOTs = allPHOTs(:,:,logical(goodTrials));
     
-    % for plotting PHOT the right way round
-%     if ~light_on_dark
-%         allPHOTs = -allPHOTs;
-%     end
+    %% remove all ERPs with NaNs (from "shaving")
+    allERPs = allERPs(:,:,~isnan(sum(squeeze(sum(allERPs,2)))));
+    
+    % onion plot showing all ERPs for this block
+    all_erps = squeeze(sum(allERPs,2));
+    if aux_plots
+        figure;
+        plot(all_erps,'b');
+        hold on;
+        plot(mean(all_erps,2), 'r');
+    end
     
     % onion plot of the photodiode data
     if aux_plots

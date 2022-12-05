@@ -38,16 +38,12 @@ function blocks = sortSEs(blocks, n_back, aux_plots)
         % matrix with all ERPs irrespective of sequence
         all_erps = squeeze(sum(ERPS,2));% squeeze removes first dimension
         
-        %% PCA
-%         [coeff,score] = pca(all_erps.','centered',false);
-%         
-%         figure;
-%         for i=1:64
-%            subplot(8,8,i);
-%            plot(coeff(:,i));
-%         end
+        %PCA
+        [coeff,score] = pca(all_erps.');
         
-        %%
+        for i=1:16
+           subplot() 
+        end
         
         %calculate mean and SEM for outlier calculations
         meanERP = mean(all_erps, 2);
@@ -76,6 +72,15 @@ function blocks = sortSEs(blocks, n_back, aux_plots)
         blocks(b).badTrials = badTrials;
         blocks(b).seqPHOT = seqPHOT;
         blocks(b).window = window;
+        
+        % onion plot showing all ERPs for this block
+        all_erps = all_erps(:,good_erps);
+        if aux_plots
+            figure;
+            plot(all_erps,'b');
+            hold on;
+            plot(mean(all_erps,2), 'r');
+        end
     
     end
     
