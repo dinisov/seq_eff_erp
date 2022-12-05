@@ -43,14 +43,14 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [6];
+chosenFlies = [46];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [8];
+chosenBlocks = [6];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -85,6 +85,9 @@ peak_threshold = fly_record.Threshold;
 %light_on_dark = 1 means a bright bar over a dark background was used
 light_on_dark = strcmp(fly_record.Condition,'LIT').';
 % chosenOnes = 1-light_on_dark; % choose all lit flies
+
+%number of sd to trim from LFP
+LFPsd = fly_record.LFPsd;
 
 %% whether to plot auxiliary plots
 aux_plots = 0;
@@ -122,6 +125,24 @@ for b = find(chosenOnes)
 
     PHOT = trim_phot_outliers(PHOT, 5);
 
+    %% remove anything from LFP beyond some sd
+    
+    figure; plot(LFP); hold on;
+    
+    if ~isnan(LFPsd(b))
+    
+        % do a nice plot
+        n_sd_lfp = LFPsd(b);
+        sd_lfp = std(LFP); mean_lfp = mean(LFP);
+        x_lim = xlim;
+        plot([x_lim(1) x_lim(2)],[mean_lfp-n_sd_lfp*sd_lfp mean_lfp-n_sd_lfp*sd_lfp],'r');
+        plot([x_lim(1) x_lim(2)],[mean_lfp+n_sd_lfp*sd_lfp mean_lfp+n_sd_lfp*sd_lfp],'r');
+
+        % nuke everything beyond +/- the set number of sd
+        LFP(LFP > mean_lfp+n_sd_lfp*sd_lfp | LFP < mean_lfp-n_sd_lfp*sd_lfp) = NaN;
+
+    end
+    
     BLOCKS(b).LFP = LFP;
     BLOCKS(b).PHOT = PHOT;
     BLOCKS(b).rawPHOT = rawPHOT;

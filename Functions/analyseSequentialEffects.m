@@ -87,6 +87,7 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     meanERPs = meanERPs(:,seq_eff_order(n_back));
     meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
     semERPs = semERPs(:,seq_eff_order(n_back));
+    nERPs = nERPs(seq_eff_order(n_back));
     
     if aux_plots
         figure;
