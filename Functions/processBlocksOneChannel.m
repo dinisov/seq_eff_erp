@@ -23,7 +23,7 @@ function R = processBlocksOneChannel(blocks, aux_plots,mode)
         blocks(b).PHOT = [PHOT; PHOT; PHOT];
         
         % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .1 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .2 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
         [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(PHOT , 'MinPeakHeight' , peakThreshold , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); 
 
         [LOCS_PHOT1, ind_locs_phot1] = setdiff(LOCS_PHOT1, LOCS_PHOT2);
@@ -36,7 +36,7 @@ function R = processBlocksOneChannel(blocks, aux_plots,mode)
         
         %we must get rid of trials where we could not get a peak and the
         %subsequent four trials
-        badLOCS = LOCS([false diff(LOCS) > (1.2*ISI*resampleFreq)] | [false diff(LOCS) < (0.8*ISI*resampleFreq)]); % index of trials where gap was too long or too short
+        badLOCS = LOCS([false diff(LOCS) > (1.5*ISI*resampleFreq)] | [false diff(LOCS) < (0.5*ISI*resampleFreq)]); % index of trials where gap was too long or too short
         
         % infer random sequence (0 - left; 1 - right)
         randomSequence = zeros(size(PHOT(1,:)));

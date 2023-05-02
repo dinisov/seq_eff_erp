@@ -67,7 +67,7 @@ fly_list = dir([dataPath, filesep, '*']); % changed from Analyzed*
 
 if length(fly_list) == 0
     ['## ERROR: NO DATA FOUND ##']
-    crash = yes
+    crash = yes;
 end
 %Remove operating system 'folders' from fly_list
 osExcludeList = [{'.'},{'..'}];

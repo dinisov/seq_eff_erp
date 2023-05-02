@@ -60,7 +60,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [46];
+chosenFlies = [64];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -69,7 +69,7 @@ chosenFlies = [46];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [7];
+chosenBlocks = [4];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -130,7 +130,13 @@ for b = find(chosenOnes)
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
-   
+    
+    % remove first/last n_sec seconds of recording
+    n_sec = 1;
+    chunk_a_time = n_sec*resampleFreq;
+    LFP = LFP(:,chunk_a_time:end-chunk_a_time);
+    PHOT = PHOT(:,chunk_a_time:end-chunk_a_time);
+    rawPHOT = rawPHOT(:,chunk_a_time:end-chunk_a_time);
     
     %%
     
@@ -144,7 +150,7 @@ for b = find(chosenOnes)
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
 
-%     PHOT = -PHOT;
+%     PHOT(3,:) = -PHOT(3,:);
     
     % butterworth filter LFP
     [b_f,a_f] = butter(6,100/resampleFreq*2);
@@ -158,7 +164,7 @@ for b = find(chosenOnes)
         
     LFP = smoothdata(LFP,'sgolay');
 
-    PHOT = trim_phot_outliers(PHOT, 5);
+    PHOT = trim_phot_outliers(PHOT, 12);
     
     %% remove anything from LFP beyond some sd
     

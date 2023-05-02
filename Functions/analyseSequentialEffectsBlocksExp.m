@@ -1,4 +1,4 @@
-function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
+ function R = analyseSequentialEffectsBlocksExp(blocks, aux_plots)
 
     %% sort data according to previous sequence
 
