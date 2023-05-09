@@ -62,7 +62,16 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         title('')
     end
     
-    plotSeparateERPs(allERPs);
+    % store allERPs as separate to calculate ERP for 1 and 0 stimuli
+    index0 = [1:2:15;fliplr(17:2:31)]; index0 = index0(:).';
+    index1 = [2:2:16;fliplr(18:2:32)]; index1 = index1(:).';
+    allERPs0 = allERPs(:,index0,:); allERPs0 = sum(allERPs0,2);
+    allERPs1 = allERPs(:,index1,:); allERPs1 = sum(allERPs1,2);
+    
+    % plot mean ERP separately
+    figure; 
+    subplot(1,2,1); plot(mean(allERPs0,3)); title('Stimulus 0')
+    subplot(1,2,2); plot(mean(allERPs1,3));
     
     % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
     allERPs = allERPs + flip(allERPs,2);
