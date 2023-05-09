@@ -1,10 +1,8 @@
 function plotSeparateERPs(allERPs)
 
     % calculate ERP for stimuli 0 and 1
-    index0 = [1:2:15;fliplr(17:2:31)]; index0 = index0(:).';
-    index1 = [2:2:16;fliplr(18:2:32)]; index1 = index1(:).';
-    allERPs0 = allERPs(:,index0,:); allERPs0 = sum(allERPs0,2);
-    allERPs1 = allERPs(:,index1,:); allERPs1 = sum(allERPs1,2);
+    allERPs0 = allERPs(:,1:2:31,:); allERPs0 = sum(allERPs0,2);
+    allERPs1 = allERPs(:,2:2:32,:); allERPs1 = sum(allERPs1,2);
     
     allERPs0(allERPs0 == 0) = nan; allERPs1(allERPs1 == 0) = nan;
     

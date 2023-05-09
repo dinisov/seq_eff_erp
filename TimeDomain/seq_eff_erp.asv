@@ -24,7 +24,6 @@ analysisType = 1;
 focusPeak = 5;
 
 % fit model
-fitModel = false;
 
 %% load data
 homeDirectory = '../..';
@@ -276,19 +275,16 @@ for fly = chosenFlies
            FLIES(fly).(lit_dark{lit+1}).meanPHOTs = R.meanPHOTs;
 
            % perform fits to a simple exponential filter
-           if fitModel
-               [x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options); %#ok<UNRCH>
-               [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(R.amplitudeSEs).'),[1 1 0 0],[],[],[],[],[-inf  -inf 0 -inf],[inf inf 0 inf],[],options);
-
-               FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
-               FLIES(fly).(lit_dark{lit+1}).FITS.fit_params = x;
-
-               results.(struct_name)(n_fly).model_fit = FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude;
-               results.(struct_name)(n_fly).fit_params = x;
-           end
+           %[x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options);
+%            [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(R.amplitudeSEs).'),[1 1 0 0],[],[],[],[],[-inf  -inf 0 -inf],[inf inf 0 inf],[],options);
+           
+%            FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
+%            FLIES(fly).(lit_dark{lit+1}).FITS.fit_params = x;
            
            % dump results in a structure to be saved in the end (may need to improve this)
            results.(struct_name)(n_fly).seq_eff_profile = (R.amplitudeSEs).';
+%            results.(struct_name)(n_fly).model_fit = FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude;
+%            results.(struct_name)(n_fly).fit_params = x;
 
        end
        
@@ -318,14 +314,10 @@ for lit = [0 1]
         if isfield(FLIES(fly),lit_dark{lit+1}) && ~isempty(FLIES(fly).(lit_dark{lit+1}))
             
             %amplitude sequential effects
-            figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            if fitModel
-                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.','scores',FLIES(fly).(lit_dark{lit+1}).FITS.fit_params(1:3)); %#ok<UNRCH>
-            else
-                  create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.');              
-            end
-                saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
-%             close(gcf);
+%             figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+%             create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.','scores',FLIES(fly).(lit_dark{lit+1}).FITS.fit_params(1:3));
+%             saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
+% %             close(gcf);
             
             %positive amplitude SEs
             figure('Name',['Positive_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
