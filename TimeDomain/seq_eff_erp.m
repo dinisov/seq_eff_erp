@@ -24,7 +24,7 @@ analysisType = 1;
 focusPeak = 5;
 
 % fit model
-fitModel = false;
+fitModel = true;
 
 %% load data
 homeDirectory = '../..';
@@ -63,7 +63,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [94];
+chosenFlies = [64];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -72,7 +72,7 @@ chosenFlies = [94];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [18];
+chosenBlocks = [4];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
