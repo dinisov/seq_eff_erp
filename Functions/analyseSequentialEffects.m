@@ -46,7 +46,10 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     %% plot isomers
     
     %AAAARRRRAARARRARa
-    plotIsomers(allERPs,[1 0 1 0 1 1 1 1 1 0 1 1 0 0 0 1 1 0 1 0], window, n_back, blocks(1).resampleFreq);
+%     plotIsomers(allERPs,[1 0 1 0 1 1 1 1 1 0 1 1 0 0 0 1 1 0 1 0], window, n_back, blocks(1).resampleFreq);
+    plotIsomers(allERPs,[], window, n_back, blocks(1).resampleFreq);
+    
+    %% calculate SEs
     
     % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
     allERPs = allERPs + flip(allERPs,2);
