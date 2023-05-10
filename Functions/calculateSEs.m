@@ -1,6 +1,17 @@
-function R = calculateSEs(allERPs,aux_plots,window,n_back, resampleFreq)
+function R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back, resampleFreq)
 %UNTITLED4 Takes a matrix of ERPs separated by sequence and calculates SEs
 %   Detailed explanation goes here
+
+    R = struct;
+    
+    if ~isempty(allPHOTs)
+        %mean photodiode traces
+        allPHOTs(allPHOTs == 0) = nan;
+        meanPHOTs = mean(allPHOTs, 3, 'omitnan');
+        meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
+        
+        R.meanPHOTs = meanPHOTs;
+    end
     
     % in preparation for calculating the nan mean
     allERPs(allERPs == 0) = nan;
@@ -75,9 +86,7 @@ function R = calculateSEs(allERPs,aux_plots,window,n_back, resampleFreq)
     negativeAmplitudeSEs =  min_erp - meanERPs(1,:);
     semNegAmplSEs = sqrt(semMin.^2 + semERPs(1,:).^2);
     
-    % put all results into a neat structure
-    R = struct;
-    
+    % put all results into a neat structure  
     R.amplitudeSEs = amplitudeSEs;
     R.semAmplSEs = semAmplSEs;
     
@@ -95,6 +104,29 @@ function R = calculateSEs(allERPs,aux_plots,window,n_back, resampleFreq)
     
     R.allERPs = allERPs;
 
+    % plot ERPs for each sequence separately in a 4x4 plot
+    % for each sequence, highlight where the maxima (red) and minima (blue) are located 
+    if aux_plots || ~isempty(allPHOTs)
+        
+        figure;
+
+        load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
+
+        %this is just to help turn horizontal sequences into vertical ones
+        ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]);
+
+        for i = 1:16
+           subplot(4,4,i);
+           plot(normalize(meanERPs(:,i)));
+           hold on;
+           scatter(ind_max_erp(i), 0,40,'r','filled');
+           scatter(ind_min_erp(i), 0,40,'b','filled');
+           plot(normalize(meanPHOTs(:,i)));
+%            plot([window(1) window(1)],ylim,'r');
+           title(binomial_x_labels_latex{i}(ind_horiz));
+        end
+    end
+    
 
 end
 
