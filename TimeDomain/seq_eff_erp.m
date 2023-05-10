@@ -26,6 +26,9 @@ focusPeak = 5;
 % fit model
 fitModel = true;
 
+%% whether to plot auxiliary plots
+aux_plots = 0;
+
 %% load data
 homeDirectory = '../..';
 
@@ -109,9 +112,6 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 
 %number of sd to trim from LFP
 LFPsd = fly_record.LFPsd;
-
-%% whether to plot auxiliary plots
-aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly

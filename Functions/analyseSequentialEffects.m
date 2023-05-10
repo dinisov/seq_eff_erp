@@ -43,8 +43,10 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     
     plotSeparateERPs(allERPs);
     
+    %% plot isomers
+    
     %AAAARRRRAARARRARa
-%     plotIsomers(allERPs,[1 0 1 0 1 1 1 1 1 0 1 1 0 0 0 1 1 0 1 0],n_back);
+    plotIsomers(allERPs,[1 0 1 0 1 1 1 1 1 0 1 1 0 0 0 1 1 0 1 0], window, n_back, blocks(1).resampleFreq);
     
     % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
     allERPs = allERPs + flip(allERPs,2);
@@ -52,6 +54,13 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     allERPs = allERPs(:,1:16,:);
     allPHOTs = allPHOTs(:,1:16,:);
     
-    R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back,blocks(1).resampleFreq);
+    % reorder according to the literature
+    allERPs = allERPs(:,seq_eff_order(n_back),:);
+    allPHOTs = allPHOTs(:,seq_eff_order(n_back),:);
+    
+    R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
+    
+    %% ANOVA
+    SEAnova(R);
     
 end

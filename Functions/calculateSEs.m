@@ -1,4 +1,4 @@
-function R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back, resampleFreq)
+function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
 %UNTITLED4 Takes a matrix of ERPs separated by sequence and calculates SEs
 %   Detailed explanation goes here
 
@@ -8,7 +8,7 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back, resampleFreq
         %mean photodiode traces
         allPHOTs(allPHOTs == 0) = nan;
         meanPHOTs = mean(allPHOTs, 3, 'omitnan');
-        meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
+%         meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
         
         R.meanPHOTs = meanPHOTs;
     end
@@ -25,10 +25,9 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back, resampleFreq
     semERPs = sdERPs ./ sqrt(nERPs);% broadcasting
     
     % reorder according to the literature
-    meanERPs = meanERPs(:,seq_eff_order(n_back));
-    
-    semERPs = semERPs(:,seq_eff_order(n_back));
-    nERPs = nERPs(seq_eff_order(n_back));
+%     meanERPs = meanERPs(:,seq_eff_order(n_back));
+%     semERPs = semERPs(:,seq_eff_order(n_back));
+%     nERPs = nERPs(seq_eff_order(n_back));
     
     if aux_plots
         figure;
@@ -45,20 +44,6 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back, resampleFreq
     %SEM for the maxima and minima(use of linear indexing here)
     semMax = semERPs(sub2ind(size(semERPs),ind_max_erp,1:16));
     semMin = semERPs(sub2ind(size(semERPs),ind_min_erp,1:16));
-    
-    %% ANOVA
-    allERPs = allERPs(:,seq_eff_order(n_back),:);
-    
-    % full data for maxima and minima across all stimuli
-    aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';
-    
-    % data tables for performing an ANOVA to check for the effect of
-    % sequence
-    dataMaxima = aux(:,sub2ind(size(semERPs),ind_max_erp,1:16));
-    dataMinima = aux(:,sub2ind(size(semERPs),ind_min_erp,1:16));
-    dataAmplitude = dataMaxima-dataMinima;
-    
-    anova1(dataAmplitude);
     
     %%
         
@@ -102,7 +87,11 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window,n_back, resampleFreq
     R.meanERPs = meanERPs;
     R.nERPs = nERPs;
     
+    R.ind_max_erp = ind_max_erp;
+    R.ind_min_erp = ind_min_erp;
+    
     R.allERPs = allERPs;
+    R.semERPs = semERPs;
 
     % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 
