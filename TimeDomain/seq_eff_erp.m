@@ -23,11 +23,16 @@ analysisType = 1;
 % if analysisType is 2, choose which stimulus to look in the train (starting at 5 up to train length)
 focusPeak = 5;
 
+%% toggles
+
 % fit model
 fitModel = true;
 
-%% whether to plot auxiliary plots
-aux_plots = 0;
+%which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
+plotSelector = [1 0 0 0 0];
+
+% whether to plot auxiliary plots (some are always plotted)
+aux_plots = 1;
 
 %% load data
 homeDirectory = '../..';
@@ -317,39 +322,50 @@ for lit = [0 1]
         % if DARK/LIT field is not empty for this fly
         if isfield(FLIES(fly),lit_dark{lit+1}) && ~isempty(FLIES(fly).(lit_dark{lit+1}))
             
-            %amplitude sequential effects
-            figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            if fitModel
-                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.','scores',FLIES(fly).(lit_dark{lit+1}).FITS.fit_params(1:3)); %#ok<UNRCH>
-            else
-                  create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.');              
+            if plotSelector(1)
+                %amplitude sequential effects
+                figure('Name',['Amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+                if fitModel
+                    create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',FLIES(fly).(lit_dark{lit+1}).FITS.model_fit_amplitude,'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.','scores',FLIES(fly).(lit_dark{lit+1}).FITS.fit_params(1:3)); %#ok<UNRCH>
+                else
+                      create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).amplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semAmplSEs.');               %#ok<UNRCH>
+                end
+                    saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
+    %             close(gcf);
             end
-                saveas(gcf,[resultsDirectory '/Amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '.png']);
-%             close(gcf);
             
-            %positive amplitude SEs
-            figure('Name',['Positive_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).positiveAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semPosAmplSEs.');
-            saveas(gcf,[resultsDirectory '/Positive amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_positive_amplitude.png']);
-%             close(gcf);
+            if plotSelector(2)
+                %positive amplitude SEs
+                figure('Name',['Positive_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).positiveAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semPosAmplSEs.');
+                saveas(gcf,[resultsDirectory '/Positive amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_positive_amplitude.png']);
+    %             close(gcf);
+            end
             
-            %negative amplitude SEs
-            figure('Name',['Negative_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off')
-            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).negativeAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semNegAmplSEs.');
-            saveas(gcf,[resultsDirectory '/Negative amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_negative_amplitude.png']);
-%             close(gcf);
-                
-            %latency to peak sequential effects
-            figure('Name',['Latency_to_peak_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToPeakSEs.',[]);
-            saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_peak.png']);
-%             close(gcf);
+            if plotSelector(3)
+                %negative amplitude SEs
+                figure('Name',['Negative_amplitude_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off')
+                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).negativeAmplitudeSEs.',[],'errors',FLIES(fly).(lit_dark{lit+1}).semNegAmplSEs.');
+                saveas(gcf,[resultsDirectory '/Negative amplitude/fly_' num2str(fly) '_' lit_dark{lit+1} '_negative_amplitude.png']);
+    %             close(gcf);
+            end
+    
+            if plotSelector(4)
+                %latency to peak sequential effects
+                figure('Name',['Latency_to_peak_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToPeakSEs.',[]);
+                saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_peak.png']);
+    %             close(gcf);
+            end
             
-            %latency to trough sequential effects
-            figure('Name',['Latency_to_trough_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToTroughSEs.',[]);
-            saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_trough.png']);
-%             close(gcf);
+            if plotSelector(5)
+                %latency to trough sequential effects
+                figure('Name',['Latency_to_trough_fly_' num2str(fly) '_' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(FLIES(fly).(lit_dark{lit+1}).latencyToTroughSEs.',[]);
+                saveas(gcf,[resultsDirectory '/Latency/fly_' num2str(fly) '_' lit_dark{lit+1} '_latency_to_trough.png']);
+    %             close(gcf);
+            end
+
 %             close all
 
         end
@@ -423,27 +439,36 @@ if length(chosenFlies) > 1
             [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(sum(amplitudeSEs,2)/sum(nERPsFly))),[1 1 1 0],[],[],[],[],[-inf  -inf -inf -inf],[inf inf inf inf],[],options);
 %             [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
            
-            figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            best_fit = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
-            create_seq_eff_plot((sum(amplitudeSEs,2)/sum(nERPsFly)),best_fit,'errors',semAmplSEs,'scores',x(1:3));
+            if plotSelector(1)
+                figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+                best_fit = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
+                create_seq_eff_plot((sum(amplitudeSEs,2)/sum(nERPsFly)),best_fit,'errors',semAmplSEs,'scores',x(1:3));
+                saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
+            end
             
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
-    
-            figure('Name',['Positive_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(positiveAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semPosAmplSEs);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_positive_amplitude.png']);
-    
-            figure('Name',['Negative_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(negativeAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semNegAmplSEs);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} 'negative_amplitude.png']);
-    
-            figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(latencyToPeakSEs,2)/sum(nERPsFly),[]);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
-
-            figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-            create_seq_eff_plot(sum(latencyToTroughSEs,2)/sum(nERPsFly),[]);
-            saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
+            if plotSelector(2)
+                figure('Name',['Positive_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(sum(positiveAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semPosAmplSEs);
+                saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_positive_amplitude.png']);
+            end
+            
+            if plotSelector(3)
+                figure('Name',['Negative_amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(sum(negativeAmplitudeSEs,2)/sum(nERPsFly),[],'errors',semNegAmplSEs);
+                saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} 'negative_amplitude.png']);
+            end
+            
+            if plotSelector(4)
+                figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(sum(latencyToPeakSEs,2)/sum(nERPsFly),[]);
+                saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
+            end
+            
+            if plotSelector(5)
+                figure('Name',['Latency_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+                create_seq_eff_plot(sum(latencyToTroughSEs,2)/sum(nERPsFly),[]);
+                saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_latency.png']);
+            end
 
         end
 
