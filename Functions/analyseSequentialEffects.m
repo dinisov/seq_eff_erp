@@ -2,47 +2,24 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
     %% sort data according to previous sequence
 
-    n_back = 5; n_seq = 2^n_back; %TODO: make n_back variable
-    
-    n_blocks = length(blocks);
+    n_back = 5;  %TODO: make n_back variable
     
     blocks = sortSEs(blocks, n_back, aux_plots);
     
     window = blocks(1).window;%WARNING: we can only merge blocks with windows of same size
     
-    %% sequential effects analysis across all blocks
+    %% group blocks
 
-    total_length = 0;
+    [allERPs, allPHOTs, goodTrials] = groupBlocks(blocks,window,n_back);
 
-    for b = 1:n_blocks
-        total_length = total_length + size(blocks(b).ERPS,3);
-    end 
-    
-    % concatenate ERPs from different "experiments" (blocks)
-    allERPs = zeros(length(window(1):window(2)), n_seq, total_length);
-    allPHOTs = zeros(length(window(1):window(2)), n_seq, total_length);
-    
-    start_index = 0; goodTrials = [];
-
-    % these are already separated by sequence so in order to group by block
-    % it is only necessary to stack along third dimension
-    for b = 1:n_blocks
-
-        allERPs(:,:,start_index + 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).ERPS;
-        allPHOTs(:,:,start_index+ 1:start_index + size(blocks(b).ERPS,3)) = blocks(b).seqPHOT;
-
-        start_index = start_index + size(blocks(b).ERPS,3);
-
-        goodTrials = [goodTrials 1-blocks(b).badTrials]; %#ok<AGROW> 
-
-    end
-
-    % get rid of bad trials (trials with too long gaps between peaks)
+    %% get rid of bad trials (trials with too long gaps between peaks)
     allERPs = allERPs(:,:,logical(goodTrials));
     allPHOTs = allPHOTs(:,:,logical(goodTrials));
     
     %% remove all ERPs with NaNs (from "shaving")
     allERPs = allERPs(:,:,~isnan(sum(squeeze(sum(allERPs,2)))));
+    
+    %% onion plots
     
     % onion plot showing all ERPs for this block
     all_erps = squeeze(sum(allERPs,2));
@@ -62,13 +39,20 @@ function R = analyseSequentialEffects(blocks, aux_plots)
         title('')
     end
     
+    %% plot mean ERPs for both stimuli separately
+    
     plotSeparateERPs(allERPs);
+    
+    %AAAARRRRAARARRARa
+%     plotIsomers(allERPs,[1 0 1 0 1 1 1 1 1 0 1 1 0 0 0 1 1 0 1 0]);
     
     % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
     allERPs = allERPs + flip(allERPs,2);
     allPHOTs = allPHOTs + flip(allPHOTs,2);
     allERPs = allERPs(:,1:16,:);
     allPHOTs = allPHOTs(:,1:16,:);
+    
+    
     
     % in preparation for calculating the nan mean
     allERPs(allERPs == 0) = nan;
