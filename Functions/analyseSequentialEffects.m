@@ -41,13 +41,13 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     
     %% plot mean ERPs for both stimuli separately
     
-%     plotSeparateERPs(allERPs);
+    plotSeparateERPs(allERPs);
     
     %% plot isomers
     
     %AAAARRRRAARARRARa
 %     plotIsomers(allERPs,[1 0 1 0 1 1 1 1 1 0 1 1 0 0 0 1 1 0 1 0], window, n_back, blocks(1).resampleFreq);
-%     plotIsomers(allERPs,[], window, n_back, blocks(1).resampleFreq);
+    plotIsomers(allERPs,[], window, n_back, blocks(1).resampleFreq);
     
     %% calculate SEs
     
@@ -64,6 +64,6 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
     
     %% ANOVA
-%     SEAnova(R);
+    SEAnova(R);
     
 end
