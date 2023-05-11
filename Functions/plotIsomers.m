@@ -58,9 +58,12 @@ function plotIsomers(allERPs, isomer, window, n_back, resampleFreq)
         R1 = calculateSEs(allERPs1,[],0,window, resampleFreq);
         R2 = calculateSEs(allERPs2,[],0,window, resampleFreq);
 
-        figure; create_seq_eff_plot(R1.amplitudeSEs.',R2.amplitudeSEs.');
+        figure; create_seq_eff_plot([R1.amplitudeSEs.' R2.amplitudeSEs.'],[],'errors',[R1.semAmplSEs.' R2.semAmplSEs.']);
         h = legend({'First Isomer','Second Isomer'});
         set(h,'FontSize',6);
+        
+        h = findobj(gca,'Type','ErrorBar');
+        set(h(1),'color','r');
         
     end
 

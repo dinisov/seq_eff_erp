@@ -31,7 +31,7 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
     
     if aux_plots
         figure;
-        plot(meanERPs)
+        plot(meanERPs);
     end
     
     % get the maxima and minima for all 16 sequences
@@ -95,7 +95,7 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
 
     % plot ERPs for each sequence separately in a 4x4 plot
     % for each sequence, highlight where the maxima (red) and minima (blue) are located 
-    if aux_plots || ~isempty(allPHOTs)
+    if aux_plots && ~isempty(allPHOTs)
         
         figure;
 

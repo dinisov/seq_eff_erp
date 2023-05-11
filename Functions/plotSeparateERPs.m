@@ -17,13 +17,13 @@ function plotSeparateERPs(allERPs)
     
     % plot mean ERP for both stimuli
     figure; 
-    h1 = plot(mean(allERPs0,3,'omitnan'),'r'); hold on; 
-    h2 = plot(mean(allERPs1,3,'omitnan'),'b');
+    h1 = plot(mean(allERPs0,3,'omitnan'),'b'); hold on; 
+    h2 = plot(mean(allERPs1,3,'omitnan'),'r');
     
-    plot(mean(allERPs0,3,'omitnan')+semERPs0,'r:');
-    plot(mean(allERPs0,3,'omitnan')-semERPs0,'r:');
+    plot(mean(allERPs0,3,'omitnan')+semERPs0,'b:');
+    plot(mean(allERPs0,3,'omitnan')-semERPs0,'b:');
     
-    plot(mean(allERPs1,3,'omitnan')+semERPs1,'b:');
-    plot(mean(allERPs1,3,'omitnan')-semERPs1,'b:');
+    plot(mean(allERPs1,3,'omitnan')+semERPs1,'r:');
+    plot(mean(allERPs1,3,'omitnan')-semERPs1,'r:');
     
     legend([h1 h2],{'Stimulus 1','Stimulus 2'});

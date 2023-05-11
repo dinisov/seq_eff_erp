@@ -26,7 +26,7 @@ focusPeak = 5;
 %% toggles
 
 % fit model
-fitModel = 0;
+fitModel = 1;
 
 %which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
 plotSelector = [1 0 0 0 0];
@@ -71,7 +71,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [41 43];
+chosenFlies = [43];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -80,7 +80,7 @@ chosenFlies = [41 43];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [88 30];
+chosenBlocks = [88];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -175,18 +175,20 @@ for b = find(chosenOnes)
     PHOT = trim_phot_outliers(PHOT, 12);
     
     %% remove anything from LFP beyond some sd
-    
-    figure; plot(LFP); hold on;
-    
+        
     if ~isnan(LFPsd(b))
     
-        % do a nice plot
         n_sd_lfp = LFPsd(b);
         sd_lfp = std(LFP); mean_lfp = mean(LFP);
-        x_lim = xlim;
-        plot([x_lim(1) x_lim(2)],[mean_lfp-n_sd_lfp*sd_lfp mean_lfp-n_sd_lfp*sd_lfp],'r');
-        plot([x_lim(1) x_lim(2)],[mean_lfp+n_sd_lfp*sd_lfp mean_lfp+n_sd_lfp*sd_lfp],'r');
-
+        
+        % do a nice plot
+        if aux_plots
+            figure; plot(LFP); hold on; %#ok<UNRCH>
+            x_lim = xlim;
+            plot([x_lim(1) x_lim(2)],[mean_lfp-n_sd_lfp*sd_lfp mean_lfp-n_sd_lfp*sd_lfp],'r');
+            plot([x_lim(1) x_lim(2)],[mean_lfp+n_sd_lfp*sd_lfp mean_lfp+n_sd_lfp*sd_lfp],'r');
+        end
+            
         % nuke everything beyond +/- the set number of sd
         LFP(LFP > mean_lfp+n_sd_lfp*sd_lfp | LFP < mean_lfp-n_sd_lfp*sd_lfp) = NaN;
 

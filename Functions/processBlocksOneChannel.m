@@ -16,10 +16,15 @@ function R = processBlocksOneChannel(blocks, aux_plots,mode)
         resampleFreq = blocks(b).resampleFreq;
         ISI = blocks(b).ISI;
         peakThreshold = blocks(b).peakThreshold;
-
-        figure; plot(PHOT);
+        
+        if aux_plots
+            figure; plot(PHOT);
+        end
         PHOT = movmax(PHOT,[20 20]);
-        hold on; plot(PHOT);
+        if aux_plots    
+            hold on; plot(PHOT);
+        end
+        
         blocks(b).PHOT = [PHOT; PHOT; PHOT];
         
         % find peaks
@@ -58,9 +63,11 @@ function R = processBlocksOneChannel(blocks, aux_plots,mode)
         
         % histogram of interval between peaks (should have one tight peak)
         % this is a critical check so it is always plotted
-        figure;
-        histogram(diff(LOCS(~badTrials)));title('Good peaks histogram');
-    
+        if aux_plots
+            figure;
+            histogram(diff(LOCS(~badTrials)));title('Good peaks histogram');
+        end
+        
         % add processed data to original blocks structure
         blocks(b).badTrials = badTrials;
         blocks(b).LOCS = LOCS;
