@@ -26,7 +26,7 @@ focusPeak = 5;
 %% toggles
 
 % fit model
-fitModel = true;
+fitModel = 0;
 
 %which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
 plotSelector = [1 0 0 0 0];
@@ -71,7 +71,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [64];
+chosenFlies = [41 43];
 % chosenFlies = setdiff(flySet, [24 25]);
 % chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -80,7 +80,7 @@ chosenFlies = [64];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [4];
+chosenBlocks = [88 30];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -435,15 +435,25 @@ if length(chosenFlies) > 1
                 end
 
             end
-            
-            [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(sum(amplitudeSEs,2)/sum(nERPsFly))),[1 1 1 0],[],[],[],[],[-inf  -inf -inf -inf],[inf inf inf inf],[],options);
-%             [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
-           
+                       
             if plotSelector(1)
-                figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
-                best_fit = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
-                create_seq_eff_plot((sum(amplitudeSEs,2)/sum(nERPsFly)),best_fit,'errors',semAmplSEs,'scores',x(1:3));
-                saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
+                
+                if fitModel
+                    
+                    [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,(sum(amplitudeSEs,2)/sum(nERPsFly))),[1 1 1 0],[],[],[],[],[-inf  -inf -inf -inf],[inf inf inf inf],[],options);
+%             [x,~] = fmincon(@(x) least_squares_slrp_lrpr(x(1),x(2),x(3),slrp,lrpr,sum(amplitudeSEs,2)/sum(nERPsFly).'),[1 1 0],[],[],[],[],[-inf  -inf -inf],[inf inf inf],[],options);
+
+                    figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off');
+                    best_fit = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
+                    create_seq_eff_plot((sum(amplitudeSEs,2)/sum(nERPsFly)),best_fit,'errors',semAmplSEs,'scores',x(1:3));
+                    saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
+                else
+                    figure('Name',['Amplitude_all_flies_method_2' lit_dark{lit+1}],'NumberTitle','off'); %#ok<UNRCH>
+                    create_seq_eff_plot((sum(amplitudeSEs,2)/sum(nERPsFly)),[],'errors',semAmplSEs);
+                    saveas(gcf,[resultsDirectory '/All flies 2/all_flies_' lit_dark{lit+1} '_amplitude.png']);
+                    
+                end
+                
             end
             
             if plotSelector(2)

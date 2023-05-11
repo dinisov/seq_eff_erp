@@ -1,6 +1,7 @@
-function plotIsomers(allERPs, isomer, window, n_back,resampleFreq)
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+function plotIsomers(allERPs, isomer, window, n_back, resampleFreq)
+%plotIsomers Plot isomers
+%   If isomer input is empty it calculates "natural" isomers (all ending with 0/1)
+%   "isomer" defines a set of 16 sequences, the other isomer being 1-isomer
 
     if ~isempty(isomer)
 

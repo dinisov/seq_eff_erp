@@ -1,5 +1,5 @@
 function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
-%UNTITLED4 Takes a matrix of ERPs separated by sequence and calculates SEs
+%calculateSEs Takes a matrix of ERPs separated by sequence and calculates SEs
 %   Detailed explanation goes here
 
     R = struct;
