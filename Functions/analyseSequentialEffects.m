@@ -9,7 +9,6 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     window = blocks(1).window;%WARNING: we can only merge blocks with windows of same size
     
     %% group blocks
-
     [allERPs, allPHOTs, goodTrials] = groupBlocks(blocks,window,n_back);
 
     %% get rid of bad trials (trials with too long gaps between peaks)
