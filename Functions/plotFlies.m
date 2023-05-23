@@ -1,8 +1,6 @@
 function plotFlies(data,chosenFlies,plotSelector,resultsDirectory)
 
-seTypes = {'amplitudeSEs','positiveAmplitudeSEs','negativeAmplitudeSEs','latencyToPeakSEs','latencyToTroughSEs'};
-
-errorNames = {'semAmplSEs','semPosAmplSEs','semNegAmplSEs'};
+seTypes = {'amplitude','positiveAmplitude','negativeAmplitude','latencyToPeak','latencyToTrough'};
 
 directoryNames = {'Amplitude','Positive amplitude','Negative amplitude','Latency','Latency'};
 
@@ -20,13 +18,10 @@ if length(data) == 1
 
         if p == 1
             figure('Name',seTypes{p},'NumberTitle','off');
-            create_seq_eff_plot(data.(seTypes{p}).',modelFit,'errors',data.(errorNames{p}).','scores',modelScores);
-        elseif (p > 1) && (p < 4)
-            figure('Name',seTypes{p},'NumberTitle','off');
-            create_seq_eff_plot(data.(seTypes{p}).',[],'errors',data.(errorNames{p}).');
+            create_seq_eff_plot(data.PROFILE.(seTypes{p}).',modelFit,'errors',data.ERROR.(seTypes{p}).','scores',modelScores);
         else
             figure('Name',seTypes{p},'NumberTitle','off');
-            create_seq_eff_plot(data.(seTypes{p}).',[]);
+            create_seq_eff_plot(data.PROFILE.(seTypes{p}).',[],'errors',data.ERROR.(seTypes{p}).');
         end
 
         saveas(gcf,[ resultsDirectory seTypes{p} '.png']);
@@ -48,14 +43,11 @@ else
         for p = find(plotSelector)
             
             if p == 1
-                figure('Name',seTypes{p},'NumberTitle','off');
-                create_seq_eff_plot(data(fly).(seTypes{p}).',modelFit,'errors',data(fly).(errorNames{p}).','scores',modelScores);
-            elseif (p > 1) && (p < 4)
-                figure('Name',seTypes{p},'NumberTitle','off');
-                create_seq_eff_plot(data(fly).(seTypes{p}).',[],'errors',data(fly).(errorNames{p}).');
-            else% no errors for latencies
-                figure('Name',seTypes{p},'NumberTitle','off');
-                create_seq_eff_plot(data(fly).(seTypes{p}).',[]);
+                figure('Name',[seTypes{p} '_fly_' num2str(fly)],'NumberTitle','off');
+                create_seq_eff_plot(data(fly).PROFILE.(seTypes{p}).',modelFit,'errors',data(fly).ERROR.(seTypes{p}).','scores',modelScores);
+            else
+                figure('Name',[seTypes{p} '_fly_' num2str(fly)],'NumberTitle','off');
+                create_seq_eff_plot(data(fly).PROFILE.(seTypes{p}).',[],'errors',data(fly).ERROR.(seTypes{p}).');
             end
 
             saveas(gcf,[ resultsDirectory directoryNames{p} '/' seTypes{p} '_fly' num2str(fly) '.png']);

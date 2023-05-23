@@ -8,12 +8,12 @@ addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
 addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
 addpath('../Functions');
 
-load slrp_lrpr
+% load slrp_lrpr
 
-load results
+% load results
 
 % these are the standard ALT/REP components from the literature (Jentzsch 2002)
-lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
+% lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
 
 %% type of analysis
 
@@ -24,6 +24,9 @@ analysisType = 1;
 focusPeak = 5;
 
 %% toggles
+
+%error method (0 - a la Bruno and Matt; 1- propagation )
+errorMethod = 0;
 
 % fit model
 fitModel = 1;
@@ -82,7 +85,7 @@ flySet = unique(whichFly);
 chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
-chosenFlies = chosenFlies(1:2);
+% chosenFlies = chosenFlies(1:2);
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
@@ -165,7 +168,7 @@ for b = find(chosenOnes)
         PHOT(1,:) = -PHOT(1,:); 
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
-
+ 
 %     PHOT(3,:) = -PHOT(3,:);
     
     % butterworth filter LFP
@@ -234,9 +237,6 @@ end
 
 %% analyse data per fly and whether experiment is lit or unlit
 
-% fit options (choices here are historical but keeping them for now)
-options = optimset('Algorithm','interior-point','FinDiffType','central');
-
 for fly = chosenFlies
        
    % index of the blocks belonging to this fly if they are to be
@@ -259,46 +259,35 @@ for fly = chosenFlies
    end
    
    FLIES(fly) = R; %#ok<SAGROW>
-
-   % dump results in a structure to be saved in the end (may need to improve this)
-%    results.(struct_name)(n_fly).seq_eff_profile = (R.amplitudeSEs).';
    
 end
-
-% save('results','results');
 
 %% fit individual flies (can easily be expanded to include fits not just to amplitude)
 
 if fitModel
-    
     for fly = chosenFlies
-%                [x,~] = fmincon(@(x) least_squares_exp_filters(x(1),x(2),x(3),R.amplitudeSEs.'),[0 1 0.5],[],[],[],[],[-inf  -inf 0],[inf inf 1],[],options); %#ok<UNRCH>
-
-        % fit to a linear combination of SE components 
-        [x,~] = fmincon(@(x) least_squares_slrp_lrpr_weird(x(1),x(2),x(3),x(4),slrp,lrpr,weird,FLIES(fly).amplitudeSEs.'),[1 1 0 0],[],[],[],[],[-inf  -inf 0 -inf],[inf inf 0 inf],[],options);
-
-        FLIES(fly).FIT.model_fit_amplitude = x(4) + x(1)*slrp + x(2)*lrpr + x(3)*weird;
-        FLIES(fly).FIT.fit_params = x;
-   
+        FLIES(fly).FIT = fitFlyModel(FLIES(fly));
     end
-%    results.(struct_name)(n_fly).model_fit = FLIES(fly).FITS.model_fit_amplitude;
-%    results.(struct_name)(n_fly).fit_params = x;
 end
 
-%% plot sequential dependencies per fly
+%% plot sequential dependencies per fly (if model results exist they are plotted)
 
 if plotIndividualFlies
-    
     plotFlies(FLIES, chosenFlies, plotSelector, resultsDirectory);
-
 end
 
 %% calculate SEs for all flies by averaging SE profiles
 
 if length(chosenFlies) > 1
-    
-    ALLFLIES = groupFlies(FLIES, chosenFlies);
-
+    ALLFLIES = groupFlies(FLIES, chosenFlies, errorMethod);
 end
 
-%% plot 
+%% fit model to grouped data
+
+if fitModel
+    ALLFLIES.FIT = fitFlyModel(ALLFLIES);
+end
+
+%% plot grouped SE profiles
+
+plotFlies(ALLFLIES,chosenFlies,plotSelector,[resultsDirectory 'All flies/']);

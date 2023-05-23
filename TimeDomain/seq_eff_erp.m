@@ -25,6 +25,9 @@ focusPeak = 5;
 
 %% toggles
 
+%error method (0 - a la Bruno and Matt; 1- propagation )
+errorMethod = 0;
+
 % fit model
 fitModel = 1;
 
@@ -32,7 +35,7 @@ fitModel = 1;
 plotIndividualFlies = 1;
 
 %which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
-plotSelector = [1 1 1 1 1];
+plotSelector = [1 0 0 0 0];
 
 % whether to plot auxiliary plots (some are always plotted)
 aux_plots = 0;
@@ -81,6 +84,9 @@ flySet = unique(whichFly);
 % chosenFlies = setdiff(flySet, [24 25]);
 chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
+
+%for testing
+% chosenFlies = chosenFlies(1:2);
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
@@ -163,7 +169,7 @@ for b = find(chosenOnes)
         PHOT(1,:) = -PHOT(1,:); 
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
-
+ 
 %     PHOT(3,:) = -PHOT(3,:);
     
     % butterworth filter LFP
@@ -254,45 +260,33 @@ for fly = chosenFlies
    end
    
    FLIES(fly) = R; %#ok<SAGROW>
-
-   % dump results in a structure to be saved in the end (may need to improve this)
-%    results.(struct_name)(n_fly).seq_eff_profile = (R.amplitudeSEs).';
    
 end
-
-% save('results','results');
 
 %% fit individual flies (can easily be expanded to include fits not just to amplitude)
 
 if fitModel
-    
     for fly = chosenFlies
-        FIT = fitFlyModel(FLIES(fly));
-        FLIES(fly).FIT = FIT;
+        FLIES(fly).FIT = fitFlyModel(FLIES(fly));
     end
-%    results.(struct_name)(n_fly).model_fit = FLIES(fly).FITS.model_fit_amplitude;
-%    results.(struct_name)(n_fly).fit_params = x;
 end
 
 %% plot sequential dependencies per fly (if model results exist they are plotted)
 
 if plotIndividualFlies
-    
     plotFlies(FLIES, chosenFlies, plotSelector, resultsDirectory);
-
 end
 
 %% calculate SEs for all flies by averaging SE profiles
 
 if length(chosenFlies) > 1
-    ALLFLIES = groupFlies(FLIES, chosenFlies);
+    ALLFLIES = groupFlies(FLIES, chosenFlies, errorMethod);
 end
 
 %% fit model to grouped data
 
 if fitModel
-    FIT = fitFlyModel(ALLFLIES);
-    ALLFLIES.FIT = FIT;
+    ALLFLIES.FIT = fitFlyModel(ALLFLIES);
 end
 
 %% plot grouped SE profiles

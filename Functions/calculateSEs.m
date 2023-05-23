@@ -72,17 +72,20 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
     semNegAmplSEs = sqrt(semMin.^2 + semERPs(1,:).^2);
     
     % put all results into a neat structure  
-    R.amplitudeSEs = amplitudeSEs;
-    R.semAmplSEs = semAmplSEs;
+    R.PROFILE.amplitude = amplitudeSEs;
+    R.ERROR.amplitude = semAmplSEs;
     
-    R.latencyToPeakSEs = latencyToPeakSEs;
-    R.latencyToTroughSEs = latencyToTroughSEs;
+    R.PROFILE.positiveAmplitude = positiveAmplitudeSEs;
+    R.ERROR.positiveAmplitude = semPosAmplSEs;
     
-    R.positiveAmplitudeSEs = positiveAmplitudeSEs;
-    R.semPosAmplSEs = semPosAmplSEs;
+    R.PROFILE.negativeAmplitude = negativeAmplitudeSEs;
+    R.ERROR.negativeAmplitude = semNegAmplSEs;
     
-    R.negativeAmplitudeSEs = negativeAmplitudeSEs;
-    R.semNegAmplSEs = semNegAmplSEs;
+    R.PROFILE.latencyToPeak = latencyToPeakSEs;
+    R.ERROR.latencyToPeak = [];%just to make plotting a bit easier downstream
+    
+    R.PROFILE.latencyToTrough = latencyToTroughSEs;
+    R.ERROR.latencyToTrough = [];
     
     R.meanERPs = meanERPs;
     R.nERPs = nERPs;
