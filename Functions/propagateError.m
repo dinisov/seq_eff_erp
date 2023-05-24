@@ -18,16 +18,25 @@ for fly = 1:length(chosenFlies)
         semNegAmplSEs(:,fly) = FLIES(chosenFlies(fly)).ERROR.negativeAmplitude; 
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%error propagated according to
+%sem(a1*mean_1 + .. + an*mean_n) = sqrt(a1^2*sem_n + ... + an^2*sem_n)
+%for a weigthed mean the a,...,an are nERP1/(nERP1 + ... + nERPn) so
+%sqrt((nERP1/(nERP1 + ... + nERPn))^2*sem_1 + ... + (nERP1/(nERP1 + ... + nERPn))^2*sem_n)
+%or equally
+%%sqrt((1/(nERP1 + ... + nERPn))^2*(nERP1^2*sem_1 + ... + nERP1^2*sem_n))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %calculate errors by propagating errors from individual flies
 for fly = 1:length(chosenFlies)
-        % part of the error propagation calculation (n_A^2*sem_A^2)
+        % part of the error propagation calculation (nERP1^2*sem_1 + ... + nERP1^2*sem_n)
         semAmplSEs(:,fly) = semAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
         semPosAmplSEs(:,fly) = semPosAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
         semNegAmplSEs(:,fly) = semNegAmplSEs(:,fly).^2 * nERPsFly(fly).^2;
 end
 
 %finish calculating error propagation
-% sem_{(n_A*A + n_B*B)/(n_A+n_B)^2} = sqrt(n_A^2/(n_A+n_B)^2 sem_A^2 + n_B^2/(n_A+n_B)^2 sem_B^2)
+%sqrt((1/(nERP1 + ... + nERPn))^2*(nERP1^2*sem_1 + ... + nERP1^2*sem_n))
 semAmplSEs = sqrt(sum(semAmplSEs/(sum(nERPsFly)^2),2));
 semPosAmplSEs = sqrt(sum(semPosAmplSEs/(sum(nERPsFly)^2),2));
 semNegAmplSEs = sqrt(sum(semNegAmplSEs/(sum(nERPsFly)^2),2));

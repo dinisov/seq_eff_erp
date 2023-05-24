@@ -1,16 +1,21 @@
 function ERROR = calculateError(FLIES, chosenFlies)
 
 amplitudeSEs = zeros(16,length(chosenFlies));
-negativeAmplitudeSEs = zeros(16,length(chosenFlies));
 positiveAmplitudeSEs = zeros(16,length(chosenFlies));
+negativeAmplitudeSEs = zeros(16,length(chosenFlies));
 
 %collect profiles in matrix
 for fly = 1:length(chosenFlies)        
-        %sequential effects results
-        amplitudeSEs(:,fly) = FLIES(chosenFlies(fly)).PROFILE.amplitude.';
-        positiveAmplitudeSEs(:,fly) = FLIES(chosenFlies(fly)).PROFILE.positiveAmplitude.';
-        negativeAmplitudeSEs(:,fly) = FLIES(chosenFlies(fly)).PROFILE.negativeAmplitude.';
+    %sequential effects results
+    amplitudeSEs(:,fly) = FLIES(chosenFlies(fly)).PROFILE.amplitude.';
+    positiveAmplitudeSEs(:,fly) = FLIES(chosenFlies(fly)).PROFILE.positiveAmplitude.';
+    negativeAmplitudeSEs(:,fly) = FLIES(chosenFlies(fly)).PROFILE.negativeAmplitude.';
 end
+
+%subtract mean
+amplitudeSEs = amplitudeSEs./mean(amplitudeSEs);
+positiveAmplitudeSEs = positiveAmplitudeSEs./mean(positiveAmplitudeSEs);
+negativeAmplitudeSEs = negativeAmplitudeSEs./mean(negativeAmplitudeSEs);
 
 %onion plot of profiles
 figure; create_seq_eff_plot(amplitudeSEs,[]);

@@ -35,7 +35,7 @@ fitModel = 1;
 plotIndividualFlies = 1;
 
 %which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
-plotSelector = [1 0 0 0 0];
+plotSelector = [0 0 0 0 0];
 
 % whether to plot auxiliary plots (some are always plotted)
 aux_plots = 0;
