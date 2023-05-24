@@ -23,6 +23,13 @@ for fly = 1:length(chosenFlies)
         latencyToTroughSEs(:,fly) = (FLIES(chosenFlies(fly)).PROFILE.latencyToTrough.')*nERPsFly(fly);
 end
 
+%preserve matrices with all profiles
+allProfilesAmplitude = amplitudeSEs;
+allProfilesPositiveAmplitude = positiveAmplitudeSEs;
+allProfilesNegativeAmplitude = negativeAmplitudeSEs;
+allProfilesLatencyToPeak= latencyToPeakSEs;
+allProfilesLatencyToTrough = latencyToTroughSEs;
+
 %divide SE profiles by total number of ERPs to finish weighted average
 amplitudeSEs = sum(amplitudeSEs,2)/sum(nERPsFly);
 positiveAmplitudeSEs = sum(positiveAmplitudeSEs,2)/sum(nERPsFly);
@@ -45,3 +52,9 @@ ALLFLIES.PROFILE.latencyToPeak = latencyToPeakSEs.';
 ALLFLIES.PROFILE.latencyToTrough = latencyToTroughSEs.';
 
 ALLFLIES.nERPsFly = nERPsFly.';
+
+ALLFLIES.allProfilesAmplitude = allProfilesAmplitude;
+ALLFLIES.allProfilesPositiveAmplitude = allProfilesPositiveAmplitude;
+ALLFLIES.allProfilesNegativeAmplitude = allProfilesNegativeAmplitude;
+ALLFLIES.allProfilesLatencyToPeak = allProfilesLatencyToPeak;
+ALLFLIES.allProfilesLatencyToTrough = allProfilesLatencyToTrough;
