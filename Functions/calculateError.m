@@ -20,6 +20,9 @@ negativeAmplitudeSEs = negativeAmplitudeSEs-mean(negativeAmplitudeSEs);
 %onion plot of profiles
 figure; create_seq_eff_plot(amplitudeSEs,[]);
 
+%do ANOVA on subtracted mean data (for amplitude)
+anova1(amplitudeSEs.');
+
 semAmplSEs = std(amplitudeSEs,[],2)/sqrt(length(chosenFlies));
 semPosAmplSEs = std(positiveAmplitudeSEs,[],2)/sqrt(length(chosenFlies));
 semNegAmplSEs = std(negativeAmplitudeSEs,[],2)/sqrt(length(chosenFlies));
