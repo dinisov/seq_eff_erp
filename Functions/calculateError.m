@@ -13,9 +13,9 @@ for fly = 1:length(chosenFlies)
 end
 
 %subtract mean
-amplitudeSEs = amplitudeSEs./mean(amplitudeSEs);
-positiveAmplitudeSEs = positiveAmplitudeSEs./mean(positiveAmplitudeSEs);
-negativeAmplitudeSEs = negativeAmplitudeSEs./mean(negativeAmplitudeSEs);
+amplitudeSEs = amplitudeSEs-mean(amplitudeSEs);
+positiveAmplitudeSEs = positiveAmplitudeSEs-mean(positiveAmplitudeSEs);
+negativeAmplitudeSEs = negativeAmplitudeSEs-mean(negativeAmplitudeSEs);
 
 %onion plot of profiles
 figure; create_seq_eff_plot(amplitudeSEs,[]);
