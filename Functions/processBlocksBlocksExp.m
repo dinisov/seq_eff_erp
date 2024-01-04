@@ -4,8 +4,9 @@
 function R = processBlocksBlocksExp(blocks, aux_plots)
 
     %% load peak finder (Matt's code)
-    toolPath = 'D:\group_swinderen\Matthew\Scripts\toolboxes';
-    addpath([toolPath filesep 'basefindpeaks']);
+%     toolPath = 'D:\group_swinderen\Matthew\Scripts\toolboxes';
+%     addpath([toolPath filesep 'basefindpeaks']);
+    addpath('..\..\Scripts\Toolboxes\basefindpeaks\');
     
     n_blocks = length(blocks);
 

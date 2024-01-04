@@ -53,8 +53,8 @@ skipExistingFiles = 1; %Whether to skip analysis of already processed files
 %paths
 %addpath(genpath(['D:\group_swinderen\Matthew\Scripts\toolboxes\TDTMatlabSDK'])) %Required
 %addpath(genpath(['D:\group_swinderen\Matthew\Scripts\toolboxes\basefindpeaks']))
-addpath(genpath(['D:\group_swinderen\Dinis\Scripts\Toolboxes\TDTMatlabSDK'])) %Required
-addpath(genpath(['D:\group_swinderen\Dinis\Scripts\Toolboxes\basefindpeaks']))
+addpath(genpath(['..\Scripts\Toolboxes\TDTMatlabSDK'])) %Required
+addpath(genpath(['..\Scripts\Toolboxes\basefindpeaks']))
 %cd(raw_path);
 
 %Begin actual processing
