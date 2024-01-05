@@ -4,18 +4,26 @@ function R = analyseSequentialEffects(blocks, aux_plots)
 
     n_back = 5;  %TODO: make n_back variable
     
-    blocks = sortSEs(blocks, n_back, aux_plots);
+    % sort according to sequence
+    blocks = sortSEs(blocks, n_back);
     
     window = blocks(1).window;%WARNING: we can only merge blocks with windows of same size
     
-    %% group blocks
-    [allERPs, allPHOTs, goodTrials] = groupBlocks(blocks,window,n_back);
+    % group blocks
+    [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,window,n_back);
 
-    %% get rid of bad trials (trials with too long gaps between peaks)
-    allERPs = allERPs(:,:,logical(goodTrials));
-    allPHOTs = allPHOTs(:,:,logical(goodTrials));
+    %TODO: find way to handle errors in block experiments
+    if isfield(blocks,'focusPeaks')
+        % get rid of all trials except the last one in each train
+        allERPs = allERPs(:,:,logical(focusPeaks));
+        allPHOTs = allPHOTs(:,:,logical(focusPeaks));
+    else
+        % get rid of bad trials (trials with too long gaps between peaks)
+        allERPs = allERPs(:,:,logical(goodTrials));
+        allPHOTs = allPHOTs(:,:,logical(goodTrials));
+    end
     
-    %% remove all ERPs with NaNs (from "shaving")
+    % remove all ERPs with NaNs (from "shaving")
     allERPs = allERPs(:,:,~isnan(sum(squeeze(sum(allERPs,2)))));
     
     %% onion plots

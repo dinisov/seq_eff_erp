@@ -18,7 +18,7 @@ addpath('..\Functions');
 %% type of analysis
 
 % 1 - regular SEs; 2 - block experiments
-analysisType =1;
+analysisType = 2;
 
 % if analysisType is 2, choose which stimulus to look in the train (starting at 5 up to train length)
 focusPeak = 5;
@@ -38,10 +38,10 @@ plotIndividualFlies = 1;
 plotSelector = [1 0 0 0 0];
 
 % whether to plot auxiliary plots (some are always plotted)
-aux_plots = 0;
+aux_plots = 1;
 
 %% load data
-homeDirectory = '../..';
+homeDirectory = '../../../Bruno';
 
 resultsDirectory = [homeDirectory '/Results/12dot5Hz/'];
 
@@ -70,19 +70,19 @@ fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true
 %fly_record = fly_record(contains(fly_record.Comments,'red1','IgnoreCase',true),:);
 
 %remove block paradigm flies
-fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
+% fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
 %% 
- fly_record = fly_record(contains(fly_record.Comments,'recovery2','IgnoreCase',true),:);
+%  fly_record = fly_record(contains(fly_record.Comments,'recovery2','IgnoreCase',true),:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-%chosenFlies = [126];
+chosenFlies = [39];
 % chosenFlies = setdiff(flySet, [24 25]);
- chosenFlies = flySet; % choose all flies
+%  chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
 %for testing
@@ -92,8 +92,8 @@ flySet = unique(whichFly);
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-%chosenBlocks = [9];
- chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+chosenBlocks = [43];
+%  chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
 
@@ -246,18 +246,7 @@ for fly = chosenFlies
 
    disp(['Processing fly #' num2str(fly)]);
 
-   switch analysisType
-       case 1
-
-           if thisFlyBlocks(1).PHOTType == 1
-            R = processBlocksOneChannel(thisFlyBlocks, aux_plots,'time');
-           elseif thisFlyBlocks(1).PHOTType == 2
-            R = processBlocks(thisFlyBlocks, aux_plots,'time');  
-           end
-
-       case 2
-            R = processBlocksBlocksExp(thisFlyBlocks, aux_plots);
-   end
+   R = processBlocks(thisFlyBlocks, aux_plots,'time');
    
    FLIES(fly) = R; %#ok<SAGROW>
    

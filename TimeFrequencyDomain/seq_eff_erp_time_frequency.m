@@ -4,12 +4,12 @@ clear;
 
 %% load auxiliary functions
 addpath('../');
-addpath('D:\group_swinderen\Dinis\Scripts\Global functions\');
-addpath('D:\group_swinderen\Dinis\Scripts\Indexes and legends\');
+addpath('D:\group_vanswinderen\Dinis\Scripts\Global functions\');
+addpath('D:\group_vanswinderen\Dinis\Scripts\Indexes and legends\');
 addpath('../Functions');
 
 %% load data
-homeDirectory = '../..';
+homeDirectory = '../../../Bruno';
 
 resultsDirectory = [homeDirectory '\Results_Time_Frequency'];
 
@@ -36,21 +36,21 @@ fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true
 fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
 
 %remove block paradigm flies
-fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
+% fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [46];
+chosenFlies = [39];
 % chosenFlies = flySet; % choose all flies
 
 % choose which blocks to run
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [6];
+chosenBlocks = [43];
 % chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -90,7 +90,7 @@ light_on_dark = strcmp(fly_record.Condition,'LIT').';
 LFPsd = fly_record.LFPsd;
 
 %% whether to plot auxiliary plots
-aux_plots = 0;
+aux_plots = 1;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -193,4 +193,4 @@ for fly = chosenFlies
  
 end
 
-save(['data_flies_time_frequency_wavelet_' frequency],'FLIES');
+% save(['data_flies_time_frequency_wavelet_' frequency],'FLIES');

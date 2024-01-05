@@ -1,4 +1,4 @@
-function [allERPs, allPHOTs, goodTrials] = groupBlocks(blocks,window,n_back)
+function [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,window,n_back)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -28,7 +28,17 @@ function [allERPs, allPHOTs, goodTrials] = groupBlocks(blocks,window,n_back)
         start_index = start_index + size(blocks(b).ERPS,3);
 
         goodTrials = [goodTrials 1-blocks(b).badTrials]; %#ok<AGROW> 
-
+        
     end
+    
+    if isfield(blocks,'focusPeaks')
+        focusPeaks = [];
+        for b = 1:n_blocks
+            focusPeaks = [focusPeaks blocks(b).focusPeaks]; %#ok<AGROW> 
+        end
+    else
+        focusPeaks = [];
+    end
+
 end
 

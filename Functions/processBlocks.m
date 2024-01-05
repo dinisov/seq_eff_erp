@@ -1,85 +1,41 @@
 % this function processes a set of blocks, usually corresponding to a
 % single fly and condition; it concatenates the data for individual blocks
-% and conditions (LIT/DARK)
+% and conditions (e.g. LIT/DARK)
 function R = processBlocks(blocks, aux_plots, mode)
-    
-    n_blocks = length(blocks);
 
-    for b = 1:n_blocks
-        
-        PHOT1 = blocks(b).PHOT(1,:)/max(blocks(b).PHOT(1,:));
-        PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); 
-        resampleFreq = blocks(b).resampleFreq;
-        ISI = blocks(b).ISI;
-        PHOT1 = movmax(PHOT1,[20 20]);
-        PHOT2 = movmax(PHOT2,[20 20]);
-        blocks(b).PHOT(1,:) = PHOT1;
-        blocks(b).PHOT(2,:) = PHOT2;
-        peakThreshold = blocks(b).peakThreshold;
+blocks = calculatePeaks(blocks, aux_plots);
 
-        %find beginning of stimuli
-        LOCS_PHOT1 = find(diff(PHOT1 > peakThreshold) > 0) + 1;
-        LOCS_PHOT2 = find(diff(PHOT2 > peakThreshold) > 0) + 1;
+blocks = inferRandomSequence(blocks);
 
-        %first round of double peak detection
-        badLOCS_PHOT1 = LOCS_PHOT1([false diff(LOCS_PHOT1) < (0.8*ISI*resampleFreq)]);
-        badLOCS_PHOT2 = LOCS_PHOT2([false diff(LOCS_PHOT2) < (0.8*ISI*resampleFreq)]);
+blocks = calculateBadTrials(blocks, aux_plots);
 
-        if aux_plots
-            figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); 
-            figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); 
-        end
-        
-        % fuse locations of PHOT1 and PHOT2 (I figured this was quicker than concatenating and sorting)
-        LOCS = zeros(size(PHOT1));
-        LOCS(LOCS_PHOT1) = LOCS_PHOT1; LOCS(LOCS_PHOT2) = LOCS_PHOT2;
-        LOCS = LOCS(logical(LOCS));
-        
-        %we must get rid of trials where we could not get a peak and the
-        %subsequent four trials
-        badLOCS = LOCS([false diff(LOCS) > (1.2*ISI*resampleFreq)] | [false diff(LOCS) < (0.8*ISI*resampleFreq)]); % index of trials where gap was too long or too short
+blocks = findFocusLocs(blocks);
 
-        % infer random sequence (0 - left; 1 - right)
-        randomSequence = zeros(size(PHOT1(1,:)));
-        randomSequence(LOCS_PHOT1) = 2; randomSequence(LOCS_PHOT2) = 1;
+% peak detection figure
+if aux_plots
 
-        %create logical vector of which trials are bad
-        badTrials = zeros(size(PHOT1(1,:)));
-        badTrials(badLOCS) = 1;
+    for b = 1:length(blocks)
+        figure;
+        hold on
 
-        badTrials = badTrials(logical(randomSequence));
-        randomSequence = randomSequence(logical(randomSequence)) - 1;
-
-        %add four trials subsequent to the bad trials vector
-        indBadTrials = find(badTrials);
-        badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
-        
-        percentDataLost = nnz(badTrials)/length(badTrials);
-        disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
-        
-        % histogram of interval between peaks (should have one tight peak)
-        if aux_plots
-            figure;
-            histogram(diff(LOCS));
+        if blocks(b).PHOTType == 1
+            plot(blocks(b).PHOT(1,:));% PHOT3
+            scatter(blocks(b).LOCS_PHOT1,blocks(b).PKS_PHOT1);
+            scatter(blocks(b).LOCS_PHOT2,blocks(b).PKS_PHOT2);
+        elseif blocks(b).PHOTType == 2
+            plot(blocks(b).PHOT(1,:)); plot(blocks(b).PHOT(2,:));
+            scatter(blocks(b).LOCS_PHOT1,zeros(size(blocks(b).LOCS_PHOT1)),'b','filled');
+            scatter(blocks(b).LOCS_PHOT2,zeros(size(blocks(b).LOCS_PHOT2)),'r','filled');
         end
 
-        % add processed data to original blocks structure
-        blocks(b).badTrials = badTrials;
-        blocks(b).LOCS = LOCS;
-        blocks(b).randomSequence = randomSequence;
-        
-        % peak detection figure
-        if aux_plots
-            figure
-            hold on
-            plot(PHOT1); plot(PHOT2);
-            scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled');
-            scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled');
-
-            scatter(badLOCS, zeros(size(badLOCS)),40,'m','filled');
+        if isfield(blocks,'focusPeaks')
+            scatter(blocks(b).focusLocs, zeros(size(blocks(b).focusLocs)),40,'m','filled');
+        else
+            scatter(blocks(b).badLOCS, zeros(size(blocks(b).badLOCS)),40,'m','filled');
         end
-            
     end
+
+end
 
 switch mode
     case 'time'

@@ -1,5 +1,5 @@
-function blocks = sortSEs(blocks, n_back, aux_plots)
-%this function sorts ERPs according to the past sequence of events and 
+function blocks = sortSEs(blocks, n_back)
+%this function sorts ERPs according to the past sequence of events 
 
     n_seq = 2^n_back;
 
