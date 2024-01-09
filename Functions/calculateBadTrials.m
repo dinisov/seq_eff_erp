@@ -24,7 +24,7 @@ for b = 1:length(blocks)
         badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
 
         percentDataLost = nnz(badTrials)/length(badTrials);
-        disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '%']);
+        disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '% (ignore if block experiment)']);
 
         % add processed data to original blocks structure
         blocks(b).badLOCS = badLOCS;

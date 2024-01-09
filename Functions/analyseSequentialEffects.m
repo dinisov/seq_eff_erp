@@ -7,9 +7,9 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     % sort according to sequence
     blocks = sortSEs(blocks, n_back);
     
-    window = blocks(1).window;%WARNING: we can only merge blocks with windows of same size
+    window = blocks(1).window;
     
-    % group blocks
+    % group blocks (WARNING: only possible if window is the same for all blocks)
     [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,window,n_back);
 
     %TODO: find way to handle errors in block experiments
@@ -69,6 +69,8 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     allPHOTs = allPHOTs(:,seq_eff_order(n_back),:);
     
     R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
+    
+    R = timeFrequencySpectrum(R, blocks);
     
     %% ANOVA
     SEAnova(R);

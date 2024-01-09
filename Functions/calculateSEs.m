@@ -8,8 +8,6 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
         %mean photodiode traces
         allPHOTs(allPHOTs == 0) = nan;
         meanPHOTs = mean(allPHOTs, 3, 'omitnan');
-%         meanPHOTs = meanPHOTs(:,seq_eff_order(n_back));
-        
         R.meanPHOTs = meanPHOTs;
     end
     
@@ -23,11 +21,6 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
     % SEM for each sequence (this outputs a t X seq matrix of SDs)
     sdERPs = std(allERPs,[],3,'omitnan');
     semERPs = sdERPs ./ sqrt(nERPs);% broadcasting
-    
-    % reorder according to the literature
-%     meanERPs = meanERPs(:,seq_eff_order(n_back));
-%     semERPs = semERPs(:,seq_eff_order(n_back));
-%     nERPs = nERPs(seq_eff_order(n_back));
     
     if aux_plots
         figure;

@@ -1,0 +1,154 @@
+% analyse sequential dependencies in fly ERPs
+close all;
+clear;
+
+%% load auxiliary functions
+addpath('../');
+addpath('..\Scripts\Global functions\');
+addpath('..\Scripts\Indexes and legends\');
+addpath('Functions');
+
+% load peak finder (Matt's code)
+addpath('..\Scripts\Toolboxes\basefindpeaks\');
+
+% load slrp_lrpr
+
+% load results
+
+% these are the standard ALT/REP components from the literature (Jentzsch 2002)
+% lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
+
+%% type of analysis
+
+% if block experiment, choose which stimulus to look in the train (starting at 5 up to train length)
+focusPeak = 5;
+
+% whether to perform time-frequency analysis (takes a long time)
+timeFrequency = 1;
+
+%% toggles
+
+%error method (0 - a la Bruno and Matt; 1- propagation )
+errorMethod = 0;
+
+% fit model
+fitModel = 1;
+
+%plot individual flies?
+plotIndividualFlies = 1;
+
+%which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
+plotSelector = [1 1 1 0 0];
+
+% whether to plot auxiliary plots (some are always plotted)
+aux_plots = 1;
+
+%% load data
+homeDirectory = '../../Bruno';
+
+resultsDirectory = [homeDirectory '/Results/12dot5Hz/'];
+
+struct_name = 'freq12dot5hz';
+
+fly_record = readtable([homeDirectory '/Fly record/fly_record']);
+
+%% restrict to some frequency
+% fly_record = fly_record(fly_record.Frequency == 12.5,:);
+
+%% restrictions on data of interest; always check this before running
+
+% remove DARK flies
+fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
+
+% remove flies to be excluded (usually because data is unsound for some obvious reason)
+fly_record = fly_record(~logical(fly_record.Exclude),:);
+
+%remove jittering flies
+fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
+
+%remove red light flies
+% fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
+
+%restrict to red1 flies
+%fly_record = fly_record(contains(fly_record.Comments,'red1','IgnoreCase',true),:);
+
+%remove block paradigm flies
+% fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
+
+% 
+%  fly_record = fly_record(contains(fly_record.Comments,'recovery2','IgnoreCase',true),:);
+
+%% choose flies and experiments
+whichFly =      fly_record.Fly.';
+flySet = unique(whichFly);
+
+% choose which flies to run here
+chosenFlies = [39];
+% chosenFlies = setdiff(flySet, [24 25]);
+%  chosenFlies = flySet; % choose all flies
+% chosenFlies = setdiff(chosenFlies, 24:29);
+
+%for testing
+% chosenFlies = chosenFlies(1:2);
+
+% choose which blocks to run
+%NOTE: while unlikely as a request, this does not handle the case where two
+%flies have a block with the same number but we would like to look at both
+%flies but not one of the blocks with the same number
+chosenBlocks = [23];
+%  chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
+
+chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
+
+%% add data to structure according to block
+% the structure may be largely empty if analysing only one fly
+% the index here is that of the fly_record table, *not* the original block number
+
+BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,homeDirectory,aux_plots);
+
+%% analyse data for each fly (can include multiple blocks)
+% IMPORTANT: make sure window is the same for all blocks belonging to the
+% same fly
+for fly = chosenFlies
+       
+   % index of the blocks belonging to this fly if they are to be
+   % included in the analysis
+   thisFlyBlocks = BLOCKS(whichFly == fly & chosenOnes);
+
+   disp(['Processing fly #' num2str(fly)]);
+
+   R = processBlocks(thisFlyBlocks, aux_plots);
+   
+   FLIES(fly) = R; %#ok<SAGROW>
+   
+end
+
+%% fit individual flies (can easily be expanded to include fits not just to amplitude)
+if fitModel
+    for fly = chosenFlies
+        FLIES(fly).FIT = fitFlyModel(FLIES(fly));
+    end
+end
+
+%% plot sequential dependencies per fly (if model results exist they are plotted)
+if plotIndividualFlies
+    plotFlies(FLIES, chosenFlies, plotSelector, resultsDirectory);
+end
+
+%% calculate SEs for all flies by averaging SE profiles
+if length(chosenFlies) > 1
+    ALLFLIES = groupFlies(FLIES, chosenFlies, errorMethod);
+    
+    % fit model to grouped data
+    if fitModel
+        ALLFLIES.FIT = fitFlyModel(ALLFLIES);
+    end
+    
+    % plot grouped SE profiles
+    plotFlies(ALLFLIES,chosenFlies,plotSelector,[resultsDirectory 'All flies/']);
+end
+
+%% time-frequency analysis
+if timeFrequency
+    
+end

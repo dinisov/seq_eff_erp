@@ -10,9 +10,6 @@ for b = 1:length(blocks)
     
     % one photodiode (different size peaks)
     if blocks(b).PHOTType == 1
-        
-        %% load peak finder (Matt's code)
-        addpath('..\..\Scripts\Toolboxes\basefindpeaks\');
 
         PHOT = -blocks(b).PHOT(3,:)/max(blocks(b).PHOT(3,:));
 

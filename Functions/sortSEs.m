@@ -15,7 +15,7 @@ function blocks = sortSEs(blocks, n_back)
         if isfield(blocks,'focusPeaks')
             focusPeaks = blocks.focusPeaks;
         end
-            
+        
         window = floor([-blocks(b).time_before_peak*resampleFreq, blocks(b).time_after_peak*resampleFreq]);
 
         sequenceLength = length(randomSequence);

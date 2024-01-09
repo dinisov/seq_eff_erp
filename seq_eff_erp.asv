@@ -4,9 +4,12 @@ clear;
 
 %% load auxiliary functions
 addpath('../');
-addpath('..\..\Scripts\Global functions\');
-addpath('..\..\Scripts\Indexes and legends\');
-addpath('..\Functions');
+addpath('..\Scripts\Global functions\');
+addpath('..\Scripts\Indexes and legends\');
+addpath('Functions');
+
+% load peak finder (Matt's code)
+addpath('..\Scripts\Toolboxes\basefindpeaks\');
 
 % load slrp_lrpr
 
@@ -17,11 +20,11 @@ addpath('..\Functions');
 
 %% type of analysis
 
-% 1 - regular SEs; 2 - block experiments
-analysisType = 1;
-
-% if analysisType is 2, choose which stimulus to look in the train (starting at 5 up to train length)
+% if block experiment, choose which stimulus to look in the train (starting at 5 up to train length)
 focusPeak = 5;
+
+% analysis mode ('time' or 'timefrequency')
+analysisMode = 'timefrequency';
 
 %% toggles
 
@@ -35,13 +38,13 @@ fitModel = 1;
 plotIndividualFlies = 1;
 
 %which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
-plotSelector = [1 0 0 0 0];
+plotSelector = [1 1 1 0 0];
 
 % whether to plot auxiliary plots (some are always plotted)
 aux_plots = 1;
 
 %% load data
-homeDirectory = '../../../Bruno';
+homeDirectory = '../../Bruno';
 
 resultsDirectory = [homeDirectory '/Results/12dot5Hz/'];
 
@@ -50,7 +53,7 @@ struct_name = 'freq12dot5hz';
 fly_record = readtable([homeDirectory '/Fly record/fly_record']);
 
 %% restrict to some frequency
-fly_record = fly_record(fly_record.Frequency == 12.5,:);
+% fly_record = fly_record(fly_record.Frequency == 12.5,:);
 
 %% restrictions on data of interest; always check this before running
 
@@ -72,7 +75,7 @@ fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true
 %remove block paradigm flies
 % fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
-%% 
+% 
 %  fly_record = fly_record(contains(fly_record.Comments,'recovery2','IgnoreCase',true),:);
 
 %% choose flies and experiments
@@ -80,7 +83,7 @@ whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [23];
+chosenFlies = [39];
 % chosenFlies = setdiff(flySet, [24 25]);
 %  chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
@@ -92,43 +95,10 @@ chosenFlies = [23];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [9];
+chosenBlocks = [43];
 %  chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
-
-%% experimental parameters in fly_record
-
-% inter-stimulus interval (ISI in fly_record is the stimulus-off period, 
-%i.e. the time between the end of the stimulus and the beginning of the
-%next one
-ISI = fly_record.ISI + fly_record.SDT; 
-SDT = fly_record.SDT; % stimulus duration time
-
-% relevant LFP channel
-LFPChannel = fly_record.LFPChannel;
-
-% whether to do a 1 or 2 photodiode analysis
-% 2 is better currently but 1 is more universal/convenient
-PHOTType = fly_record.PHOTType;
-
-% for block experiments
-interBlockPeriod = fly_record.InterBlockPeriod;
-blockLength = fly_record.BlockLength;
-
-%this is the window to look at around each peak
-time_before_peak = fly_record.SDT.*fly_record.Window1;
-time_after_peak = fly_record.ISI.*fly_record.Window2;
-
-%peak detection threshold
-peak_threshold = fly_record.Threshold;
-
-%light_on_dark = 1 means a bright bar over a dark background was used
-light_on_dark = strcmp(fly_record.Condition,'LIT').';
-% chosenOnes = 1-light_on_dark; % choose all lit flies
-
-%number of sd to trim from LFP
-LFPsd = fly_record.LFPsd;
 
 %% add data to structure according to block
 % the structure may be largely empty if analysing only one fly
@@ -146,7 +116,7 @@ for b = find(chosenOnes)
     load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
     
     % photodiode and lfp data
-    LFP = EEG.LFP1.data(LFPChannel(b),:);
+    LFP = EEG.LFP1.data(fly_record.LFPChannel(b),:);
     PHOT = EEG.PHOT.data;
     rawPHOT = EEG.PHOT.data; %preserve raw unfiltered photodiode data
     resampleFreq = EEG.srate;
@@ -162,35 +132,40 @@ for b = find(chosenOnes)
     
     % correct for the fact that the left photodiode is inverted
     % such that peaks are always upward for peak detection
-    if light_on_dark(b)
+    if strcmp(fly_record.Condition(b),'LIT')
         PHOT(2,:) = -PHOT(2,:);
         rawPHOT(2,:) = -rawPHOT(2,:);
     else
         PHOT(1,:) = -PHOT(1,:); 
         rawPHOT(1,:) = -rawPHOT(1,:);
     end
- 
+    
 %     PHOT(3,:) = -PHOT(3,:);
     
+    LFP = filterLFP(LFP, re)
+
+
     % butterworth filter LFP
     [b_f,a_f] = butter(6,100/resampleFreq*2);
     LFP = filter(b_f,a_f,LFP.').';
 
+    %notch filter at 50Hz
     wo = 50/(resampleFreq/2);  
     bw = wo/10;
     [b_f,a_f] = iirnotch(wo,bw);
 
     LFP = filter(b_f,a_f,LFP.').';
-        
+    
+    % savitsky-golay filter
     LFP = smoothdata(LFP,'sgolay');
 
     PHOT = trim_phot_outliers(PHOT, 12);
     
     %% remove anything from LFP beyond some sd
         
-    if ~isnan(LFPsd(b))
+    if ~isnan(fly_record.LFPsd(b))
     
-        n_sd_lfp = LFPsd(b);
+        n_sd_lfp = fly_record.LFPsd(b);
         sd_lfp = std(LFP); mean_lfp = mean(LFP);
         
         % do a nice plot
@@ -221,23 +196,33 @@ for b = find(chosenOnes)
     BLOCKS(b).resampleFreq = resampleFreq;
     
     % only for block experiments
-    BLOCKS(b).interBlockPeriod = interBlockPeriod(b);
+    BLOCKS(b).interBlockPeriod = fly_record.InterBlockPeriod(b);
     BLOCKS(b).focusPeak = focusPeak;
-    BLOCKS(b).blockLength = blockLength(b);
+    BLOCKS(b).blockLength = fly_record.BlockLength(b);
     
-    BLOCKS(b).time_before_peak = time_before_peak(b);
-    BLOCKS(b).time_after_peak = time_after_peak(b);
-    BLOCKS(b).ISI = ISI(b);
-    BLOCKS(b).SDT = SDT(b);
-    BLOCKS(b).peakThreshold = peak_threshold(b);
+    % if this is a block experiment and the focus peak is the last in the
+    % train, disregard the window setting and look at the entire period
+    % between blocks (both for time-domain and time-frequency analyses)
+    if ~isnan(fly_record.BlockLength(b)) && (focusPeak == BLOCKS(b).blockLength) 
+        BLOCKS(b).time_before_peak = 0;
+        BLOCKS(b).time_after_peak = fly_record.InterBlockPeriod(b);
+    else
+        BLOCKS(b).time_before_peak = fly_record.SDT(b).*fly_record.Window1(b);
+        BLOCKS(b).time_after_peak = fly_record.ISI(b).*fly_record.Window2(b);
+    end
     
-    %type of photodiode analysis
-    BLOCKS(b).PHOTType = PHOTType(b);
+    BLOCKS(b).ISI = fly_record.ISI(b) + fly_record.SDT(b);
+%     BLOCKS(b).SDT = fly_record.SDT(b);
+    BLOCKS(b).peakThreshold = fly_record.Threshold(b);
+    
+    % whether to do a 1 or 2 photodiode analysis
+    % 2 is better currently but 1 is more universal/convenient
+    BLOCKS(b).PHOTType = fly_record.PHOTType(b);
 
 end
 
-%% analyse data per fly and whether experiment is lit or unlit
-
+%% analyse data for each fly (can include multiple blocks)
+% IMPORTANT: make sure window is the same for all blocks
 for fly = chosenFlies
        
    % index of the blocks belonging to this fly if they are to be
@@ -246,21 +231,13 @@ for fly = chosenFlies
 
    disp(['Processing fly #' num2str(fly)]);
 
-   switch analysisType
-       case 1
-                R = processBlocks(thisFlyBlocks, aux_plots,'time');  
-           end
-
-       case 2
-            R = processBlocksBlocksExp(thisFlyBlocks, aux_plots);
-   end
+   R = processBlocks(thisFlyBlocks, aux_plots);
    
    FLIES(fly) = R; %#ok<SAGROW>
    
 end
 
 %% fit individual flies (can easily be expanded to include fits not just to amplitude)
-
 if fitModel
     for fly = chosenFlies
         FLIES(fly).FIT = fitFlyModel(FLIES(fly));
@@ -268,13 +245,11 @@ if fitModel
 end
 
 %% plot sequential dependencies per fly (if model results exist they are plotted)
-
 if plotIndividualFlies
     plotFlies(FLIES, chosenFlies, plotSelector, resultsDirectory);
 end
 
 %% calculate SEs for all flies by averaging SE profiles
-
 if length(chosenFlies) > 1
     ALLFLIES = groupFlies(FLIES, chosenFlies, errorMethod);
     
@@ -285,5 +260,6 @@ if length(chosenFlies) > 1
     
     %% plot grouped SE profiles
     plotFlies(ALLFLIES,chosenFlies,plotSelector,[resultsDirectory 'All flies/']);
-    
 end
+
+%% time-frequency analysis
