@@ -20,7 +20,7 @@ f_limits = [0 300];
 
 f = FLIES(1).f;
 
-f_reduced = f(f > f_limits(1) & f < f_limits(2));
+% f_reduced = f(f > f_limits(1) & f < f_limits(2));
 
 %for plots
 y_ticks = 1:2:length(f);

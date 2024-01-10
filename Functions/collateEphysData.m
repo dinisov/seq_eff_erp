@@ -1,4 +1,4 @@
-function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,homeDirectory,aux_plots)
+function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots)
 %collateEphysData Summary of this function goes here
 %   Detailed explanation goes here
     BLOCKS = struct;
@@ -29,7 +29,7 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,homeDirectory
 
         % correct for the fact that the left photodiode is inverted
         % such that peaks are always upward for peak detection
-        if strcmp(fly_record.Condition(b),'LIT')
+        if ~contains(fly_record.Comments(b),'dark','IgnoreCase',true)
             PHOT(2,:) = -PHOT(2,:);
             rawPHOT(2,:) = -rawPHOT(2,:);
         else
@@ -71,7 +71,7 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,homeDirectory
         % if this is a block experiment and the focus peak is the last in the
         % train, disregard the window setting and look at the entire period
         % between blocks (both for time-domain and time-frequency analyses)
-        if ~isnan(fly_record.BlockLength(b)) && (focusPeak == BLOCKS(b).blockLength) 
+        if ~isnan(fly_record.BlockLength(b)) && (focusPeak == BLOCKS(b).blockLength) && timeFrequency
             BLOCKS(b).window = [0 fly_record.InterBlockPeriod(b)];
         else
             BLOCKS(b).window = [-fly_record.SDT(b).*fly_record.Window1(b) fly_record.ISI(b).*fly_record.Window2(b)];

@@ -27,10 +27,10 @@ errorMethod = 0;
 % fit model
 fitModel = 1;
 
-% plot individual flies?
+%plot individual flies?
 plotIndividualFlies = 1;
 
-% which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
+%which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
 plotSelector = [1 1 1 0 0];
 
 % whether to plot auxiliary plots (some are always plotted)
@@ -45,42 +45,40 @@ struct_name = 'freq12dot5hz';
 
 fly_record = readtable([homeDirectory '/Fly record/fly_record']);
 
-%% remove flies to be excluded (usually because data is unsound for some obvious reason)
+%% restrict to some frequency
+% fly_record = fly_record(fly_record.Frequency == 12.5,:);
 
+%% restrictions on data of interest; always check this before running
+
+% remove DARK flies
+fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
+
+% remove flies to be excluded (usually because data is unsound for some obvious reason)
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
-%% restrict to some frequency if desired
+%remove jittering flies
+% fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
 
-frequency = [];
+%remove red light flies
+% fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
 
-if ~isempty(frequency)
-    fly_record = fly_record(fly_record.Frequency == frequency,:);
-end
+%restrict to red1 flies
+%fly_record = fly_record(contains(fly_record.Comments,'red1','IgnoreCase',true),:);
 
-%% filter in keywords
+%remove block paradigm flies
+% fly_record = fly_record(~contains(fly_record.Comments,'block','IgnoreCase',true),:);
 
-%see filter out example
-filterIn = {};
-
-if ~isempty(filterIn)
-    fly_record = fly_record(contains(fly_record.Comments,filterIn,'IgnoreCase',true),:);
-end
-
-%% filter out keywords
-
-% cell array of keywords
-filterOut = {'keyword1','keyword2'};
-
-fly_record = fly_record(~contains(fly_record.Comments,filterOut,'IgnoreCase',true),:);
+% 
+%  fly_record = fly_record(contains(fly_record.Comments,'recovery2','IgnoreCase',true),:);
 
 %% choose flies and experiments
 whichFly =      fly_record.Fly.';
 flySet = unique(whichFly);
 
 % choose which flies to run here
-chosenFlies = [39];
+% chosenFlies = [39];
 % chosenFlies = setdiff(flySet, [24 25]);
-%  chosenFlies = flySet; % choose all flies
+ chosenFlies = flySet; % choose all flies
 % chosenFlies = setdiff(chosenFlies, 24:29);
 
 %for testing
@@ -90,7 +88,7 @@ chosenFlies = [39];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [43];
+chosenBlocks = [23];
 %  chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -99,7 +97,7 @@ chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fl
 % the structure may be largely empty if analysing only one fly
 % the index here is that of the fly_record table, *not* the original block number
 
-BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots);
+BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,homeDirectory,aux_plots);
 
 %% analyse data for each fly (can include multiple blocks)
 % IMPORTANT: make sure window is the same for all blocks belonging to the
@@ -144,6 +142,6 @@ if length(chosenFlies) > 1
 end
 
 %% time-frequency analysis
-% if timeFrequency
-%     timeFrequencyAnalysis(FLIES, BLOCKS(1).window, '..');
-% end
+if timeFrequency
+    timeFrequencyAnalysis(FLIES, BLOCKS(1).window, '..');
+end
