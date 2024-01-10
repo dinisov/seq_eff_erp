@@ -23,7 +23,8 @@ f = FLIES(1).f;
 f_reduced = f(f > f_limits(1) & f < f_limits(2));
 
 %for plots
-% y_data = [max(f_reduced) min(f_reduced)];
+y_ticks = 1:2:length(f);
+y_tick_labels = f(y_ticks);
 
 %for preallocation
 fSize = length(f(f > f_limits(1) & f < f_limits(2)));
@@ -94,26 +95,30 @@ for fly = 1:n_flies
         end
 
         figure; title(['SLRP Fly ' num2str(fly)]);
-        imagesc(r_squared_slrp(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
+        imagesc(r_squared_slrp(:,:),'xdata',time_bounds); colorbar; colormap('hot');
+        set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
         saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
 
         figure; title(['LRPR Fly ' num2str(fly)]);
-        imagesc(r_squared_lrpr(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
+        imagesc(r_squared_lrpr,'xdata',time_bounds); colorbar; colormap('hot');
+        set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
         saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
 
         figure; title(['WEIRD Fly ' num2str(fly)]);
-        imagesc(r_squared_weird(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
+        imagesc(r_squared_weird,'xdata',time_bounds); colorbar; colormap('hot');
+        set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
         saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
 
         figure; title(['COMBINED Fly ' num2str(fly)]);
-        imagesc(r_squared_overall(:,:,fly),'xdata',time_bounds,'ydata',[min(f_reduced) max(f_reduced)]); colorbar; colormap('hot');
+        imagesc(r_squared_overall,'xdata',time_bounds); colorbar; colormap('hot');
+        set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
         saveas(gcf,[resultsDirectory 'combined_fly_' num2str(fly) '.png']);
 
-        close all;
+%         close all;
 
 end
  
@@ -179,32 +184,32 @@ end
 %% plot r_squared
 
 %make a tick every x steps
-% y_ticks = 1:2:length(f);
-% y_tick_labels = f(y_ticks);
-% 
-% figure; title('SLRP All');
-% imagesc(r_squared_slrp(:,:),'xdata',time_bounds); colorbar; colormap('hot');
-% set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
-% xlabel('time (ms)'); ylabel('Frequency (Hz)');
-% saveas(gcf,[resultsDirectory 'slrp_all.png']);
-% 
-% figure; title('LRPR All');
-% imagesc(r_squared_lrpr,'xdata',time_bounds); colorbar; colormap('hot');
-% set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
-% xlabel('time (ms)'); ylabel('Frequency (Hz)');
-% saveas(gcf,[resultsDirectory 'lrpr_all.png']);
-% 
-% figure; title('WEIRD All');
-% imagesc(r_squared_weird,'xdata',time_bounds); colorbar; colormap('hot');
-% set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
-% xlabel('time (ms)'); ylabel('Frequency (Hz)');
-% saveas(gcf,[resultsDirectory 'weird_all.png']);
-% 
-% figure; title('COMBINED All ');
-% imagesc(r_squared_overall,'xdata',time_bounds); colorbar; colormap('hot');
-% set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
-% xlabel('time (ms)'); ylabel('Frequency (Hz)');
-% saveas(gcf,[resultsDirectory 'combined_all.png']);
+y_ticks = 1:2:length(f);
+y_tick_labels = f(y_ticks);
+
+figure; title('SLRP All');
+imagesc(r_squared_slrp(:,:),'xdata',time_bounds); colorbar; colormap('hot');
+set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+xlabel('time (ms)'); ylabel('Frequency (Hz)');
+saveas(gcf,[resultsDirectory 'slrp_all.png']);
+
+figure; title('LRPR All');
+imagesc(r_squared_lrpr,'xdata',time_bounds); colorbar; colormap('hot');
+set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+xlabel('time (ms)'); ylabel('Frequency (Hz)');
+saveas(gcf,[resultsDirectory 'lrpr_all.png']);
+
+figure; title('WEIRD All');
+imagesc(r_squared_weird,'xdata',time_bounds); colorbar; colormap('hot');
+set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+xlabel('time (ms)'); ylabel('Frequency (Hz)');
+saveas(gcf,[resultsDirectory 'weird_all.png']);
+
+figure; title('COMBINED All ');
+imagesc(r_squared_overall,'xdata',time_bounds); colorbar; colormap('hot');
+set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+xlabel('time (ms)'); ylabel('Frequency (Hz)');
+saveas(gcf,[resultsDirectory 'combined_all.png']);
 
 %% create plots for difference between combined and slrp/lrpr
 
