@@ -16,8 +16,8 @@ function R = timeFrequencySpectrum(R, blocks)
     R.phaseSEs = phaseSEs;
     R.f = f;
     
-    %TODO: check and automate
-    time_bounds = [-blocks(1).time_before_peak, blocks(1).time_after_peak];
+    % for block experiments, this is set in seq_eff_erp() as [0 InterBlockPeriod]
+    time_bounds = blocks(1).window;
     
     %make a tick every x steps
     y_ticks = 1:2:length(f);

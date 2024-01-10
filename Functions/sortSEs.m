@@ -12,11 +12,12 @@ function blocks = sortSEs(blocks, n_back)
         randomSequence = blocks(b).randomSequence;
         resampleFreq = blocks(b).resampleFreq;
         badTrials = blocks(b).badTrials;
+        
         if isfield(blocks,'focusPeaks')
             focusPeaks = blocks.focusPeaks;
         end
         
-        window = floor([-blocks(b).time_before_peak*resampleFreq, blocks(b).time_after_peak*resampleFreq]);
+        window = floor(resampleFreq*blocks(b).window);
 
         sequenceLength = length(randomSequence);
 
@@ -75,7 +76,6 @@ function blocks = sortSEs(blocks, n_back)
         blocks(b).ERPS = ERPS;
         blocks(b).badTrials = badTrials;
         blocks(b).seqPHOT = seqPHOT;
-        blocks(b).window = window;
     
     end
     

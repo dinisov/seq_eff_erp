@@ -72,11 +72,9 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,homeDirectory
         % train, disregard the window setting and look at the entire period
         % between blocks (both for time-domain and time-frequency analyses)
         if ~isnan(fly_record.BlockLength(b)) && (focusPeak == BLOCKS(b).blockLength) 
-            BLOCKS(b).time_before_peak = 0;
-            BLOCKS(b).time_after_peak = fly_record.InterBlockPeriod(b);
+            BLOCKS(b).window = [0 fly_record.InterBlockPeriod(b)];
         else
-            BLOCKS(b).time_before_peak = fly_record.SDT(b).*fly_record.Window1(b);
-            BLOCKS(b).time_after_peak = fly_record.ISI(b).*fly_record.Window2(b);
+            BLOCKS(b).window = [-fly_record.SDT(b).*fly_record.Window1(b) fly_record.ISI(b).*fly_record.Window2(b)];
         end
 
         BLOCKS(b).ISI = fly_record.ISI(b) + fly_record.SDT(b);

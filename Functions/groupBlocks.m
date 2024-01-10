@@ -1,4 +1,4 @@
-function [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,window,n_back)
+function [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,n_back)
 %groupBlocks Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -11,6 +11,8 @@ function [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,window
     for b = 1:n_blocks
         total_length = total_length + size(blocks(b).ERPS,3);
     end 
+    
+    window = floor(blocks(1).window * blocks(1).resampleFreq);
     
     % concatenate ERPs from different "experiments" (blocks)
     allERPs = zeros(length(window(1):window(2)), n_seq, total_length);

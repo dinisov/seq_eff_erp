@@ -11,17 +11,10 @@ addpath('Functions');
 % load peak finder (Matt's code)
 addpath('..\Scripts\Toolboxes\basefindpeaks\');
 
-% load slrp_lrpr
-
-% load results
-
-% these are the standard ALT/REP components from the literature (Jentzsch 2002)
-% lrpr = normalize(-lrpr); slrp = normalize(slrp); weird = normalize(weird);
-
 %% type of analysis
 
-% if block experiment, choose which stimulus to look in the train (starting at 5 up to train length)
-focusPeak = 5;
+% if block experiment, choose which stimulus to look in the train (starting at 5 up to BlockLength)
+focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
 timeFrequency = 1;
@@ -64,7 +57,7 @@ fly_record = fly_record(convertCharsToStrings(fly_record.Condition) == 'LIT',:);
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %remove jittering flies
-fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
+% fly_record = fly_record(~contains(fly_record.Comments,'jitter','IgnoreCase',true),:);
 
 %remove red light flies
 % fly_record = fly_record(~contains(fly_record.Comments,'red','IgnoreCase',true),:);
@@ -95,7 +88,7 @@ chosenFlies = [39];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [23];
+chosenBlocks = [43];
 %  chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -150,5 +143,5 @@ end
 
 %% time-frequency analysis
 if timeFrequency
-    
+    timeFrequencyAnalysis(FLIES, BLOCKS(1).window, '..');
 end
