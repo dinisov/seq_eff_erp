@@ -144,6 +144,6 @@ if length(chosenFlies) > 1
 end
 
 %% time-frequency analysis
-% if timeFrequency
-%     timeFrequencyAnalysis(FLIES, BLOCKS(1).window, '..');
-% end
+if timeFrequency
+    timeFrequencyAnalysis(FLIES, BLOCKS(1).window, '..');
+end
