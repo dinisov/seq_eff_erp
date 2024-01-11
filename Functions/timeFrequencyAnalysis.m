@@ -14,7 +14,7 @@ n_flies = length(FLIES);
 
 time_bounds = window;
 
-options = optimset('Algorithm','interior-point','FinDiffType','central');
+% options = optimset('Algorithm','interior-point','FinDiffType','central');
 
 f_limits = [0 300];
 
@@ -127,14 +127,16 @@ tSize = size(FLIES(1).magnitudeSEs,2);
 r_slrp = zeros(fSize,tSize,n_flies);
 r_lrpr = zeros(fSize,tSize,n_flies);
 r_weird = zeros(fSize,tSize,n_flies);
-% r_ephys = zeros(gridSize);
+r_td = zeros(fSize,tSize,n_flies);
 
 p_slrp = zeros(fSize,tSize,n_flies);
 p_lrpr = zeros(fSize,tSize,n_flies);
 p_weird = zeros(fSize,tSize,n_flies);
-% p_ephys = zeros(gridSize);
+p_td = zeros(fSize,tSize,n_flies);
 
 for fly = 1:n_flies
+    
+    td_profile = FLIES(fly).PROFILE.amplitude;
    
     magSEs = FLIES(fly).magnitudeSEs; magSEs = magSEs(f > f_limits(1) & f < f_limits(2),:,:);
 
@@ -154,6 +156,9 @@ for fly = 1:n_flies
 
            [r,p] = corrcoef(seq_eff_pattern,weird);
            r_weird(f_ind,t_ind,fly) = r(2); p_weird(f_ind,t_ind,fly) = p(2); %#ok<PFOUS>
+           
+          [r,p] = corrcoef(seq_eff_pattern,td_profile);
+           r_td(f_ind,t_ind,fly) = r(2); p_td(f_ind,t_ind,fly) = p(2); %#ok<PFOUS>
 
         end
         
@@ -176,6 +181,12 @@ for fly = 1:n_flies
     set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
+    
+    figure; title(['TD PROFILE Fly ' num2str(fly)]);
+    imagesc(r_td,'xdata',time_bounds); colorbar; colormap('jet');
+    set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+    xlabel('time (ms)'); ylabel('Frequency (Hz)');
+    saveas(gcf,[resultsDirectory 'td_profile_fly_' num2str(fly) '.png']);
     
 end
  

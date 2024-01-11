@@ -10,7 +10,7 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         block = num2str(fly_record.Block(b));
 
         % load this block's data
-        load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0']);
+        load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_block' block '/' date '_chunk_0'],'EEG');
 
         % photodiode and lfp data
         LFP = EEG.LFP1.data(fly_record.LFPChannel(b),:);
