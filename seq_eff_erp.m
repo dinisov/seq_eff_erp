@@ -14,7 +14,7 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 %% type of analysis
 
 % if block experiment, choose which stimulus to look in the train (starting at 5 up to BlockLength)
-focusPeak = 10;
+focusPeak = 5;
 
 % whether to perform time-frequency analysis (takes a long time)
 timeFrequency = 1;
@@ -90,7 +90,7 @@ chosenFlies = [125];
 %NOTE: while unlikely as a request, this does not handle the case where two
 %flies have a block with the same number but we would like to look at both
 %flies but not one of the blocks with the same number
-chosenBlocks = [14];
+chosenBlocks = [15];
 %  chosenBlocks = unique(fly_record.Block.');% do not choose specific blocks
 
 chosenOnes = ismember(fly_record.Block.', chosenBlocks) & ismember(fly_record.Fly.', chosenFlies);
@@ -145,5 +145,5 @@ end
 
 %% time-frequency analysis
 if timeFrequency
-    timeFrequencyAnalysis(FLIES, BLOCKS(1).window, '..'); %#ok<UNRCH>
+    timeFrequencyAnalysis(FLIES, '..'); %#ok<UNRCH>
 end

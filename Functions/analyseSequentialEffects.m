@@ -72,6 +72,9 @@ function R = analyseSequentialEffects(blocks, aux_plots)
     
     R = timeFrequencySpectrum(R, blocks);
     
+    % add window to results structure for convenience
+    R.window = blocks(1).window;
+    
     %% ANOVA
     SEAnova(R);
     

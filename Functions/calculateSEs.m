@@ -112,6 +112,5 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq)
         end
     end
     
-
 end
 

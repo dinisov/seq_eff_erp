@@ -1,5 +1,5 @@
 % analyse in which frequency bands SLRP and LRPR live
-function timeFrequencyAnalysis(FLIES, window, homeDirectory)
+function timeFrequencyAnalysis(FLIES, homeDirectory)
 
 load('slrp_lrpr.mat','slrp','lrpr','weird');
 
@@ -12,7 +12,7 @@ resultsDirectory = [homeDirectory '\Results_Time_Frequency\'];
 
 n_flies = length(FLIES);
 
-time_bounds = window;
+time_bounds = FLIES(1).window;
 
 % options = optimset('Algorithm','interior-point','FinDiffType','central');
 
