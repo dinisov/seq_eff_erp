@@ -25,13 +25,13 @@ function R = timeFrequencySpectrum(R, blocks)
     
     % spectrogram for AAAA minus AAAR
     figure; imagesc(squeeze(magnitudeSEs(:,16,:)) - squeeze(magnitudeSEs(:,8,:)),'xdata',time_bounds); colorbar;
-    set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     title('AAAA minus AAAR');
 
     % spectrogram for RRRR minus RRRA
     figure; imagesc(squeeze(magnitudeSEs(:,9,:)) - squeeze(magnitudeSEs(:,1,:)),'xdata',time_bounds); colorbar;
-    set(gca,'ytick',y_ticks,'yticklabel',floor(y_tick_labels));
+    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     title('RRRR minus RRRA');
 end
