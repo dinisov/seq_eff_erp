@@ -12,7 +12,7 @@ resultsDirectory = [homeDirectory '\Results_Time_Frequency\'];
 
 n_flies = length(FLIES);
 
-time_bounds = FLIES(1).window;
+time_bounds = FLIES(1).window*1000;
 
 % options = optimset('Algorithm','interior-point','FinDiffType','central');
 
