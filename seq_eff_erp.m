@@ -145,5 +145,5 @@ end
 
 %% time-frequency analysis
 if timeFrequency
-    timeFrequencyAnalysis(FLIES, '..'); %#ok<UNRCH>
+    timeFrequencyAnalysis(FLIES, '..', false); %#ok<UNRCH>
 end

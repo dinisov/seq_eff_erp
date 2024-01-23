@@ -1,5 +1,5 @@
 % analyse in which frequency bands SLRP and LRPR live
-function timeFrequencyAnalysis(FLIES, homeDirectory)
+function timeFrequencyAnalysis(FLIES, homeDirectory, plot_individual_flies)
 
 load('slrp_lrpr.mat','slrp','lrpr','weird');
 
@@ -164,29 +164,33 @@ for fly = 1:n_flies
         
     end
     
-    figure; title(['SLRP Fly ' num2str(fly)]);
-    imagesc(r_slrp(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
-    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
-
-    figure; title(['LRPR Fly ' num2str(fly)]);
-    imagesc(r_lrpr(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
-    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
-
-    figure; title(['WEIRD Fly ' num2str(fly)]);
-    imagesc(r_weird(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
-    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
+    if plot_individual_flies
     
-    figure; title(['TD PROFILE Fly ' num2str(fly)]);
-    imagesc(r_td(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
-    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    saveas(gcf,[resultsDirectory 'td_profile_fly_' num2str(fly) '.png']);
+        figure; title(['SLRP Fly ' num2str(fly)]);
+        imagesc(r_slrp(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+        set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
+        xlabel('time (ms)'); ylabel('Frequency (Hz)');
+        saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
+
+        figure; title(['LRPR Fly ' num2str(fly)]);
+        imagesc(r_lrpr(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+        set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
+        xlabel('time (ms)'); ylabel('Frequency (Hz)');
+        saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
+
+        figure; title(['WEIRD Fly ' num2str(fly)]);
+        imagesc(r_weird(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+        set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
+        xlabel('time (ms)'); ylabel('Frequency (Hz)');
+        saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
+
+        figure; title(['TD PROFILE Fly ' num2str(fly)]);
+        imagesc(r_td(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+        set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
+        xlabel('time (ms)'); ylabel('Frequency (Hz)');
+        saveas(gcf,[resultsDirectory 'td_profile_fly_' num2str(fly) '.png']);
+    
+    end
     
 end
  
