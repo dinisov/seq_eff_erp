@@ -165,56 +165,43 @@ for fly = 1:n_flies
     end
     
     figure; title(['SLRP Fly ' num2str(fly)]);
-    imagesc(r_slrp(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+    imagesc(r_slrp,'xdata',time_bounds); colorbar; colormap('jet');
     set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
 
     figure; title(['LRPR Fly ' num2str(fly)]);
-    imagesc(r_lrpr(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+    imagesc(r_lrpr,'xdata',time_bounds); colorbar; colormap('jet');
     set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
 
     figure; title(['WEIRD Fly ' num2str(fly)]);
-    imagesc(r_weird(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+    imagesc(r_weird,'xdata',time_bounds); colorbar; colormap('jet');
     set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
     
     figure; title(['TD PROFILE Fly ' num2str(fly)]);
-    imagesc(r_td(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
+    imagesc(r_td,'xdata',time_bounds); colorbar; colormap('jet');
     set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
     xlabel('time (ms)'); ylabel('Frequency (Hz)');
     saveas(gcf,[resultsDirectory 'td_profile_fly_' num2str(fly) '.png']);
     
 end
  
-%% plot mean r for all flies
+%% mean magnitude SEs across all flies (simple average)
+meanMagSEs = FLIES(1).LIT.magnitudeSEs;
 
-figure; title('Mean SLRP');
-imagesc(mean(r_slrp,3),'xdata',time_bounds); colorbar; colormap('jet');
-set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-xlabel('time (ms)'); ylabel('Frequency (Hz)');
-saveas(gcf,[resultsDirectory 'mean_slrp.png']);
+for fly = 2:n_flies
+   
+    meanMagSEs = meanMagSEs + FLIES(fly).LIT.magnitudeSEs;
+    
+end
 
-figure; title('Mean LRPR');
-imagesc(mean(r_lrpr,3),'xdata',time_bounds); colorbar; colormap('jet');
-set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-xlabel('time (ms)'); ylabel('Frequency (Hz)');
-saveas(gcf,[resultsDirectory 'mean_lrpr.png']);
+meanMagSEs = meanMagSEs/n_flies;
 
-figure; title('Mean WEIRD');
-imagesc(mean(r_weird,3),'xdata',time_bounds); colorbar; colormap('jet');
-set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-xlabel('time (ms)'); ylabel('Frequency (Hz)');
-saveas(gcf,[resultsDirectory 'mean_weird.png']);
-
-figure; title('Mean TD PROFILE');
-imagesc(mean(r_td,3),'xdata',time_bounds); colorbar; colormap('jet');
-set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-xlabel('time (ms)'); ylabel('Frequency (Hz)');
-saveas(gcf,[resultsDirectory 'mean_td.png']);
+meanMagSEs = meanMagSEs(f > f_limits(1) & f < f_limits(2),:,:);
 
 %% phase SEs
 
