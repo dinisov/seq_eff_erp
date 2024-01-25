@@ -232,14 +232,14 @@ meanMagSEs = meanMagSEs/n_flies;
 
 % spectrogram for AAAA minus AAAR
 figure; 
-imagesc(squeeze(meanMagSEs(:,16,:)) - squeeze(magSEs(:,8,:)),'xdata',time_bounds); colorbar;
+imagesc(squeeze(meanMagSEs(:,16,:)) - squeeze(meanMagSEs(:,8,:)),'xdata',time_bounds); colorbar;
 set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
 xlabel('time (ms)'); ylabel('Frequency (Hz)');
 title('Mean AAAA minus AAAR');
 saveas(gcf,[resultsDirectory 'mean_AAAA_minus_AAAR.png']);
 
 % spectrogram for RRRR minus RRRA
-figure; imagesc(squeeze(meanMagSEs(:,9,:)) - squeeze(magSEs(:,1,:)),'xdata',time_bounds); colorbar;
+figure; imagesc(squeeze(meanMagSEs(:,9,:)) - squeeze(meanMagSEs(:,1,:)),'xdata',time_bounds); colorbar;
 set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
 xlabel('time (ms)'); ylabel('Frequency (Hz)');
 title('Mean RRRR minus RRRA');
