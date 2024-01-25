@@ -187,7 +187,6 @@ for fly = 1:n_flies
         title(['WEIRD Fly ' num2str(fly)]);
         saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
         
-
         figure; 
         imagesc(r_td(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
@@ -213,7 +212,39 @@ for fly = 1:n_flies
     end
     
 end
- 
+
+%% plot mean oddballs
+
+magSEs = FLIES(1).magnitudeSEs; magSEs = magSEs(f > f_limits(1) & f < f_limits(2),:,:);
+
+%calculate mean spectra
+meanMagSEs = zeros(size(magSEs));
+
+for fly = 1:n_flies
+
+    magSEs = FLIES(fly).magnitudeSEs; magSEs = magSEs(f > f_limits(1) & f < f_limits(2),:,:);
+
+    meanMagSEs = meanMagSEs + magSEs;
+
+end
+
+meanMagSEs = meanMagSEs/n_flies;
+
+% spectrogram for AAAA minus AAAR
+figure; 
+imagesc(squeeze(meanMagSEs(:,16,:)) - squeeze(magSEs(:,8,:)),'xdata',time_bounds); colorbar;
+set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
+xlabel('time (ms)'); ylabel('Frequency (Hz)');
+title('Mean AAAA minus AAAR');
+saveas(gcf,[resultsDirectory 'mean_AAAA_minus_AAAR.png']);
+
+% spectrogram for RRRR minus RRRA
+figure; imagesc(squeeze(meanMagSEs(:,9,:)) - squeeze(magSEs(:,1,:)),'xdata',time_bounds); colorbar;
+set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
+xlabel('time (ms)'); ylabel('Frequency (Hz)');
+title('Mean RRRR minus RRRA');
+saveas(gcf,[resultsDirectory 'mean_RRRR_minus_RRRA.png']);
+
 %% plot mean r for all flies
 
 figure; title('Mean SLRP');
