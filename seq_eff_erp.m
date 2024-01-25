@@ -28,7 +28,7 @@ errorMethod = 0;
 fitModel = 1;
 
 % plot individual flies?
-plotIndividualFlies = 1;
+plotIndividualFlies = 0;
 
 % which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough)
 plotSelector = [1 1 1 0 0];
@@ -63,7 +63,9 @@ end
 filterIn = {};
 
 if ~isempty(filterIn)
-    fly_record = fly_record(contains(fly_record.Comments,filterIn,'IgnoreCase',true),:);
+    for i = 1:length(filterIn)
+        fly_record = fly_record(contains(fly_record.Comments,filterIn{i},'IgnoreCase',true),:);
+    end
 end
 
 %% filter out keywords
@@ -127,7 +129,7 @@ end
 
 %% plot sequential dependencies per fly (if model results exist they are plotted)
 if plotIndividualFlies
-    plotFlies(FLIES, chosenFlies, plotSelector, resultsDirectory);
+    plotFlies(FLIES, chosenFlies, plotSelector, resultsDirectory); %#ok<*UNRCH>
 end
 
 %% calculate SEs for all flies by averaging SE profiles
@@ -145,5 +147,5 @@ end
 
 %% time-frequency analysis
 if timeFrequency
-    timeFrequencyAnalysis(FLIES, '..', false); %#ok<UNRCH>
+    timeFrequencyAnalysis(FLIES, '..', plotIndividualFlies);
 end

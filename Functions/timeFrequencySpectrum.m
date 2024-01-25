@@ -15,23 +15,4 @@ function R = timeFrequencySpectrum(R, blocks)
     R.magnitudeSEs = magnitudeSEs;
     R.phaseSEs = phaseSEs;
     R.f = f;
-    
-    % for block experiments, this is set in seq_eff_erp() as [0 InterBlockPeriod]
-    time_bounds = blocks(1).window*1000;
-    
-    %make a tick every x steps
-    y_ticks = 1:2:length(f);
-    y_tick_labels = f(y_ticks);
-    
-    % spectrogram for AAAA minus AAAR
-    figure; imagesc(squeeze(magnitudeSEs(:,16,:)) - squeeze(magnitudeSEs(:,8,:)),'xdata',time_bounds); colorbar;
-    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    title('AAAA minus AAAR');
-
-    % spectrogram for RRRR minus RRRA
-    figure; imagesc(squeeze(magnitudeSEs(:,9,:)) - squeeze(magnitudeSEs(:,1,:)),'xdata',time_bounds); colorbar;
-    set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
-    xlabel('time (ms)'); ylabel('Frequency (Hz)');
-    title('RRRR minus RRRA');
 end

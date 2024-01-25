@@ -166,33 +166,28 @@ for fly = 1:n_flies
     
     if plot_individual_flies
     
-        figure; 
+        figure; title(['SLRP Fly ' num2str(fly)]);
         imagesc(r_slrp(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
-        title(['SLRP Fly ' num2str(fly)]);
         saveas(gcf,[resultsDirectory 'slrp_fly_' num2str(fly) '.png']);
 
-        figure; 
+        figure; title(['LRPR Fly ' num2str(fly)]);
         imagesc(r_lrpr(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
-        title(['LRPR Fly ' num2str(fly)]);
         saveas(gcf,[resultsDirectory 'lrpr_fly_' num2str(fly) '.png']);
 
-        figure; 
+        figure; title(['WEIRD Fly ' num2str(fly)]);
         imagesc(r_weird(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
-        title(['WEIRD Fly ' num2str(fly)]);
         saveas(gcf,[resultsDirectory 'weird_fly_' num2str(fly) '.png']);
-        
 
-        figure; 
+        figure; title(['TD PROFILE Fly ' num2str(fly)]);
         imagesc(r_td(:,:,fly),'xdata',time_bounds); colorbar; colormap('jet');
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
-        title(['TD PROFILE Fly ' num2str(fly)]);
         saveas(gcf,[resultsDirectory 'td_profile_fly_' num2str(fly) '.png']);
         
         % spectrogram for AAAA minus AAAR
@@ -200,15 +195,12 @@ for fly = 1:n_flies
         imagesc(squeeze(magSEs(:,16,:)) - squeeze(magSEs(:,8,:)),'xdata',time_bounds); colorbar;
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
-        title('AAAA minus AAAR');
-        saveas(gcf,[resultsDirectory 'AAAA_minus_AAAR_fly' num2str(fly) '.png']);
 
         % spectrogram for RRRR minus RRRA
-        figure; imagesc(squeeze(magSEs(:,9,:)) - squeeze(magSEs(:,1,:)),'xdata',time_bounds); colorbar;
+        figure; imagesc(squeeze(magnitudeSEs(:,9,:)) - squeeze(magnitudeSEs(:,1,:)),'xdata',time_bounds); colorbar;
         set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
         title('RRRR minus RRRA');
-        saveas(gcf,[resultsDirectory 'RRRR_minus_RRRA_fly' num2str(fly) '.png']);
     
     end
     
