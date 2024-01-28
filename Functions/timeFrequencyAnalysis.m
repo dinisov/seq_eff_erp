@@ -247,28 +247,32 @@ saveas(gcf,[resultsDirectory 'mean_RRRR_minus_RRRA.png']);
 
 %% plot mean r for all flies
 
-figure; title('Mean SLRP');
+figure; 
 imagesc(mean(r_slrp,3),'xdata',time_bounds); colorbar; colormap('jet');
 set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
 xlabel('time (ms)'); ylabel('Frequency (Hz)');
+title('Mean SLRP');
 saveas(gcf,[resultsDirectory 'mean_slrp.png']);
 
-figure; title('Mean LRPR');
+figure;
 imagesc(mean(r_lrpr,3),'xdata',time_bounds); colorbar; colormap('jet');
 set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
 xlabel('time (ms)'); ylabel('Frequency (Hz)');
+title('Mean LRPR');
 saveas(gcf,[resultsDirectory 'mean_lrpr.png']);
 
-figure; title('Mean WEIRD');
+figure; 
 imagesc(mean(r_weird,3),'xdata',time_bounds); colorbar; colormap('jet');
 set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
 xlabel('time (ms)'); ylabel('Frequency (Hz)');
+title('Mean WEIRD');
 saveas(gcf,[resultsDirectory 'mean_weird.png']);
 
-figure; title('Mean TD PROFILE');
+figure; 
 imagesc(mean(r_td,3),'xdata',time_bounds); colorbar; colormap('jet');
 set(gca,'ytick',y_ticks,'yticklabel',round(y_tick_labels,1));
 xlabel('time (ms)'); ylabel('Frequency (Hz)');
+title('Mean TD PROFILE');
 saveas(gcf,[resultsDirectory 'mean_td.png']);
 
 %% phase SEs
