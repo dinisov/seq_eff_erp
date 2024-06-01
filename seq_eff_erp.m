@@ -60,12 +60,20 @@ end
 %% filter in keywords
 
 %see filter out example
-filterIn = {};
+filterInAnd = {};
 
-if ~isempty(filterIn)
+%AND filtering
+if ~isempty(filterInAnd)
     for i = 1:length(filterIn)
         fly_record = fly_record(contains(fly_record.Comments,filterIn{i},'IgnoreCase',true),:);
     end
+end
+
+filterInOr = {};
+
+% OR filtering
+if ~isempty(filterInAnd)
+    fly_record = fly_record(contains(fly_record.Comments,filterIn{i},'IgnoreCase',true),:);
 end
 
 %% filter out keywords
