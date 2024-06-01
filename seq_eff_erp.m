@@ -64,16 +64,16 @@ filterInAnd = {};
 
 %AND filtering
 if ~isempty(filterInAnd)
-    for i = 1:length(filterIn)
-        fly_record = fly_record(contains(fly_record.Comments,filterIn{i},'IgnoreCase',true),:);
+    for i = 1:length(filterInAnd)
+        fly_record = fly_record(contains(fly_record.Comments,filterInAnd{i},'IgnoreCase',true),:);
     end
 end
 
 filterInOr = {};
 
 % OR filtering
-if ~isempty(filterInAnd)
-    fly_record = fly_record(contains(fly_record.Comments,filterIn{i},'IgnoreCase',true),:);
+if ~isempty(filterInOr)
+    fly_record = fly_record(contains(fly_record.Comments,filterInOr,'IgnoreCase',true),:);
 end
 
 %% filter out keywords
