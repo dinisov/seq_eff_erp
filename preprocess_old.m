@@ -23,7 +23,7 @@ networkMode = 0; %Whether to load data from network rather than local
 if networkMode == 0
     %dataPath = 'D:\group_swinderen\Bruno\Data\'
     %outPath = 'D:\group_swinderen\Bruno\Processed\'
-    dataPath = '..\SEdata\';
+    dataPath = '..\SEdata\benin\';
     outPath = '..\SEoutput\';
     %dataPath = 'D:\group_swinderen\Matthew\TDTs\Data\'
     %outPath = 'D:\group_swinderen\Matthew\TDTs\Processed\'
@@ -33,45 +33,20 @@ else
 end
 %-----------------------------------------------
 %Flags (Mostly)
-%#############
-expType = 'single' %('single' vs 'multi')
-%#############
-switch expType
-    case 'single'
-        expName = 'TagTrials'; %This is the name that will be looked for in all detected folders that exist within dataPath (probably)
-            %Note: With Mk 4.25 wildcards no longer necessary here (And will in fact cause issues for tank detection)
-        calibMode = 0; %Whether to analyse calib data
-        if calibMode == 1
-            findPolRevers = 1; %Whether to try find the polarity reversal for calb data
-        end
-        dataIsFromSynapse = 1; %Whether data was collected from Synapse
-        if dataIsFromSynapse == 1
-            specialSubsampleFields = []; %These fields will be subsampled with a coordinate technique, rather than resampled
-                %This is intended for TTL and TTL-like fields that react...poorly to traditional resampling methods
-        end
-        mimicSynapseData = 0; %0 - No (Not necessary if actually Synapse OR analysing old multichannel data), 1 - Yes (If old data -> New analysis)
-            %Warning: This will reroute PDec as 'stim' data (Rather than InpP), probably invalidating output for Matt LFP analysis
-        blockConvention = 'block'; %This is the string that will be searched for in folders (e.g. if your convention is 'C:\TDT\Tanks\290421\block1' etc, then the blockConvention is 'block' and the value immediately after is the block number)
-        reSampleFreq = 3000; % Desired Sampling Frequency (Set as NaN to use source framerate)
-        skipExistingFiles = 1; %Whether to skip analysis of already processed files
-        
-    case 'multi'
-        expName = 'TagTrials'; %This is the name that will be looked for in all detected folders that exist within dataPath (probably)
-            %Note: With Mk 4.25 wildcards no longer necessary here (And will in fact cause issues for tank detection)
-        calibMode = 0; %Whether to analyse calib data
-        if calibMode == 1
-            findPolRevers = 1; %Whether to try find the polarity reversal for calb data
-        end
-        dataIsFromSynapse = 0; %Whether data was collected from Synapse
-        if dataIsFromSynapse == 1
-            specialSubsampleFields = []; %These fields will be subsampled with a coordinate technique, rather than resampled
-                %This is intended for TTL and TTL-like fields that react...poorly to traditional resampling methods
-        end
-        mimicSynapseData = 1;
-        blockConvention = 'Block'; %This is the string that will be searched for in folders (e.g. if your convention is 'C:\TDT\Tanks\290421\block1' etc, then the blockConvention is 'block' and the value immediately after is the block number)
-        reSampleFreq = 3000; % Desired Sampling Frequency (Set as NaN to use source framerate)
-        skipExistingFiles = 1; %Whether to skip analysis of already processed files
+expName = 'TagTrials'; %This is the name that will be looked for in all detected folders that exist within dataPath (probably)
+    %Note: With Mk 4.25 wildcards no longer necessary here (And will in fact cause issues for tank detection)
+calibMode = 0; %Whether to analyse calib data
+if calibMode == 1
+    findPolRevers = 1; %Whether to try find the polarity reversal for calb data
 end
+dataIsFromSynapse = 1; %Whether data was collected from Synapse
+if dataIsFromSynapse == 1
+    specialSubsampleFields = []; %These fields will be subsampled with a coordinate technique, rather than resampled
+        %This is intended for TTL and TTL-like fields that react...poorly to traditional resampling methods
+end
+blockConvention = 'block'; %This is the string that will be searched for in folders (e.g. if your convention is 'C:\TDT\Tanks\290421\block1' etc, then the blockConvention is 'block' and the value immediately after is the block number)
+reSampleFreq = 3000; % Desired Sampling Frequency (Set as NaN to use source framerate)
+skipExistingFiles = 1; %Whether to skip analysis of already processed files
 %-------------------------------------------------
 
 %cd(dataPath)
@@ -356,22 +331,15 @@ for fly_number = 1:length(fly_list)
         end
         %}
         %New
-        breaker = 0;
         for blockInd = 1:size(block_list,1)
             %unPos = strfind(block_list(blockInd).name,'-'); %Old, searched for hyphen
             unPos = strfind(block_list(blockInd).name,blockConvention); %New, searches for word 'block'
             if isempty(unPos) ~= 1
                 block_list(blockInd).blocknumber = str2num( block_list(blockInd).name(unPos+size(blockConvention,2):end) );
             else
-                ['## Alert: Block identity not found in name (',block_list(blockInd).name,') (or no blocks of name "',blockConvention,'" found) ##']
-                %crash = yes
-                breaker = 1;
-                break
+                ['## Alert: Block identity could not be derived from block name ##']
+                crash = yes
             end
-        end
-        if breaker
-            disp(['-# Breaking for next dataset #-'])
-            break %Exit loop for this fly
         end
         temp = struct2table(block_list); % convert the struct array to a table
         temp = sortrows(temp, 'blocknumber'); % sort the table by blocknumber
@@ -394,24 +362,15 @@ for fly_number = 1:length(fly_list)
 
             disp([char(10),'-- Reading detected block #',num2str(chunkidx),' (',blockname,') of ',num2str(totalchunks),' --'])
             %blockpath = char(horzcat(blockpath(1:length(blockpath))));
-            if mimicSynapseData && ~isempty(strfind(blockname,'-')) %This section used to ensure saving done to 'appropriate' folder
-                blockname = strrep(blockname,'-',''); %Remove hyphenation if present (e.g. "Block-2" -> "Block2")
-                    %Note: May cause issues if multiple hyphenations present
-                disp(['-# Block name adjusted to be Synapse-like (',blockname,') #-'])
-            end
 
             locpathappend = [outPath, datasetname];
             %outputfolder = [locpathappend filesep 'LFP' filesep 'Analyzed_LFP_' blockname];
             outputfolder = [locpathappend filesep 'LFP' filesep 'Analyzed_' detExpName '_' blockname];
             S.output_folder  = outputfolder;
             %S.eeg_filename = [datasetname  '_chunk_' char(sprintf("%0.2d",chunkidx))];
-            if mimicSynapseData == 0 %Preserve chunk identity
-                S.eeg_filename = [datasetname,  '_chunk_', blockID]; %Dynamic detection of block/chunk number
-            else
-                S.eeg_filename = [datasetname,  '_chunk_0'];
-            end
+            S.eeg_filename = [datasetname,  '_chunk_', blockID]; %Dynamic detection of block/chunk number
             mat_name = [S.output_folder filesep S.eeg_filename '.mat'];
-
+            
             try
                 fileIsExist = isfile(mat_name); %Will fail on MATLAB 2014b, but that's why this is in a try-catch
             catch
@@ -539,8 +498,6 @@ for fly_number = 1:length(fly_list)
                 waveData.fs = reSampleFreq;  %This cannot be blank else the rat fails
                 chandata_resamp = []; %Generate a blank value for this ahead of time, since it won't be generated by the normal loop (Because chandata size 0)
             end
-
-            %hummingbird
             
             if dataIsFromSynapse == 0
                 chandata = waveData.data; %Old, assumed Single format
@@ -552,12 +509,7 @@ for fly_number = 1:length(fly_list)
             try
                 if dataIsFromSynapse == 0
                     %stimdata = data.streams.InpP.data(:,:);
-                    if mimicSynapseData == 0
-                        inpData = data.streams.InpP;
-                    else
-                        inpData = data.streams.PDec; %If this crashes, PDec was not saved?
-                        disp(['-# Cautionary: PDec routed as stim data by request #-'])
-                    end
+                    inpData = data.streams.InpP;
                 else
                     if isfield(data.streams,'Phot') == 1
                         inpData = data.streams.Phot; %No generalisation here currently
@@ -717,11 +669,7 @@ for fly_number = 1:length(fly_list)
             timeres = 1/samplerate;
             Tottime = endtime - starttime;
 %             timepoints = 0: timeres : Tottime;
-            if isstruct(chandata_resamp)
-                timepoints = linspace(0,Tottime,length(chandata_resamp.LFP1));%DINIS: used LFP1 assuming the other channels are the same.
-            else
-                timepoints = linspace(0,Tottime,size(chandata_resamp,2));
-            end
+            timepoints = linspace(0,Tottime,length(chandata_resamp.LFP1));%DINIS: used LFP1 assuming the other channels are the same.
 
             %%Step 4: Create EEGlab file for LfP data..
             EEG = [];
@@ -729,24 +677,10 @@ for fly_number = 1:length(fly_list)
             EEG.filename = [datasetname];
             % EEG.filepath = [calib_data_path];
             if ~isstruct(LFP) %Probably non-Synapse
-                if mimicSynapseData == 0
-                    EEG.nbchan = size(LFP,1);
-                    EEG.data = double(LFP);
-                    EEG.pnts = length(LFP);
-                    EEG.chanlocs(1).labels = 'LfP';
-                else
-                    EEG.LFP1.nbchan = size(LFP,1);
-                    EEG.LFP1.data = double(LFP);
-                    EEG.LFP1.pnts = length(LFP);
-                    EEG.LFP1.chanlocs(1).labels = 'LfP';
-
-                    EEG.PHOT.nbchan = size(STIM,1);
-                    EEG.PHOT.data = double(STIM);
-                    EEG.PHOT.pnts = length(STIM);
-                    EEG.PHOT.chanlocs(1).labels = 'PHOT';
-                    disp(['-# Architecture of EEG structure given Synapse-like nature #-'])
-                end
-                EEG.recordingType = 'multi';
+                EEG.nbchan = size(LFP,1);
+                EEG.data = double(LFP);
+                EEG.pnts = length(LFP);
+                EEG.chanlocs(1).labels = 'LfP';
             else
                 for fielInd = 1:size(dataFiels,1)
                     thisFiel = dataFiels{fielInd};
@@ -1041,12 +975,7 @@ for fly_number = 1:length(fly_list)
             %%Step 5: Create EEGlab file for LfP data..
             S = [];
             %S.eeg_filename = [datasetname  '_chunk_' char(sprintf("%0.2d",chunkidx))];
-            if mimicSynapseData == 0
-                S.eeg_filename = [datasetname,'_chunk_',num2str(blockID)];
-            else
-                S.eeg_filename = [datasetname,'_chunk_0'];
-                disp(['-# Chunk given generic number to mimic Synapse output #-'])
-            end
+            S.eeg_filename = [datasetname,'_chunk_',num2str(blockID)];
             try
                 S.eeg_filename = [char(horzcat(S.eeg_filename{1:length(S.eeg_filename)}))];
             catch

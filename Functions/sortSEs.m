@@ -21,8 +21,17 @@ function blocks = sortSEs(blocks, n_back)
 
         sequenceLength = length(randomSequence);
 
-        ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
-        seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
+        %ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
+        %seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
+        ERPS = nan(length(window(1):window(2)), n_seq, sequenceLength); %Switch to NaN because zero issues
+        seqPHOT = nan(length(window(1):window(2)), n_seq, sequenceLength);
+        SEQS = cell(1,n_seq);
+
+        %Pre-check for 'true' NaNs
+        if any(isnan(LFP))
+            disp(['-# Caution: True NaN/s present in LFP data #-'])
+            %crash = yes %Maybe overkill; Will have to see if this ever occurs
+        end
         
         for n = n_back:sequenceLength
 
@@ -34,10 +43,13 @@ function blocks = sortSEs(blocks, n_back)
             ERPS(:, seq, n) = LFP(LOCS(n) + window(1) : LOCS(n) + window(2));
             seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), LOCS(n) + window(1) : LOCS(n) + window(2) ));
 
+            SEQS{1,seq} = randomSequence(n-n_back+1:n); %Store this for posterity
+
         end
 
         % matrix with all ERPs irrespective of sequence
-        all_erps = squeeze(sum(ERPS,2));% squeeze removes first dimension
+        %all_erps = squeeze(sum(ERPS,2));% squeeze removes first dimension
+        all_erps = squeeze(nansum(ERPS,2));% squeeze removes first dimension; Need to use nansum now
         
         %% PCA
 %         [coeff,score] = pca(all_erps.','centered',false);
@@ -53,8 +65,13 @@ function blocks = sortSEs(blocks, n_back)
         %calculate mean and SEM for outlier calculations
         meanERP = mean(all_erps, 2);
         STDs = std(all_erps, [], 2);
+        %QA
+        if nansum(isnan(meanERP)) ~= 0
+            ['## ALERT: NAN CONTAMINATION IN meanERP ##']
+            crash = yes         
+        end
 
-        n_sd = 3;
+        n_sd = 4;
 
         % remove ERPs beyond n_sd (broadcasting here)
         outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);
@@ -76,6 +93,7 @@ function blocks = sortSEs(blocks, n_back)
         blocks(b).ERPS = ERPS;
         blocks(b).badTrials = badTrials;
         blocks(b).seqPHOT = seqPHOT;
+        blocks(b).SEQS = SEQS;
     
     end
     

@@ -1,8 +1,11 @@
-function ERROR = propagateError(FLIES, chosenFlies)
+function ERROR = propagateError(FLIES, chosenFlies, n_back)
 
-semAmplSEs = zeros(16,length(chosenFlies));
-semPosAmplSEs = zeros(16,length(chosenFlies));
-semNegAmplSEs = zeros(16,length(chosenFlies));
+%semAmplSEs = zeros(16,length(chosenFlies));
+%semPosAmplSEs = zeros(16,length(chosenFlies));
+%semNegAmplSEs = zeros(16,length(chosenFlies));
+semAmplSEs = zeros(0.5*2^n_back,length(chosenFlies));
+semPosAmplSEs = zeros(0.5*2^n_back,length(chosenFlies));
+semNegAmplSEs = zeros(0.5*2^n_back,length(chosenFlies));
 
 nERPsFly = zeros(1,length(chosenFlies));
 

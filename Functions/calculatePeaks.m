@@ -14,17 +14,21 @@ for b = 1:length(blocks)
         PHOT = -blocks(b).PHOT(3,:)/max(blocks(b).PHOT(3,:));
 
         if aux_plots
-            figure; plot(PHOT);
+            figure; 
+            plot(PHOT);
+            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot data [Pre movmax]'])
         end
         PHOT = movmax(PHOT,[20 20]);
         if aux_plots    
-            hold on; plot(PHOT);
+            hold on; 
+            plot(PHOT);
+            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot data [Post movmax]'])
         end
 
         blocks(b).PHOT = [PHOT; PHOT; PHOT];
 
         % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .2 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .1 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
         [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(PHOT , 'MinPeakHeight' , peakThreshold , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); 
 
         [LOCS_PHOT1, ind_locs_phot1] = setdiff(LOCS_PHOT1, LOCS_PHOT2);
@@ -35,11 +39,16 @@ for b = 1:length(blocks)
         
     % two photodiodes
     elseif blocks(b).PHOTType == 2
+        %blocks(b)
        
         PHOT1 = blocks(b).PHOT(1,:)/max(blocks(b).PHOT(1,:));
-        PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); 
-        PHOT1 = movmax(PHOT1,[20 20]);
-        PHOT2 = movmax(PHOT2,[20 20]);
+        if blocks(b).dataIsMulti == 0
+        PHOT2 = -blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); %make -blocks if Melvyn rig
+        else
+        PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); %No inversion for multichannel data (Currently)
+        end
+        PHOT1 = movmax(PHOT1,[40 40]);%was [40 40]
+        PHOT2 = movmax(PHOT2,[40 40]);%was [40 40]
         
         blocks(b).PHOT(1,:) = PHOT1;
         blocks(b).PHOT(2,:) = PHOT2;
@@ -49,12 +58,23 @@ for b = 1:length(blocks)
         LOCS_PHOT2 = find(diff(PHOT2 > peakThreshold) > 0) + 1;
 
         %first round of double peak detection
-        badLOCS_PHOT1 = LOCS_PHOT1([false diff(LOCS_PHOT1) < (0.8*ISI*resampleFreq)]);
+        badLOCS_PHOT1 = LOCS_PHOT1([false diff(LOCS_PHOT1) < (0.8*ISI*resampleFreq)]); %Was 0.8
         badLOCS_PHOT2 = LOCS_PHOT2([false diff(LOCS_PHOT2) < (0.8*ISI*resampleFreq)]);
 
         if aux_plots
-            figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); 
-            figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); 
+            figure; hold on; 
+            plot(PHOT1); 
+            scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); 
+            scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); 
+            %title(['Phot 1 data (Max:',num2str(max(blocks(b).PHOT(1,:))),')'])
+            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot 1 data (Max:',num2str(max(blocks(b).PHOT(1,:))),')'])
+
+            figure; hold on; 
+            plot(PHOT2); 
+            scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); 
+            scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); 
+            %title(['Phot 2 data (Max:',num2str(max(blocks(b).PHOT(2,:))),')'])
+            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot 2 data (Max:',num2str(max(blocks(b).PHOT(2,:))),')'])
         end
         
     end
