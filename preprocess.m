@@ -34,7 +34,7 @@ end
 %-----------------------------------------------
 %Flags (Mostly)
 %#############
-expType = 'single' %('single' vs 'multi')
+expType = 'multi' %('single' vs 'multi')
 %#############
 switch expType
     case 'single'
@@ -428,7 +428,7 @@ for fly_number = 1:length(fly_list)
             tic
             while tdt_dur_load == 0 && a < 5
                 try
-                 %[timeduration, info] = TDTduration(blockpath);
+                    %[timeduration, info] = TDTduration(blockpath);
                     [timeduration, info] = TDTduration(blockPathFull);
                     disp('TDTduration read successful.');
                     tdt_dur_load = 1;

@@ -30,7 +30,7 @@ n_back = 5;
 errorMethod = 0;
 
 %Scramble level
-scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence calculation, 2 - Derived sequence)
+scramLevel = 3; %What stage to scramble sequences at (0 - None, 1 - Raw sequence calculation, 2 - Derived sequence)
     %1 - Most rigorous; Scrambles shortly after sequence calculated from phot, per fly 
     %2 - Less rigorous; Scrambles the arrangement of the 16 (or etc) 
         %Use mode 1 for rigorous scrambling, mode 2 to preserve within-sequence consistency

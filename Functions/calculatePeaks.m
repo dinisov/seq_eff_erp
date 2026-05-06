@@ -14,15 +14,11 @@ for b = 1:length(blocks)
         PHOT = -blocks(b).PHOT(3,:)/max(blocks(b).PHOT(3,:));
 
         if aux_plots
-            figure; 
-            plot(PHOT);
-            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot data [Pre movmax]'])
+            figure; plot(PHOT);
         end
         PHOT = movmax(PHOT,[20 20]);
         if aux_plots    
-            hold on; 
-            plot(PHOT);
-            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot data [Post movmax]'])
+            hold on; plot(PHOT);
         end
 
         blocks(b).PHOT = [PHOT; PHOT; PHOT];
@@ -47,6 +43,16 @@ for b = 1:length(blocks)
         else
         PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); %No inversion for multichannel data (Currently)
         end
+
+        if aux_plots
+            photty1 = figure;
+            plot(PHOT1)
+            title('PHOT1')
+            photty2 = figure;
+            plot(PHOT2)
+            title('PHOT2')
+        end
+
         PHOT1 = movmax(PHOT1,[40 40]);%was [40 40]
         PHOT2 = movmax(PHOT2,[40 40]);%was [40 40]
         
@@ -62,19 +68,10 @@ for b = 1:length(blocks)
         badLOCS_PHOT2 = LOCS_PHOT2([false diff(LOCS_PHOT2) < (0.8*ISI*resampleFreq)]);
 
         if aux_plots
-            figure; hold on; 
-            plot(PHOT1); 
-            scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); 
-            scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); 
-            %title(['Phot 1 data (Max:',num2str(max(blocks(b).PHOT(1,:))),')'])
-            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot 1 data (Max:',num2str(max(blocks(b).PHOT(1,:))),')'])
-
-            figure; hold on; 
-            plot(PHOT2); 
-            scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); 
-            scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); 
-            %title(['Phot 2 data (Max:',num2str(max(blocks(b).PHOT(2,:))),')'])
-            title([blocks(b).date,' B',blocks(b).block,' (Fly #',num2str(blocks(b).fly),')',' Phot 2 data (Max:',num2str(max(blocks(b).PHOT(2,:))),')'])
+            %figure; hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); title(['Phot 1 data (Max:',num2str(max(blocks(b).PHOT(1,:))),')'])
+            %figure; hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); title(['Phot 2 data (Max:',num2str(max(blocks(b).PHOT(2,:))),')'])
+            figure(photty1); hold on; plot(PHOT1); scatter(LOCS_PHOT1,zeros(size(LOCS_PHOT1)),'b','filled'); scatter(badLOCS_PHOT1,zeros(size(badLOCS_PHOT1)),'m','filled'); title(['Phot 1 data (Max:',num2str(max(blocks(b).PHOT(1,:))),')'])
+            figure(photty2); hold on; plot(PHOT2); scatter(LOCS_PHOT2,zeros(size(LOCS_PHOT2)),'r','filled'); scatter(badLOCS_PHOT2,zeros(size(badLOCS_PHOT2)),'m','filled'); title(['Phot 2 data (Max:',num2str(max(blocks(b).PHOT(2,:))),')'])
         end
         
     end

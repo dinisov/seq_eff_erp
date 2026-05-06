@@ -36,6 +36,9 @@ end
 if scramLevel == 1
     blocks.randomSequence = blocks.randomSequence( randperm( numel(blocks.randomSequence) ) );
     disp(['Data scrambled at raw sequence level (Scram 1)'])
+elseif scramLevel == 3
+    blocks.randomSequence = circshift( blocks.randomSequence , n_back, 2 );
+    disp(['Data circularly shifted by n_back (',num2str(n_back),'), at raw sequence level (Scram 3)'])
 end
 
 %R = analyseSequentialEffects(blocks, aux_plots);
