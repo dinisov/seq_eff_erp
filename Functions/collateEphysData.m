@@ -1,4 +1,4 @@
-function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots, zeroShiftMode, signalInversion,overrideChannel,rawDataPlot)
+function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots, zeroShiftMode, signalInversion,overrideChannel,rawDataPlot, behavState, sepTimeThreshold)
 %collateEphysData Summary of this function goes here
 %   Detailed explanation goes here
     if exist('overrideChannel') && ~isempty(overrideChannel)
@@ -6,6 +6,9 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
     end
     if exist('signalInversion') && isequal(signalInversion,'-')
         disp(['LFP data will be inverted'])
+    end
+    if exist('behavState') && ~isempty(behavState)
+        disp(['Behavioural state will be processed'])
     end
 
     BLOCKS = struct;
@@ -191,6 +194,9 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         %sometimes the photodiode has hiccups
         PHOT = trim_phot_outliers(PHOT, 12);
 
+        %behavioural separation
+        PHOT = ePhysBehavSep(PHOT, EEG.timestart, EEG.timeend, fly, block, date, behavState, homeDirectory, sepTimeThreshold);
+
         % trim LFP (remove anything from LFP beyond some sd set in fly_record)
         LFP = trimLFP(LFP,fly_record.LFPsd(b),aux_plots);
 
@@ -202,6 +208,14 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         end
 
         %% 
+
+        %Some QAs, probably useful because of possibility of behav
+            %Note: Empirically, 'small' (e.g. 250 frame [~80ms]) differences may be 'normal'
+        if abs(size(LFP,2) - size(PHOT,2)) > 0.05*size(LFP,2) %Guessing dimensionality
+            ['## Alert: >5% Size mismatch between PHOT and LFP ##'] %Note: May actually be normal depending on acquisition
+            crash = yes %Perhaps overkill
+        end
+        %%
 
     %     figure; plot(rawPHOT(2,:)); hold on; plot(PHOT(2,:));
 

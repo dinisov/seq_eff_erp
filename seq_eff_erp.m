@@ -19,18 +19,22 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
-timeFrequency = 0;
+timeFrequency = 1;
 
 %% toggles
 
 %n-back
-n_back = 5;
+n_back = 6;
+
+%behavioural separation
+behavState = 1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
+sepTimeThreshold = 30; % time threshold to classify minimum duration of an inactivity bout
 
 %error method (0 - a la Bruno and Matt; 1- propagation )
 errorMethod = 0;
 
 %Scramble level
-scramLevel = 3; %What stage to scramble sequences at (0 - None, 1 - Raw sequence calculation, 2 - Derived sequence)
+scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence calculation, 2 - Derived sequence)
     %1 - Most rigorous; Scrambles shortly after sequence calculated from phot, per fly 
     %2 - Less rigorous; Scrambles the arrangement of the 16 (or etc) 
         %Use mode 1 for rigorous scrambling, mode 2 to preserve within-sequence consistency
@@ -112,13 +116,13 @@ fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'keywords'; %keywords or manual; Modify this
+selectionMode = 'manual'; %keywords or manual; Modify this
 
 %%
 
 switch selectionMode
 
-    case 'keywords' %Do not modify
+    case 'keywords' %DO NOT MODIFY
 
         %----------------------
         %Specify keywords to select flies/blocks
@@ -174,10 +178,10 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [258]; %Singular
+        chosenFlies = [302]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[13]}; %Specify one block per fly (e.g. {[13],[17]}
+        chosenBlocks = {[5]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
 
@@ -244,7 +248,8 @@ end
 % the index here is that of the fly_record table, *not* the original block number
 
 %BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots);
-BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots, zeroShiftMode,'+',overrideChannel,rawDataPlot); %'-' for multichannel, '+' for single
+BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots,...
+    zeroShiftMode,'+',overrideChannel,rawDataPlot, behavState, sepTimeThreshold); %'-' for multichannel, '+' for single
 
 %% analyse data for each fly (can include multiple blocks)
 % IMPORTANT: make sure window is the same for all blocks belonging to the
@@ -309,7 +314,7 @@ end
 %% time-frequency analysis
 if timeFrequency
     %timeFrequencyAnalysis(FLIES, '..', plotIndividualFlies);
-    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [9,1 ; 8,1 ; 9,16 ; 8,16],n_back);
+    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [8,1 ; 1,2 ; 4,5],n_back,'isoMode',1);
 end
 
 %% Additional transect stuff
