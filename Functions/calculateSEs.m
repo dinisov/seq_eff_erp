@@ -1,4 +1,4 @@
-function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back)
+function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back)
 %calculateSEs Takes a matrix of ERPs separated by sequence and calculates SEs
 %   Detailed explanation goes here
 
@@ -11,6 +11,13 @@ function R = calculateSEs(allERPs,allPHOTs,aux_plots,window, resampleFreq, trans
         allPHOTs(allPHOTs == 0) = nan;
         meanPHOTs = mean(allPHOTs, 3, 'omitnan');
         R.meanPHOTs = meanPHOTs;
+    end
+    if ~isempty(allTIMEs)
+        %mean photodiode traces
+        allTIMEs(allTIMEs == 0) = nan;
+        temp = allTIMEs - allTIMEs(1,:,:); %This step turns allTIMEs into relative times
+        meanTIMEs = mean(temp, 3, 'omitnan'); 
+        R.meanTIMEs = meanTIMEs;
     end
     
     % in preparation for calculating the nan mean

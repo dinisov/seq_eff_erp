@@ -18,6 +18,7 @@ arguments
     options.animFrameRate double = 10; %Tentative attempted framerate for animated plot to display/save at
     options.saveFigVid double = 0; %Whether to save the animation to the figure folder
     options.extraFigSubplots double = 0; %Whether to add ERP subplots to animated plot (1) or rearrange (2)
+    options.limitIsomTime double = []; %If not empty, limits Isom x Time plots to be that frame duration (e.g. 241)
 end
 
 alphaVal = options.alphaVal;
@@ -33,6 +34,7 @@ doAnimatedPlot = options.doAnimatedPlot;
 animFrameRate = options.animFrameRate;
 saveFigVid = options.saveFigVid;
 extraFigSubplots = options.extraFigSubplots;
+limitIsomTime = options.limitIsomTime;
 
 %%
 
@@ -273,12 +275,26 @@ for fly = 1:size(chosenFlies,2)
             %                   nanstd(squeeze(R2.allERPs(timep,:,:)),[],2)' ./ nansum( ~isnan( squeeze(R2.allERPs(timep,:,:)) ), 2 )'];
             isomTime(a).SEM = [nanstd(squeeze(R1.allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(R1.allERPs(timep,:,:)) ), 2 ) )';...
                                nanstd(squeeze(R2.allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(R2.allERPs(timep,:,:)) ), 2 ) )'];
+            isomTime(a).trueTime = nanmean([R1.meanTIMEs(timep,:); R2.meanTIMEs(timep,:)],'all'); %As below, we probably don't care about per-sequence true time
             a = a + 1;
         end
 
+        %Define limits
+        timeLimit = [];
+        if ~isempty(limitIsomTime)
+            temp = find([isomTime.timep] <= limitIsomTime, 1, 'last');
+            timeLimit = temp;
+            %QA
+            if isempty(timeLimit)
+                ['-# Alert: Time limit cutoff for Isom x Time plot returned empty #-']
+                crash = yes %Highly likely an error made with limitIsomTime, or something odd with timeframe
+            end
+        else
+            timeLimit = size(isomTime,2);
+        end
         figure
-        for subl = 1:size(isomTime,2)
-            subplot(1,size(isomTime,2),subl)
+        for subl = 1:timeLimit
+            subplot(1,timeLimit,subl)
             %plot(isomTime(subl).data(1,reOrder),'Color','b')
             errorbar( isomTime(subl).mean(1,reOrder), isomTime(subl).SEM(1,reOrder), 'Color', 'b' )
             hold on
@@ -286,7 +302,14 @@ for fly = 1:size(chosenFlies,2)
             errorbar( isomTime(subl).mean(2,reOrder), isomTime(subl).SEM(2,reOrder), 'Color', 'r' )
             xticks([1:size(isomTime(subl).data,2)])
             xticklabels([])
-            title(['T:',num2str(isomTime(subl).timep)])
+            yticklabels([])
+            %xticks([])
+            %title(['T:',num2str(isomTime(subl).timep)])
+            titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
+            if subl == timeLimit && (timeLimit ~= size(isomTime,2))
+                titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
+            end
+            title(titleStr)
         end
         legend({'R1','R2'})
         set(gcf,'Name',['IsomxTime' '_fly' num2str(thisFly)])
@@ -294,7 +317,7 @@ for fly = 1:size(chosenFlies,2)
         
     end
 
-
+    clear R1 R2 %Safety
 end
 
 %Cross-fly isomers (if applicable)
@@ -320,6 +343,18 @@ if size(chosenFlies,2) > 1
         [num2str(temp)]
     end
     nTimepoints = unique(temp);
+
+    %Derive true time
+    crossTimeFull = cell(isomerCount,1);
+    for isoI = 1:isomerCount
+        crossTimeFull{isoI} = nan(nTimepoints, 0.5*2^n_back, size(chosenFlies,2));
+        temp = [];
+        for flyI = 1:size(chosenFlies,2)
+            thisFly = chosenFlies(flyI);
+            temp = FLIES(thisFly).ISOMER.(isomerNames{isoI}).meanTIMEs;
+            crossTimeFull{isoI}(:,:,flyI) = temp;
+        end
+    end
 
     for plotI = find(plotSelector == 1)
         %unstop
@@ -431,10 +466,13 @@ if size(chosenFlies,2) > 1
                 temp = [];
                 tempMean = [];
                 tempSEM = [];
+                tempTrueTime = [];
                 for isoI = 1:size(crossDataFull,1)
                     temp = squeeze( crossDataFull{isoI}(timep,:,:) ); %More cautious method of obtaining data used due to increased complexity of architecture
                     tempMean = [tempMean; nanmean(temp,2)'];
                     tempSEM = [tempSEM; nanstd(temp,[],2)' ./ sqrt(size(temp,2))];
+                    temp = squeeze( crossTimeFull{isoI}(timep,:,:) );
+                    tempTrueTime = [tempTrueTime; nanmean(temp,2)'];
                 end
                 %isomTime(a).mean = [nanmean(squeeze(R1.allERPs(timep,:,:)),2)';...
                 %                    nanmean(squeeze(R2.allERPs(timep,:,:)),2)'];
@@ -442,6 +480,8 @@ if size(chosenFlies,2) > 1
                 %                   nanstd(squeeze(R2.allERPs(timep,:,:)),[],2)' ./ nansum( ~isnan( squeeze(R2.allERPs(timep,:,:)) ), 2 )'];
                 isoMax(timep).mean = tempMean; 
                 isoMax(timep).SEM = tempSEM;
+                isoMax(timep).trueTime = nanmean(tempTrueTime,'all'); %Note: If there are irregularities in time association, this may obfuscate them
+                    %Compressing, because probably little need for true time separated by sequence
 
                 %isoIndiv
                 %a = a + 1;
@@ -453,6 +493,7 @@ if size(chosenFlies,2) > 1
                 isomTime(a).timep = timep;
                 isomTime(a).mean = isoMax(timep).mean;
                 isomTime(a).SEM = isoMax(timep).SEM;
+                isomTime(a).trueTime = isoMax(timep).trueTime;
                 a = a + 1;
             end
 
@@ -460,9 +501,21 @@ if size(chosenFlies,2) > 1
             if isoI > 2
                 ['## Alert: Subsequent plot not equipped to deal with more than 2 isomers ##']
             end
+            timeLimit = [];
+            if ~isempty(limitIsomTime)
+                temp = find([isomTime.timep] <= limitIsomTime, 1, 'last');
+                timeLimit = temp;
+                %QA
+                if isempty(timeLimit)
+                    ['-# Alert: Time limit cutoff for Isom x Time plot returned empty #-']
+                    crash = yes %Highly likely an error made with limitIsomTime, or something odd with timeframe
+                end
+            else
+                timeLimit = size(isomTime,2);
+            end
             figure
-            for subl = 1:size(isomTime,2)
-                subplot(1,size(isomTime,2),subl)
+            for subl = 1:timeLimit
+                subplot(1,timeLimit,subl)
                 %plot(isomTime(subl).data(1,reOrder),'Color','b')
                 errorbar( isomTime(subl).mean(1,reOrder), isomTime(subl).SEM(1,reOrder), 'Color', 'b' ) %Note: Hardcoded 2 isomers displayed
                 hold on
@@ -470,7 +523,13 @@ if size(chosenFlies,2) > 1
                 errorbar( isomTime(subl).mean(2,reOrder), isomTime(subl).SEM(2,reOrder), 'Color', 'r' )
                 %xticks([1:size(isomTime(subl).data,2)])
                 xticklabels([])
-                title(['T:',num2str(isomTime(subl).timep)])
+                yticklabels([])
+                %title(['T:',num2str(isomTime(subl).timep)])
+                titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
+                if subl == timeLimit && (timeLimit ~= size(isomTime,2))
+                    titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
+                end
+                title(titleStr)
             end
             legend({'R1','R2'})
             set(gcf,'Name',['Cross-fly IsomxTime'])
@@ -633,19 +692,19 @@ if size(chosenFlies,2) > 1
                 end
 
 
-            end
+            end %doAnimatedPlot end
 
 
 
         
-        end
+        end %transecting end
 
 
-    end  
+    end %plotI end  
 
 
 else
     disp(['(Not performing cross-fly isomer analyses because only one fly analysed)'])
 end
 
-end
+end %function end

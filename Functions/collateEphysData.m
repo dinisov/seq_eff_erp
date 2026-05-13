@@ -7,7 +7,7 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
     if exist('signalInversion') && isequal(signalInversion,'-')
         disp(['LFP data will be inverted'])
     end
-    if exist('behavState') && ~isempty(behavState)
+    if exist('behavState') && ~isempty(behavState) && behavState ~= -1
         disp(['Behavioural state will be processed'])
     end
 

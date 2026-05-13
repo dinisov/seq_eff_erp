@@ -34,17 +34,19 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     window = floor(blocks(1).window * blocks(1).resampleFreq);
     
     % group blocks (WARNING: only possible if window is the same for all blocks)
-    [allERPs, allPHOTs, goodTrials, focusPeaks] = groupBlocks(blocks,n_back);
+    [allERPs, allPHOTs, goodTrials, focusPeaks, allTIMEs] = groupBlocks(blocks,n_back);
 
     %TODO: find way to handle errors in block experiments
     if isfield(blocks,'focusPeaks')
         % get rid of all trials except the last one in each train
         allERPs = allERPs(:,:,logical(focusPeaks));
         allPHOTs = allPHOTs(:,:,logical(focusPeaks));
+        allTIMEs = allTIMEs(:,:,logical(focusPeaks));
     else
         % get rid of bad trials (trials with too long gaps between peaks)
         allERPs = allERPs(:,:,logical(goodTrials));
         allPHOTs = allPHOTs(:,:,logical(goodTrials));
+        allTIMEs = allTIMEs(:,:,logical(goodTrials));
     end
 
     %Scramble at sequence level if requested
@@ -52,6 +54,7 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
         scramInds = randperm( size(allERPs,2) );
         allERPs = allERPs(:,scramInds,:);
         allPHOTs = allPHOTs(:,scramInds,:);
+        allTIMEs = allTIMEs(:,scramInds,:);
         %NOTE: THIS DOES NOT DISTINGUISH BETWEEN ISOMERS
             %i.e. Scrambling will happily put LLLL as RRRRR etc 
             %It is probably possible to scramble *within* isomers, but more effort is needed
@@ -75,6 +78,7 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
         hold on;
         %plot(mean(all_erps,2), 'r');
         plot(nanmean(all_erps,2), 'r');
+        title(['Fly ',num2str(blocks(1).fly),' B',blocks(1).block, ' (',blocks(1).date,') - LFP'])
     end
     
     % onion plot of the photodiode data
@@ -84,7 +88,25 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
         hold on
         %plot(mean(squeeze(sum(allPHOTs,2)),2),'r');
         plot(nanmean(squeeze(nansum(allPHOTs,2)),2),'r');
-        title('')
+        %title('')
+        title(['Fly ',num2str(blocks(1).fly),' B',blocks(1).block, ' (',blocks(1).date,') - PHOT'])
+    end
+
+    %'onion' plot of time data
+    if aux_plots
+        temp = squeeze(nansum( allTIMEs, 2 )); %Flatten across sequence dimension (Since array in sparse in this dim, sum is okay)
+        temp = temp - temp(1,:);
+        figure;
+        plot(nanmean(temp,2),'k','LineWidth',2);
+        hold on
+        %plot(mean(squeeze(sum(allPHOTs,2)),2),'r');
+        %plot(nanmean(squeeze(nansum(allPHOTs,2)),2),'r');
+        for i = 1:size(temp,2)
+            plot(temp(:,i))
+        end
+        xlabel(['Frame'])
+        ylabel(['Time (s)'])
+        title(['Fly ',num2str(blocks(1).fly),' B',blocks(1).block, ' (',blocks(1).date,') - rel. time'])
     end
     
     %% plot mean ERPs for both stimuli separately
@@ -105,7 +127,7 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     [ISOMER] = plotIsomers(allERPs,[], window, n_back, blocks(1).resampleFreq,...
         blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, reOrder,...
         [blocks(1).date,' (#',num2str(blocks(1).fly),') B',blocks(1).block],...
-        plotIndividualFlies, allPHOTs);
+        plotIndividualFlies, allPHOTs, allTIMEs);
     
     %% calculate SEs
 
@@ -115,14 +137,17 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
     allERPs = allERPs + flip(allERPs,2);
     allPHOTs = allPHOTs + flip(allPHOTs,2);
+    allTIMEs = allTIMEs + flip(allTIMEs,2);
     %allERPs = allERPs(:,1:16,:);
     %allPHOTs = allPHOTs(:,1:16,:);
     allERPs = allERPs(:,1:0.5*2^n_back,:);
     allPHOTs = allPHOTs(:,1:0.5*2^n_back,:);
+    allTIMEs = allTIMEs(:,1:0.5*2^n_back,:);
     
     % reorder according to the literature
     allERPs = allERPs(:,seq_eff_order(n_back),:);
     allPHOTs = allPHOTs(:,seq_eff_order(n_back),:);
+    allTIMEs = allTIMEs(:,seq_eff_order(n_back),:);
 
     %MOVED HERE FROM calculateSEs TO SIMPLIFY ZERO-SHIFTING MATTERS
     allERPs(allERPs == 0) = nan;
@@ -135,7 +160,7 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     %end
     
     %R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
-    R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq, blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, n_back);
+    R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window,blocks(1).resampleFreq, blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, n_back);
     %Inject isomer data
     R.ISOMER = ISOMER;
     R = timeFrequencySpectrum(R, blocks, n_back);

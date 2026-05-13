@@ -1,4 +1,5 @@
-function [ISOMER] = plotIsomers(allERPs, isomer, window, n_back, resampleFreq, transectTime, avTransectWindow, plotSelector, reOrder, flyID, plotIndividualFlies, allPHOTs)
+function [ISOMER] = plotIsomers(allERPs, isomer, window, n_back, resampleFreq,...
+    transectTime, avTransectWindow, plotSelector, reOrder, flyID, plotIndividualFlies, allPHOTs, allTIMEs)
 %plotIsomers Plot isomers
 %   If isomer input is empty it calculates "natural" isomers (all ending with 0/1)
 %   "isomer" defines a set of 16 sequences, the other isomer being 1-isomer
@@ -43,11 +44,19 @@ function [ISOMER] = plotIsomers(allERPs, isomer, window, n_back, resampleFreq, t
             allPHOTs1 = [];
             allPHOTs2 = [];
         end
+        %New addition: And for times
+        if ~isempty(allTIMEs)
+            allTIMEs1 = allTIMEs(:,index1,:); %Note: Assumes same architecture as allERPs
+            allTIMEs2 = allTIMEs(:,index2,:); %Also, hardcoded only two isomers?
+        else
+            allTIMEs1 = [];
+            allTIMEs2 = [];
+        end
 
         %R1 = calculateSEs(allERPs1,[],0,window, resampleFreq); %Missing arguments for current gen implementation?
         %R2 = calculateSEs(allERPs2,[],0,window, resampleFreq);
-        R1 = calculateSEs(allERPs1,allPHOTs1,0,window, resampleFreq); %Support for phot even for isomers
-        R2 = calculateSEs(allERPs2,allPHOTs2,0,window, resampleFreq);
+        R1 = calculateSEs(allERPs1,allPHOTs1,allTIMEs1,0,window, resampleFreq); %Support for phot even for isomers
+        R2 = calculateSEs(allERPs2,allPHOTs2,allTIMEs2,0,window, resampleFreq);
 
         %figure; create_seq_eff_plot(R1.amplitudeSEs.',R2.amplitudeSEs.');
         figure; create_seq_eff_plot(R1.amplitudeSEs.',R2.amplitudeSEs.', 'reOrder',reOrder,'n_back',n_back);
@@ -100,14 +109,22 @@ function [ISOMER] = plotIsomers(allERPs, isomer, window, n_back, resampleFreq, t
             allPHOTs1 = [];
             allPHOTs2 = [];
         end
+        %And for times
+        if ~isempty(allTIMEs)
+            allTIMEs1 = allTIMEs(:,index1,:); %Note: Assumes same architecture as allERPs
+            allTIMEs2 = allTIMEs(:,index2,:); %Also, hardcoded only two isomers?
+        else
+            allTIMEs1 = [];
+            allTIMEs2 = [];
+        end
 
         nERPs1 = nansum( ~isnan(allERPs1(1,:,:)) , 3 );
         nERPs2 = nansum( ~isnan(allERPs2(1,:,:)) , 3 );
 
         %R1 = calculateSEs(allERPs1,[],0,window, resampleFreq);
         %R2 = calculateSEs(allERPs2,[],0,window, resampleFreq);
-        R1 = calculateSEs(allERPs1,allPHOTs1,0,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back);
-        R2 = calculateSEs(allERPs2,allPHOTs2,0,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back);
+        R1 = calculateSEs(allERPs1,allPHOTs1,allTIMEs1,0,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back);
+        R2 = calculateSEs(allERPs2,allPHOTs2,allTIMEs2,0,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back);
 
         %Amplitude isomers (Hardcoded)
         %{

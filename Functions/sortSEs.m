@@ -8,6 +8,7 @@ function blocks = sortSEs(blocks, n_back)
         LOCS = blocks(b).LOCS;
         LFP = blocks(b).LFP;
         PHOT = blocks(b).PHOT;
+        TIMES = blocks(b).times;
 %         rawPHOT = blocks(b).rawPHOT;
         randomSequence = blocks(b).randomSequence;
         resampleFreq = blocks(b).resampleFreq;
@@ -25,6 +26,7 @@ function blocks = sortSEs(blocks, n_back)
         %seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
         ERPS = nan(length(window(1):window(2)), n_seq, sequenceLength); %Switch to NaN because zero issues
         seqPHOT = nan(length(window(1):window(2)), n_seq, sequenceLength);
+        seqTIME = nan(length(window(1):window(2)), n_seq, sequenceLength);
         SEQS = cell(1,n_seq);
 
         %Pre-check for 'true' NaNs
@@ -42,6 +44,7 @@ function blocks = sortSEs(blocks, n_back)
             % time respectively)
             ERPS(:, seq, n) = LFP(LOCS(n) + window(1) : LOCS(n) + window(2));
             seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), LOCS(n) + window(1) : LOCS(n) + window(2) ));
+            seqTIME(:, seq, n) = TIMES(LOCS(n) + window(1) : LOCS(n) + window(2));
 
             SEQS{1,seq} = randomSequence(n-n_back+1:n); %Store this for posterity
 
@@ -83,6 +86,7 @@ function blocks = sortSEs(blocks, n_back)
         % remove ERP outliers
         ERPS = ERPS(:,:,good_erps);
         seqPHOT = seqPHOT(:,:,good_erps);
+        seqTIME = seqTIME(:,:,good_erps);
         badTrials = badTrials(good_erps);
         
         if isfield(blocks,'focusPeaks')
@@ -93,6 +97,7 @@ function blocks = sortSEs(blocks, n_back)
         blocks(b).ERPS = ERPS;
         blocks(b).badTrials = badTrials;
         blocks(b).seqPHOT = seqPHOT;
+        blocks(b).seqTIME = seqTIME;
         blocks(b).SEQS = SEQS;
     
     end

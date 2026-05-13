@@ -19,7 +19,7 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
-timeFrequency = 1;
+timeFrequency = 0;
 
 %% toggles
 
@@ -27,7 +27,7 @@ timeFrequency = 1;
 n_back = 6;
 
 %behavioural separation
-behavState = 1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
+behavState = -1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
 sepTimeThreshold = 30; % time threshold to classify minimum duration of an inactivity bout
 
 %error method (0 - a la Bruno and Matt; 1- propagation )
@@ -90,7 +90,7 @@ additionalTransectPlots = 0; %Whether to do additional transect calcs (all-timep
 additionalIsomerPlots = 1; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
 
 % whether to plot auxiliary plots (some are always plotted)
-aux_plots = 1;
+aux_plots = 0;
 rawDataPlot = 0;
 
 %%
@@ -116,7 +116,7 @@ fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'manual'; %keywords or manual; Modify this
+selectionMode = 'keywords'; %keywords or manual; Modify this
 
 %%
 
@@ -328,7 +328,8 @@ if additionalIsomerPlots
     [CROSSISOMER] = extraIsomerAnalyses(FLIES, chosenFlies, resultsDirectory,'correctForNTimepoints',1,'showPValPlots',1,...
         'patchMethod','lowestP', 'n_back',n_back,'reOrder',reOrder,'plotSelector',plotSelector,...
         'plotIndividualFlies',plotIndividualFlies, ...
-        'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2);
+        'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2,...
+        'limitIsomTime',122);
 end
 
 %% Report about potential scrambling
