@@ -26,6 +26,12 @@ for b = 1:length(blocks)
         percentDataLost = nnz(badTrials)/length(badTrials);
         disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '% (ignore if block experiment)']);
 
+        if numel(LOCS) == 0 && numel(badLOCS) == 0
+            disp(['-# No LOCS found; Skipping #-'])
+            blocks(b) = [];
+            continue
+        end
+
         % add processed data to original blocks structure
         blocks(b).badLOCS = badLOCS;
         blocks(b).badTrials = badTrials;

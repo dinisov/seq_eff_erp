@@ -103,6 +103,8 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         if ~dataIsMulti %Synapse data most likely
             photOneChannel = 1;
             photTwoChannel = 2;
+            PHOT = [PHOT(photOneChannel,:);...
+                PHOT(photTwoChannel,:)]; %Alter structure, just in case
         else %Multichannel data, probably processed like Synapse data
             photOneChannel = 1;
             photTwoChannel = 4;
@@ -127,7 +129,7 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
                 %Note: Assumes 60Hz refresh rate
             capInds = [];
             figure
-            for pInd = [photOneChannel,photTwoChannel]
+            for pInd = 1:size(PHOT,1)%[photOneChannel,photTwoChannel]
                 temp = smooth( PHOT(pInd,:) , smoothSpan );
                 temp = highpass( temp, 0.1, resampleFreq );
                 tempMed = nanmedian(temp);
@@ -159,7 +161,7 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
             for tempI = 1:tempEventNum
                 temp2 = LFP( tempBW == tempI );
                 tempTrans(tempI, [1:size(temp2,2)] ) = temp2;
-                for pInd = [photOneChannel,photTwoChannel]
+                for pInd = 1:size(PHOT,1)%[photOneChannel,photTwoChannel]
                     temp2Phot = PHOT(pInd, tempBW == tempI );
                     tempPhot(tempI, [1:size(temp2,2)] , pInd ) = temp2Phot;
                 end

@@ -5,8 +5,13 @@ function R = timeFrequencySpectrum(R, blocks, n_back)
     
     %300 Hz seems like a sensible upper limit
     for s = 1:0.5*2^n_back
-       [wt,f] = cwt(R.meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
-       cwtERPs(:,s,:) = wt; %#ok<AGROW>
+        try
+            [wt,f] = cwt(R.meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
+            cwtERPs(:,s,:) = wt; %#ok<AGROW>
+        catch
+            ['fft calculation failure']
+            crash = yes
+        end
     end
     
     magnitudeSEs = abs(cwtERPs);
@@ -28,8 +33,13 @@ function R = timeFrequencySpectrum(R, blocks, n_back)
             %300 Hz seems like a sensible upper limit
             for s = 1:0.5*2^n_back
                %[wt,f] = cwt(R.meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
-               [wt,f] = cwt(R.ISOMER.(thisIsom).meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
-               cwtERPs(:,s,:) = wt; %#ok<AGROW>
+               try
+                    [wt,f] = cwt(R.ISOMER.(thisIsom).meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
+                    cwtERPs(:,s,:) = wt; %#ok<AGROW>
+               catch
+                    ['## second stage FFT failure ##']
+                    crash = yes
+               end
             end
             
             magnitudeSEs = abs(cwtERPs);

@@ -19,7 +19,7 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
-timeFrequency = 0;
+timeFrequency = 1;
 
 %% toggles
 
@@ -281,7 +281,15 @@ for fly = chosenFlies
        'suppressANOVA',suppressANOVA, 'plotIndividualFlies',plotIndividualFlies,...
        'scramLevel',scramLevel);
    
-   FLIES(fly) = R; %#ok<SAGROW>
+   if ~isempty(R)
+       FLIES(fly) = R; %#ok<SAGROW>
+   else
+       disp([char(10),'fly # ',num2str(fly), ' empty; Removing #-', char(10)])
+       empInds = find( chosenFlies == fly );
+       chosenFlies( empInds ) = [];
+       chosenBlocks( empInds ) = [];
+       chosenFind( empInds ) = [];
+   end
    
 end
 

@@ -25,6 +25,12 @@ blocks = inferRandomSequence(blocks);
 
 blocks = calculateBadTrials(blocks, aux_plots);
 
+if isempty(blocks)
+    ['-# Block skipped #-']
+    R = [];
+    return
+end
+
 % only used for block experiments (automatic)
 blocks = findFocusLocs(blocks);
 
@@ -46,5 +52,11 @@ end
 R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, n_back, ...
     'suppressANOVA',suppressANOVA, 'plotIndividualFlies',plotIndividualFlies,...
     'scramLevel',scramLevel);
+
+if isempty(R)
+    disp(['-# No non-NaN data analysed #-'])
+    R = [];
+    return
+end
 
 end

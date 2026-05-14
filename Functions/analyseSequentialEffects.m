@@ -161,9 +161,30 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     
     %R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
     R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window,blocks(1).resampleFreq, blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, n_back);
+
+    %Check for nan problems (Empty data?)
+    if nansum(isnan(R.meanERPs),'all') == numel(R.meanERPs)
+        disp(['-# No meanERP data non-NaN #-'])
+        R = [];
+        return
+    end
+
     %Inject isomer data
     R.ISOMER = ISOMER;
-    R = timeFrequencySpectrum(R, blocks, n_back);
+    try
+        R = timeFrequencySpectrum(R, blocks, n_back);
+    catch
+        ['-# Alert: time/frequency failure for fly # ',num2str(blocks(1).fly),' block ',blocks(1).block,' #-']    
+        R.magnitudeSEs = [];
+        R.phaseSEs = [];
+        R.f = [];
+        R.ISOMER.R1.magnitudeSEs = [];
+        R.ISOMER.R1.phaseSEs = [];
+        R.ISOMER.R1.f = [];        
+        R.ISOMER.R1.magnitudeSEs = [];
+        R.ISOMER.R1.phaseSEs = [];
+        R.ISOMER.R1.f = [];
+    end
     
     % add window to results structure for convenience
     R.window = blocks(1).window;
