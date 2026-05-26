@@ -14,7 +14,7 @@ function [PHOT] = ePhysBehavSep(phot, startTime, endTime, fly, block, date, stat
 
     %presets for testing
     % phot = EEG.PHOT.data;
-    % fly = 2;
+    % fly = 23;
     % block = 1;
     % state = 1;
     % startTime = EEG.timestart;
@@ -39,6 +39,7 @@ function [PHOT] = ePhysBehavSep(phot, startTime, endTime, fly, block, date, stat
     flyVidName = ['fly', num2str(fly), char(datetime(date, 'Format', 'dd_MM_yy')), '_'];
     % vidDirectory = 'I:\BVS2026TWCF-Q9201\Mae 2026\Videos\Fly Videos'; %eventually make dynamic (maybe prereq for function?)
     vidDirectory = [homeDirectory, '\Videos'];
+    % vidDirectory = [homeDirectory, '\Videos\Fly Videos\Mae'];
 
     posixStart = posixtime(datetime([char(date), startTime], 'Format', 'ddMMyyHH:mm:ss')); %, 'TimeZone', '+10')); % did you know the capital H is for military time, lowercase h is 12-hour
     posixEnd = posixtime(datetime([char(date), endTime], 'Format', 'ddMMyyHH:mm:ss')); %, 'TimeZone', '+10'));
@@ -49,12 +50,9 @@ function [PHOT] = ePhysBehavSep(phot, startTime, endTime, fly, block, date, stat
 
     thisCSVs = dir( [vidDirectory,filesep,'fly',num2str(fly),'*mov.csv'] ); %returns structure
     %QA
-    failCount = 0;
     if isempty(thisCSVs)
         ['-# No data found for ',num2str(fly),' #-']
-        disp([[vidDirectory,filesep,'fly',num2str(fly),'*mov.csv'] ])
         failCount = failCount + 1;
-        crash = yes
     end
 
     %Collate
@@ -164,6 +162,22 @@ function [PHOT] = ePhysBehavSep(phot, startTime, endTime, fly, block, date, stat
         end
     end
     
+    % behavData informative plot
+    figure
+    plot(behavPosix - photTimes(1), movData)
+    hold on
+    plot(behavPosix - photTimes(1), repmat(acThreshLevel, size(behavPosix, 1), size(behavPosix, 2)), 'linewidth', 1.5, 'color', 'k', 'linestyle', '--')
+    % line([behavPosix(1), behavPosix(2)], [acThreshLevel, acThreshLevel], 'linewidth', 1.5, 'color', 'k', 'linestyle', '--')
+    bYs = get(gca, 'ylim');
+    plot(behavPosix - photTimes(1), inacBinaryProc*(bYs(2)/2) + bYs(2), 'linewidth', 2)
+    xlim([0, photTimes(end) - photTimes(1)])
+    xlabel('time(seconds)')
+    title(['Behavioural Data for fly ', num2str(fly), ' block ', num2str(block), ', timeThres:', num2str(timeThreshold)])
+    set(gca, 'LineWidth', 2, 'TickDir', 'out', 'FontWeight', 'bold', 'FontSize', 12, 'box', 'off')
+    legend({'behavData', 'activityThreshold', 'inacBinary'})
+    set(gcf, 'name', ['fly ', num2str(fly), ' block ', num2str(block), ', separated photodiode'])
+
+    % photodiode and binary
     figure
     plot(photTimes - photTimes(1), phot(1,:))
     % plot(photTimes, phot(1,:))
@@ -177,8 +191,10 @@ function [PHOT] = ePhysBehavSep(phot, startTime, endTime, fly, block, date, stat
     % plot(behavPosix, inacBinaryProc*(ys(2)/2) + ys(2), 'LineWidth', 2)    
     plot(behavPosix - photTimes(1), inacBinaryProc*(ys(2)/2) + ys(2), 'LineWidth', 2)
     xlim([0, photTimes(end) - photTimes(1)])
-    xlabel('time(posix)')
+    xlabel('time(seconds)')
     title(['separated photodiode for fly ', num2str(fly), ' block ', num2str(block)])
+    set(gca, 'LineWidth', 2, 'TickDir', 'out', 'FontWeight', 'bold', 'FontSize', 12, 'box', 'off')
+    set(gcf, 'name', ['fly ', num2str(fly), ' block ', num2str(block), ', separated photodiode'])
 
     % resaving photData/returning phot
     PHOT = phot;

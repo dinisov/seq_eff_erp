@@ -49,6 +49,12 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         TIMES = EEG.times;
         resampleFreq = EEG.srate;
 
+        %Reporter
+        if ~isequal(size(LFP,2),size(PHOT,2))
+            disp(['-# Caution: Sizes differ between LFP (',num2str(size(LFP,2)),') and PHOT (',num2str(size(PHOT,2)),') #-'])
+            disp(['(LFP -> PHOT: ',num2str(size(LFP,2)-size(PHOT,2)),' frames [',num2str( (size(LFP,2)-size(PHOT,2))/resampleFreq ), 's])'])
+        end
+
         if rawDataPlot
             %Plot raw data
                 %Note: This plot is likely not good for MATLAB speed/memory

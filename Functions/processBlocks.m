@@ -12,12 +12,16 @@ arguments
     options.suppressANOVA double = 0
     options.plotIndividualFlies double = 1
     options.scramLevel double = 0
+    options.arrowMode double = 0
+    options.firstLastPlot double = 0
 end
 
 %Extra
 suppressANOVA = options.suppressANOVA;
 plotIndividualFlies = options.plotIndividualFlies;
 scramLevel = options.scramLevel;
+arrowMode = options.arrowMode;
+firstLastPlot = options.firstLastPlot;
 
 blocks = calculatePeaks(blocks, aux_plots);
 
@@ -51,7 +55,7 @@ end
 %R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, n_back);
 R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, n_back, ...
     'suppressANOVA',suppressANOVA, 'plotIndividualFlies',plotIndividualFlies,...
-    'scramLevel',scramLevel);
+    'scramLevel',scramLevel, 'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);
 
 if isempty(R)
     disp(['-# No non-NaN data analysed #-'])

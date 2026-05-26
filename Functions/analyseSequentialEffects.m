@@ -11,17 +11,23 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
         options.suppressANOVA double = 0
         options.plotIndividualFlies double = 1
         options.scramLevel double = 0
+        options.arrowMode double = 0
+        options.firstLastPlot double = 0
     end
 
     %Extra
     suppressANOVA = options.suppressANOVA;
     plotIndividualFlies = options.plotIndividualFlies;
     scramLevel = options.scramLevel;
+    arrowMode = options.arrowMode;
+    firstLastPlot = options.firstLastPlot;
 
     %n_back = 5;  %TODO: make n_back variable
     
     % sort according to sequence
-    blocks = sortSEs(blocks, n_back);
+    %blocks = sortSEs(blocks, n_back);
+    blocks = sortSEs(blocks, n_back, ...
+        'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);
 
     %QA
     if size(blocks,2) > 1
@@ -35,6 +41,7 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     
     % group blocks (WARNING: only possible if window is the same for all blocks)
     [allERPs, allPHOTs, goodTrials, focusPeaks, allTIMEs] = groupBlocks(blocks,n_back);
+        %Note: This does not perform much/any processing under normal conditions?
 
     %TODO: find way to handle errors in block experiments
     if isfield(blocks,'focusPeaks')

@@ -19,12 +19,12 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
-timeFrequency = 1;
+timeFrequency = 0;
 
 %% toggles
 
 %n-back
-n_back = 6;
+n_back = 5;
 
 %behavioural separation
 behavState = -1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
@@ -40,6 +40,11 @@ scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence
         %Use mode 1 for rigorous scrambling, mode 2 to preserve within-sequence consistency
         %Note: Mode 2 as written currently will not preserve the isomer balance (i.e. 75% of left-ending may end up right-labelled etc)
         %Secondary note: This is always applied at a per-fly level, so even with mode 2, the scrambled ordering of seqs will differ across flies
+%Arrow mode
+arrowMode = 1; %Whether to apply 'Arrow of Time' control to data (Collection of data from immediately before stimuli)
+    %arrowMode = 1 - randomSequence read backwards, data collected from 'behind' and is backwards (e.g. n1:5 is read as 5:1, and window is 0:1 etc)
+    %arrowMode = 1.5 - As above, but LFP/PHOT/Times are reflipped to return them to their 'true' orientation
+firstLastPlot = 1; %Whether to do an arrow-associated plot of the first/last capture
 
 %Ordering for plots
 %reOrder = [9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8]; %Reorders plots (and labels ofc) 
@@ -87,11 +92,11 @@ plotSelector = [0 1 0 0 0 1 0];
 %end
 %Note: This data is collated in groupFlies, collected initially in [processBlocks->analyseSequentialEffects->]calculateSEs
 additionalTransectPlots = 0; %Whether to do additional transect calcs (all-timepoint transect sig, transect window, etc)
-additionalIsomerPlots = 1; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
+additionalIsomerPlots = 0; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
 
 % whether to plot auxiliary plots (some are always plotted)
-aux_plots = 0;
-rawDataPlot = 0;
+aux_plots = 1;
+rawDataPlot = 1;
 
 %%
 
@@ -116,7 +121,7 @@ fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'keywords'; %keywords or manual; Modify this
+selectionMode = 'manual'; %keywords or manual; Modify this
 
 %%
 
@@ -178,10 +183,10 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [302]; %Singular
+        chosenFlies = [260]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[5]}; %Specify one block per fly (e.g. {[13],[17]}
+        chosenBlocks = {[23]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
 
@@ -279,7 +284,7 @@ for fly = chosenFlies
 
    R = processBlocks(thisFlyBlocks, aux_plots, plotSelector, reOrder, n_back, ...
        'suppressANOVA',suppressANOVA, 'plotIndividualFlies',plotIndividualFlies,...
-       'scramLevel',scramLevel);
+       'scramLevel',scramLevel, 'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);
    
    if ~isempty(R)
        FLIES(fly) = R; %#ok<SAGROW>

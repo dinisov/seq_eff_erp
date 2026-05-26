@@ -18,6 +18,19 @@ load('slrp_lrpr.mat','slrp','lrpr','weird');
 
 % gets rid of empty structures
 FLIES = FLIES(~cellfun(@isempty,{FLIES.allERPs}));
+%Check if any missing FFT calcs (2nd stage failure etc)
+missDataList = [];
+for fly = 1:size(FLIES,2)
+    if isempty(FLIES(fly).magnitudeSEs)
+        disp(['-# Caution: Dataset #',num2str(fly),' (Fly ',num2str(FLIES(fly).fly),' block ',FLIES(fly).block,') contains empty FFT data #-'])
+        missDataList = [missDataList,fly];
+    end
+end
+if ~isempty(missDataList)
+    FLIES(missDataList) = [];
+    chosenFlies(missDataList) = [];
+    disp([num2str(numel(missDataList)),' dataset/s were removed'])
+end
 
 resultsDirectory = [homeDirectory '\Results_Time_Frequency\'];
 if exist(resultsDirectory) ~= 7
