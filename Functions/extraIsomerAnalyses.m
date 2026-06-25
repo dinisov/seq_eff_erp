@@ -19,6 +19,7 @@ arguments
     options.saveFigVid double = 0; %Whether to save the animation to the figure folder
     options.extraFigSubplots double = 0; %Whether to add ERP subplots to animated plot (1) or rearrange (2)
     options.limitIsomTime double = []; %If not empty, limits Isom x Time plots to be that frame duration (e.g. 241)
+    options.doCorrPlots double = 0; %Whether to do correlation plots on isomer data
 end
 
 alphaVal = options.alphaVal;
@@ -35,6 +36,7 @@ animFrameRate = options.animFrameRate;
 saveFigVid = options.saveFigVid;
 extraFigSubplots = options.extraFigSubplots;
 limitIsomTime = options.limitIsomTime;
+doCorrPlots = options.doCorrPlots;
 
 %%
 
@@ -314,8 +316,78 @@ for fly = 1:size(chosenFlies,2)
         legend({'R1','R2'})
         set(gcf,'Name',['IsomxTime' '_fly' num2str(thisFly)])
         saveas(gcf,[ resultsDirectory '/' 'IsomxTime' '_fly' num2str(thisFly) '.png']);
+
+        if doCorrPlots
+            uniqueNess = nan( size(isomTime(1).data,1) , size(isomTime(1).data,1) ); %Will be used to check uniqueness of isomer combinations
+            for isoKInd = 1:size(isomTime(1).data,1)
+                for isoLInd = 1:size(isomTime(1).data,1)
+                    temp = sort( [isoKInd,isoLInd] );
+                    if uniqueNess(temp(1),temp(2)) == 1
+                        %disp(['already done [',num2str(isoKInd),' x ',num2str(isoLInd),']'])
+                        continue
+                    else
+                        uniqueNess(temp(1),temp(2)) = 1;
+                    end
+
+                    superTimeCorr = nan( timeLimit , timeLimit ); %Time x Time within Isomer
+                    superTimeP = nan( timeLimit , timeLimit );
+                    for subl = 1:timeLimit
+                        for subk = 1:timeLimit
+                            [temR, temP] = corrcoef( isomTime(subl).mean(isoKInd,reOrder)' , isomTime(subk).mean(isoLInd,reOrder)' );
+                                %Note: Sometimes diagonals not perfectly equal to 1?
+                            if subl == subk
+                                superTimeCorr(subl,subk) = NaN;
+                                superTimeP(subl,subk) = NaN; 
+                            else
+                                superTimeCorr(subl,subk) = temR(1,2); %Only 'one' comp
+                                superTimeP(subl,subk) = temP(1,2);
+                            end
+                        end
+                    end
+
+                    superTimeP = superTimeP * ((timeLimit^2)*0.5 - timeLimit); %Bootleg Bonff. correction
+    
+                    %superTimeCorr( superTimeCorr == 1 ) = NaN; %This is handled by the loop now, to simplify certain things
+    
+                    %Plot
+                    figure
+                    subplot(1,2,1)
+                    imagesc( superTimeCorr )
+                    colorbar
+                    xticks(1:timeLimit)
+                    yticks(1:timeLimit)
+                    xticklabels([isomTime(1:timeLimit).timep])
+                    yticklabels([isomTime(1:timeLimit).timep])
+                    xlabel('Time')
+                    ylabel('Time')
+                    title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
+                    subplot(1,2,2)
+                    imagesc(superTimeP)
+                    colorbar
+                    %Plot P-vals too
+                    hold on
+                    [r,c] = ind2sub( [7,7], find(superTimeP < alphaVal ) ); %Find coordinates of all P values < 0.05
+                    for scatInd = 1:size(r,1)
+                        scatter(r(scatInd),c(scatInd),'filled','r')
+                    end
+                    xticks(1:timeLimit)
+                    yticks(1:timeLimit)
+                    xticklabels([isomTime(1:timeLimit).timep])
+                    yticklabels([isomTime(1:timeLimit).timep])
+                    xlabel('Time')
+                    ylabel('Time')
+                    title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Boot. Bonff.])'])
+                    hold off
+                    set(gcf,'Name',['Fly ',num2str(thisFly),' isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
+
+                end
+            end
+
+            
+
+        end %doCorrPlots end
         
-    end
+    end %plotIndividualFlies end
 
     clear R1 R2 %Safety
 end
@@ -694,11 +766,88 @@ if size(chosenFlies,2) > 1
 
             end %doAnimatedPlot end
 
+            %Full time corr plots
+            if doCorrPlots
 
+                %Borrowed from above, mostly
+                uniqueNess = nan( size(isoMax(1).mean,1) , size(isoMax(1).mean,1) ); %Will be used to check uniqueness of isomer combinations
+                for isoKInd = 1:size(isoMax(1).mean,1)
+                    for isoLInd = 1:size(isoMax(1).mean,1)
+                        temp = sort( [isoKInd,isoLInd] );
+                        if uniqueNess(temp(1),temp(2)) == 1
+                            %disp(['already done [',num2str(isoKInd),' x ',num2str(isoLInd),']'])
+                            continue
+                        else
+                            uniqueNess(temp(1),temp(2)) = 1;
+                        end
+    
+                        superTimeCorr = nan( nTimepoints , nTimepoints ); %Time x Time within Isomer
+                        superTimeP = nan( nTimepoints , nTimepoints );
+                        for subl = 1:nTimepoints
+                            for subk = 1:nTimepoints
+                                [temR, temP] = corrcoef( isoMax(subl).mean(isoKInd,reOrder)' , isoMax(subk).mean(isoLInd,reOrder)' );
+                                    %Note: Sometimes diagonals not perfectly equal to 1?
+                                if subl == subk
+                                    superTimeCorr(subl,subk) = NaN;
+                                    superTimeP(subl,subk) = NaN; 
+                                else
+                                    superTimeCorr(subl,subk) = temR(1,2); %Only 'one' comp
+                                    superTimeP(subl,subk) = temP(1,2);
+                                end
+                            end
+                        end
 
+                        superTimeP = superTimeP * ( (nTimepoints^2)*0.5 - nTimepoints);
+        
+                        %superTimeCorr( superTimeCorr == 1 ) = NaN; %This is handled by the loop now, to simplify certain things
+        
+                        %Plot
+                        figure
+                        subplot(2,2,[1,3])
+                        imagesc( superTimeCorr )
+                        colorbar
+                        %xticks(1:nTimepoints)
+                        %yticks(1:nTimepoints)
+                        %xticklabels([isoMax.timep])
+                        %yticklabels([isoMax.timep])
+                        xlabel('Time')
+                        ylabel('Time')
+                        title(['Cross-fly isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
+                        subplot(2,2,[2])
+                        imagesc(superTimeP)
+                        colorbar
+                        %Plot P-vals too
+                            %Infeasibly slow for this plot???
+                        %{
+                        hold on
+                        [r,c] = ind2sub( [7,7], find(superTimeP < alphaVal ) ); %Find coordinates of all P values < 0.05
+                        for scatInd = 1:size(r,1)
+                            scatter(r(scatInd),c(scatInd),'filled','r')
+                        end
+                        %}
+                        xlabel('Time')
+                        ylabel('Time')
+                        title(['P-vals across timep (p<',num2str(alphaVal),' [Boot. Bonff.])'])
+                        subplot(2,2,[4])
+                        binP = superTimeP;
+                        inds = binP < alphaVal ;
+                        binP( inds ) = 1;
+                        binP( ~inds ) = 0;
+                        imagesc(binP)
+                        colorbar
+                        xlabel('Time')
+                        ylabel('Time')
+                        title(['Sig Yes [1] or No [0] (p<',num2str(alphaVal),' [Boot. Bonff.])'])
+                        %hold off
+                        set(gcf,'Name',['Cross-fly isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
+    
+                    end
+                end
+                
+
+            end
         
         end %transecting end
-
 
     end %plotI end  
 

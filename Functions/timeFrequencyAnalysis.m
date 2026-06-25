@@ -10,9 +10,11 @@ arguments
     customComparisons double
     n_back double
     options.isoMode double = 0 %Whether to analyse time frequency for isomers (1) or merged (0)
+    options.forcedCLimits double = [] %Forces heatmap limits for certain applicable plots
 end
 
 isoMode = options.isoMode;
+forcedCLimits = options.forcedCLimits;
 
 load('slrp_lrpr.mat','slrp','lrpr','weird');
 
@@ -407,7 +409,12 @@ for iso = 1:isoN
         xlabel('time (ms)'); ylabel('Frequency (Hz)');
         %title('AAAA minus AAAR');
         %title(['Mean ', exLabels{c1},' minus ',exLabels{c2}]);
-        title(['Mean ', c1ActualLabel,' minus ',c2ActualLabel figAdd]);
+        if ~isempty(forcedCLimits)
+            clim([forcedCLimits])
+        end
+        ceel = get(gca,'CLim'); %If forced, this will be forced limit, otherwise should represent the auto
+        %title(['Mean ', c1ActualLabel,' minus ',c2ActualLabel figAdd]);
+        title(['Mean ', c1ActualLabel,' minus ',c2ActualLabel, figAdd, ' [CLimit: ',num2str(ceel),']']);
         %saveas(gcf,[resultsDirectory 'AAAA_minus_AAAR_fly' num2str(fly) '.png']);
         saveas(gcf,[resultsDirectory 'mean_' c1ActualLabel '_minus_' c2ActualLabel figAdd '.png']);
     end

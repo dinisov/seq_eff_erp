@@ -98,6 +98,18 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
         %title('')
         title(['Fly ',num2str(blocks(1).fly),' B',blocks(1).block, ' (',blocks(1).date,') - PHOT'])
     end
+    %Testatory version of same, with more discrete display
+    %{
+    figure
+    plot( squeeze( nanmean(allPHOTs, [2,3]) ), 'Color', 'k','LineWidth',1.5 )
+    hold on
+    for i = 1:size(allPHOTs,3)
+        plot( squeeze( nansum(allPHOTs(:,:,i) , [2] ) ) )
+        title(num2str(i))
+        drawnow
+        input('Enter to proceed to next event')
+    end
+    %}
 
     %'onion' plot of time data
     if aux_plots

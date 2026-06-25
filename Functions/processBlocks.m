@@ -14,6 +14,7 @@ arguments
     options.scramLevel double = 0
     options.arrowMode double = 0
     options.firstLastPlot double = 0
+    options.photMovMaxWindow double = [20,20]; %What window to use for calculatePeaks
 end
 
 %Extra
@@ -22,8 +23,10 @@ plotIndividualFlies = options.plotIndividualFlies;
 scramLevel = options.scramLevel;
 arrowMode = options.arrowMode;
 firstLastPlot = options.firstLastPlot;
+photMovMaxWindow = options.photMovMaxWindow;
 
-blocks = calculatePeaks(blocks, aux_plots);
+disp(['Using window of ',num2str(photMovMaxWindow), ' for phot movmax calcs'])
+blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow);
 
 blocks = inferRandomSequence(blocks);
 

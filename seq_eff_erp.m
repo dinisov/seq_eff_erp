@@ -41,7 +41,7 @@ scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence
         %Note: Mode 2 as written currently will not preserve the isomer balance (i.e. 75% of left-ending may end up right-labelled etc)
         %Secondary note: This is always applied at a per-fly level, so even with mode 2, the scrambled ordering of seqs will differ across flies
 %Arrow mode
-arrowMode = 1; %Whether to apply 'Arrow of Time' control to data (Collection of data from immediately before stimuli)
+arrowMode = 0; %Whether to apply 'Arrow of Time' control to data (Collection of data from immediately before stimuli)
     %arrowMode = 1 - randomSequence read backwards, data collected from 'behind' and is backwards (e.g. n1:5 is read as 5:1, and window is 0:1 etc)
     %arrowMode = 1.5 - As above, but LFP/PHOT/Times are reflipped to return them to their 'true' orientation
 firstLastPlot = 1; %Whether to do an arrow-associated plot of the first/last capture
@@ -82,7 +82,7 @@ fitModel = 0;
 suppressANOVA = 1;
 
 % plot individual flies?
-plotIndividualFlies = 0;
+plotIndividualFlies = 1;
 plotComponents = 0; %Currently only applies to time/freq analysis, enables/disables SLRP, etc graphs
 
 % which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough, transect, average transect in window)
@@ -92,7 +92,7 @@ plotSelector = [0 1 0 0 0 1 0];
 %end
 %Note: This data is collated in groupFlies, collected initially in [processBlocks->analyseSequentialEffects->]calculateSEs
 additionalTransectPlots = 0; %Whether to do additional transect calcs (all-timepoint transect sig, transect window, etc)
-additionalIsomerPlots = 0; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
+additionalIsomerPlots = 1; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
 
 % whether to plot auxiliary plots (some are always plotted)
 aux_plots = 1;
@@ -284,7 +284,8 @@ for fly = chosenFlies
 
    R = processBlocks(thisFlyBlocks, aux_plots, plotSelector, reOrder, n_back, ...
        'suppressANOVA',suppressANOVA, 'plotIndividualFlies',plotIndividualFlies,...
-       'scramLevel',scramLevel, 'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);
+       'scramLevel',scramLevel, 'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);%,...
+       %'photMovMaxWindow',[20,20]);
    
    if ~isempty(R)
        FLIES(fly) = R; %#ok<SAGROW>
@@ -327,7 +328,8 @@ end
 %% time-frequency analysis
 if timeFrequency
     %timeFrequencyAnalysis(FLIES, '..', plotIndividualFlies);
-    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [8,1 ; 1,2 ; 4,5],n_back,'isoMode',1);
+    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [8,1 ; 1,2 ; 4,5],n_back,...
+        'isoMode',1);
 end
 
 %% Additional transect stuff
@@ -342,7 +344,7 @@ if additionalIsomerPlots
         'patchMethod','lowestP', 'n_back',n_back,'reOrder',reOrder,'plotSelector',plotSelector,...
         'plotIndividualFlies',plotIndividualFlies, ...
         'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2,...
-        'limitIsomTime',122);
+        'limitIsomTime',122, 'doCorrPlots',1);
 end
 
 %% Report about potential scrambling

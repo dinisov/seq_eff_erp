@@ -91,11 +91,14 @@ firstLastPlot = options.firstLastPlot;
                 theseLOCInds = arrowLOCS(n) + window(1) : arrowLOCS(n) + window(2);
                 if arrowMode == 1
                     ERPS(:, seq, n) = arrowLFP( theseLOCInds );
-                    seqPHOT(:, seq, n) = normalize(arrowPHOT(2-randomSequence(n), theseLOCInds ));
+                    seqPHOT(:, seq, n) = normalize(arrowPHOT(2-arrowSequence(n), theseLOCInds ));
+                    %Note: This selects the applicable phot row for this event, 
+                    % but if the window spans >1 event, the next event may be not shown, 
+                    % because it occurred in the other channel
                     seqTIME(:, seq, n) = arrowTIMES( theseLOCInds );
                 elseif arrowMode == 1.5
                     ERPS(:, seq, n) = fliplr( arrowLFP( theseLOCInds ) );
-                    seqPHOT(:, seq, n) = fliplr( normalize(arrowPHOT(2-randomSequence(n), theseLOCInds )) );
+                    seqPHOT(:, seq, n) = fliplr( normalize(arrowPHOT(2-arrowSequence(n), theseLOCInds )) );
                     seqTIME(:, seq, n) = fliplr( arrowTIMES( theseLOCInds ) );
                 end
             end

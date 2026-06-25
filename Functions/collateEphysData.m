@@ -49,6 +49,13 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         TIMES = EEG.times;
         resampleFreq = EEG.srate;
 
+        %QA
+        if numel( unique( PHOT ) ) == 1 || numel( unique( LFP ) ) == 1
+            ['## ALERT: EXTREME LIKELIHOOD OF SINGULAR VALUES IN PHOT OR LFP ##']
+            crash = yes
+            %Basically, either PHOT or LFP contains all zeroes, ones, etc
+        end
+
         %Reporter
         if ~isequal(size(LFP,2),size(PHOT,2))
             disp(['-# Caution: Sizes differ between LFP (',num2str(size(LFP,2)),') and PHOT (',num2str(size(PHOT,2)),') #-'])

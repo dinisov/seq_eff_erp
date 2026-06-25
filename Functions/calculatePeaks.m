@@ -1,6 +1,13 @@
-function blocks = calculatePeaks(blocks, aux_plots)
+function blocks = calculatePeaks(blocks, aux_plots, options)
 %calculatePeaks Calculate photodiode peaks
 %   Detailed explanation goes here
+arguments
+    blocks struct
+    aux_plots double
+    options.photMovMaxWindow double = [20,20]
+end
+photMovMaxWindow = options.photMovMaxWindow;
+
 
 for b = 1:length(blocks)
     
@@ -12,11 +19,17 @@ for b = 1:length(blocks)
     if blocks(b).PHOTType == 1
 
         PHOT = -blocks(b).PHOT(3,:)/max(blocks(b).PHOT(3,:));
+        %QA
+        if ~any(~isnan(PHOT)) %Boolean may be assembled incorrectly
+            ['## No non-NaN PHOT data found! ##']
+            crash = yes
+        end
 
         if aux_plots
             figure; plot(PHOT);
         end
-        PHOT = movmax(PHOT,[20 20]);
+        %PHOT = movmax(PHOT,[20 20]);
+        PHOT = movmax(PHOT,photMovMaxWindow)
         if aux_plots    
             hold on; plot(PHOT);
         end
@@ -44,6 +57,12 @@ for b = 1:length(blocks)
         PHOT2 = blocks(b).PHOT(2,:)/max(blocks(b).PHOT(2,:)); %No inversion for multichannel data (Currently)
         end
 
+        %QA
+        if ~any(~isnan(PHOT1)) || ~any(~isnan(PHOT2))
+            ['## No PHOT1 or PHOT2 data found! ##']
+            crash = yes
+        end
+
         if aux_plots
             photty1 = figure;
             plot(PHOT1)
@@ -53,8 +72,10 @@ for b = 1:length(blocks)
             title('PHOT2')
         end
 
-        PHOT1 = movmax(PHOT1,[40 40]);%was [40 40]
-        PHOT2 = movmax(PHOT2,[40 40]);%was [40 40]
+        %PHOT1 = movmax(PHOT1,[40 40]);%was [40 40]
+        %PHOT2 = movmax(PHOT2,[40 40]);%was [40 40]
+        PHOT1 = movmax(PHOT1,photMovMaxWindow);%was [40 40]
+        PHOT2 = movmax(PHOT2,photMovMaxWindow);%was [40 40]
         
         blocks(b).PHOT(1,:) = PHOT1;
         blocks(b).PHOT(2,:) = PHOT2;
@@ -80,6 +101,11 @@ for b = 1:length(blocks)
     LOCS = zeros(1,length(blocks(b).PHOT));
     LOCS(LOCS_PHOT1) = LOCS_PHOT1; LOCS(LOCS_PHOT2) = LOCS_PHOT2;
     LOCS = LOCS(logical(LOCS));
+
+    if isempty(LOCS)
+        ['## ALERT: NO PHOT LOCS FOUND ##']
+        crash = yes %May actually be normal for some conditions?
+    end
     
     blocks(b).LOCS = LOCS;
     blocks(b).LOCS_PHOT1 = LOCS_PHOT1;
