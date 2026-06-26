@@ -121,7 +121,7 @@ fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'manual'; %keywords or manual; Modify this
+selectionMode = 'keywords'; %keywords or manual; Modify this
 
 %%
 

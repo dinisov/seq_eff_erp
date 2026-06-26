@@ -353,6 +353,7 @@ for fly = 1:size(chosenFlies,2)
                     figure
                     subplot(1,2,1)
                     imagesc( superTimeCorr )
+                    set(gca,'YDir','normal')
                     colorbar
                     xticks(1:timeLimit)
                     yticks(1:timeLimit)
@@ -363,12 +364,17 @@ for fly = 1:size(chosenFlies,2)
                     title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
                     subplot(1,2,2)
                     imagesc(superTimeP)
+                    set(gca,'YDir','normal')
                     colorbar
                     %Plot P-vals too
                     hold on
                     [r,c] = ind2sub( [7,7], find(superTimeP < alphaVal ) ); %Find coordinates of all P values < 0.05
                     for scatInd = 1:size(r,1)
-                        scatter(r(scatInd),c(scatInd),'filled','r')
+                        if superTimeP( r(scatInd),c(scatInd) ) < (alphaVal/5)
+                            scatter(r(scatInd),c(scatInd),'filled','w')
+                        else
+                            scatter(r(scatInd),c(scatInd),'filled','r')
+                        end
                     end
                     xticks(1:timeLimit)
                     yticks(1:timeLimit)
@@ -376,7 +382,7 @@ for fly = 1:size(chosenFlies,2)
                     yticklabels([isomTime(1:timeLimit).timep])
                     xlabel('Time')
                     ylabel('Time')
-                    title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Boot. Bonff.])'])
+                    title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] [Boot. Bonff.])'])
                     hold off
                     set(gcf,'Name',['Fly ',num2str(thisFly),' isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
 
@@ -803,16 +809,19 @@ if size(chosenFlies,2) > 1
         
                         %Plot
                         figure
-                        subplot(2,2,[1,3])
+                        ax1 = subplot(2,2,[1,3]);
                         imagesc( superTimeCorr )
+                        set(gca,'YDir','normal')
                         colorbar
                         %xticks(1:nTimepoints)
                         %yticks(1:nTimepoints)
                         %xticklabels([isoMax.timep])
                         %yticklabels([isoMax.timep])
-                        xlabel('Time')
-                        ylabel('Time')
+                        xlabel('Time (frame)')
+                        ylabel('Time (frame)')
                         title(['Cross-fly isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
+                        %{
+                        %(Granular P-value display disabled)
                         subplot(2,2,[2])
                         imagesc(superTimeP)
                         colorbar
@@ -828,16 +837,24 @@ if size(chosenFlies,2) > 1
                         xlabel('Time')
                         ylabel('Time')
                         title(['P-vals across timep (p<',num2str(alphaVal),' [Boot. Bonff.])'])
-                        subplot(2,2,[4])
+                        %}
+                        ax2 = subplot(2,2,[2,4]);
                         binP = superTimeP;
-                        inds = binP < alphaVal ;
+                        inds = binP < alphaVal;
+                        superInds = binP < (alphaVal/5);
                         binP( inds ) = 1;
                         binP( ~inds ) = 0;
+                        binP( superInds ) = 2;
+                        binP = binP .* sign(superTimeCorr);
+                        binP( isnan(binP) ) = 0;
                         imagesc(binP)
+                        set(gca,'YDir','normal')
+                        clim([-2,2])
+                        colormap(ax2,jet)
                         colorbar
-                        xlabel('Time')
-                        ylabel('Time')
-                        title(['Sig Yes [1] or No [0] (p<',num2str(alphaVal),' [Boot. Bonff.])'])
+                        xlabel('Time (frame)')
+                        ylabel('Time (frame)')
+                        title(['Pos./Neg. corr [+ / -], p<',num2str(alphaVal),' [1], p<',num2str(alphaVal/5),' [2] [Boot. Bonff.])'])
                         %hold off
                         set(gcf,'Name',['Cross-fly isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
     
