@@ -34,7 +34,7 @@ end
 %-----------------------------------------------
 %Flags (Mostly)
 %#############
-expType = 'multi' %('single' vs 'multi')
+expType = 'single' %('single' vs 'multi')
 %#############
 switch expType
     case 'single'

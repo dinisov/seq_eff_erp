@@ -171,13 +171,21 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
 
             tempTrans = nan(tempEventNum,tempMax);
             tempPhot = nan(tempEventNum,tempMax,size(PHOT,1));
+            hasFailure = 0;
             for tempI = 1:tempEventNum
-                temp2 = LFP( tempBW == tempI );
-                tempTrans(tempI, [1:size(temp2,2)] ) = temp2;
-                for pInd = 1:size(PHOT,1)%[photOneChannel,photTwoChannel]
-                    temp2Phot = PHOT(pInd, tempBW == tempI );
-                    tempPhot(tempI, [1:size(temp2,2)] , pInd ) = temp2Phot;
+                try
+                    temp2 = LFP( tempBW == tempI );
+                    tempTrans(tempI, [1:size(temp2,2)] ) = temp2;
+                    for pInd = 1:size(PHOT,1)%[photOneChannel,photTwoChannel]
+                        temp2Phot = PHOT(pInd, tempBW == tempI );
+                        tempPhot(tempI, [1:size(temp2,2)] , pInd ) = temp2Phot;
+                    end
+                catch
+                    hasFailure = hasFailure + 1;
                 end
+            end
+            if hasFailure ~= 0
+                disp(['-# Caution: Bootleg LFP/PHOT plot encountered ',num2str(hasFailure),' failures to capture an event #-'])
             end
 
             tempMean = nanmean(tempTrans,1);

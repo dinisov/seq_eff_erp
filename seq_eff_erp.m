@@ -142,8 +142,8 @@ switch selectionMode
         end
         
         % filter in keywords
-        filterIn = {'tsh/wichr','255','no atr','baseline'};
-        %filterIn = {'Baseline'};
+        %filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
+        filterIn = {'sleepdep1','104y'};
 
         if ~isempty(filterIn)
             for i = 1:length(filterIn)
@@ -154,7 +154,8 @@ switch selectionMode
         % filter out keywords
         %filter out example: {'wiChr','baseline','255'};
         % cell array of keywords
-        filterOut = {};
+        %filterOut = {}; %Matt default
+        filterOut = {'dodgy','wichr'};
         
         fly_record = fly_record(~contains(fly_record.Comments,filterOut,'IgnoreCase',true),:);
         
@@ -183,10 +184,10 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [260]; %Singular
+        chosenFlies = [131]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[23]}; %Specify one block per fly (e.g. {[13],[17]}
+        chosenBlocks = {[2]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
 
@@ -344,7 +345,7 @@ if additionalIsomerPlots
         'patchMethod','lowestP', 'n_back',n_back,'reOrder',reOrder,'plotSelector',plotSelector,...
         'plotIndividualFlies',plotIndividualFlies, ...
         'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2,...
-        'limitIsomTime',122, 'doCorrPlots',1);
+        'limitIsomTime',122, 'doCorrPlots',1,'useBootlegBonff',0);
 end
 
 %% Report about potential scrambling

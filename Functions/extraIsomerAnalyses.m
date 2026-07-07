@@ -20,6 +20,8 @@ arguments
     options.extraFigSubplots double = 0; %Whether to add ERP subplots to animated plot (1) or rearrange (2)
     options.limitIsomTime double = []; %If not empty, limits Isom x Time plots to be that frame duration (e.g. 241)
     options.doCorrPlots double = 0; %Whether to do correlation plots on isomer data
+    options.crossFlyCorrUseTime double = 0; %Whether to use isomTime [1] (1:timeStep:end) rather than full [0] (1:end) time for cross-fly corrs
+    options.useBootlegBonff double = 1; %Whether to use bootleg Bonferroni correction for certain corr. stats
 end
 
 alphaVal = options.alphaVal;
@@ -37,6 +39,8 @@ saveFigVid = options.saveFigVid;
 extraFigSubplots = options.extraFigSubplots;
 limitIsomTime = options.limitIsomTime;
 doCorrPlots = options.doCorrPlots;
+crossFlyCorrUseTime = options.crossFlyCorrUseTime;
+useBootlegBonff = options.useBootlegBonff;
 
 %%
 
@@ -335,7 +339,7 @@ for fly = 1:size(chosenFlies,2)
                         for subk = 1:timeLimit
                             [temR, temP] = corrcoef( isomTime(subl).mean(isoKInd,reOrder)' , isomTime(subk).mean(isoLInd,reOrder)' );
                                 %Note: Sometimes diagonals not perfectly equal to 1?
-                            if subl == subk
+                            if subl == subk && (isoKInd == isoLInd)
                                 superTimeCorr(subl,subk) = NaN;
                                 superTimeP(subl,subk) = NaN; 
                             else
@@ -345,7 +349,16 @@ for fly = 1:size(chosenFlies,2)
                         end
                     end
 
-                    superTimeP = superTimeP * ((timeLimit^2)*0.5 - timeLimit); %Bootleg Bonff. correction
+                    %superTimeP = superTimeP * ((timeLimit^2)*0.5 - timeLimit); %Bootleg Bonff. correction
+                    if useBootlegBonff
+                        bootBonfVal = NaN;
+                        if isoKInd == isoLInd
+                            bootBonfVal = ( (timeLimit^2)*0.5 - timeLimit);
+                        else
+                            bootBonfVal = (timeLimit^2);
+                        end
+                        superTimeP = superTimeP * bootBonfVal;
+                    end
     
                     %superTimeCorr( superTimeCorr == 1 ) = NaN; %This is handled by the loop now, to simplify certain things
     
@@ -380,9 +393,16 @@ for fly = 1:size(chosenFlies,2)
                     yticks(1:timeLimit)
                     xticklabels([isomTime(1:timeLimit).timep])
                     yticklabels([isomTime(1:timeLimit).timep])
-                    xlabel('Time')
-                    ylabel('Time')
-                    title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] [Boot. Bonff.])'])
+                    xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                    ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations 
+                    titleStr = ['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] )'];
+                    if useBootlegBonff
+                        titleStr = [titleStr,'[Boot. Bonff. @ ',num2str(bootBonfVal),']'];
+                    else
+                        titleStr = [titleStr,'[No Bonff.]'];
+                    end
+                    %title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] [Boot. Bonff.])'])
+                    title(titleStr)
                     hold off
                     set(gcf,'Name',['Fly ',num2str(thisFly),' isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
 
@@ -393,6 +413,8 @@ for fly = 1:size(chosenFlies,2)
 
         end %doCorrPlots end
         
+        clear isomTime
+
     end %plotIndividualFlies end
 
     clear R1 R2 %Safety
@@ -772,13 +794,24 @@ if size(chosenFlies,2) > 1
 
             end %doAnimatedPlot end
 
-            %Full time corr plots
+            %Full time (or not) corr plots
             if doCorrPlots
 
+                %Switch between full and reduced time
+                if ~crossFlyCorrUseTime
+                    thisIsoStruct = isoMax; %Full
+                else
+                    thisIsoStruct = isomTime; %Stepped
+                end
+                nTimepointsActual = size(thisIsoStruct,2);
+
                 %Borrowed from above, mostly
-                uniqueNess = nan( size(isoMax(1).mean,1) , size(isoMax(1).mean,1) ); %Will be used to check uniqueness of isomer combinations
-                for isoKInd = 1:size(isoMax(1).mean,1)
-                    for isoLInd = 1:size(isoMax(1).mean,1)
+                    %Note: Correlation matrices between differing isomers (e.g. 1 vs 2) will **NOT** be symmetrical
+                        %i.e. Isomer 1 T50 x Isomer 2 T1 ~= Isomer 1 T1 x Isomer 2 T50
+                %uniqueNess = nan( size(isoMax(1).mean,1) , size(isoMax(1).mean,1) ); %Will be used to check uniqueness of isomer combinations
+                uniqueNess = nan( size(thisIsoStruct(1).mean,1) , size(thisIsoStruct(1).mean,1) ); %Will be used to check uniqueness of isomer combinations
+                for isoKInd = 1:size(thisIsoStruct(1).mean,1)
+                    for isoLInd = 1:size(thisIsoStruct(1).mean,1)
                         temp = sort( [isoKInd,isoLInd] );
                         if uniqueNess(temp(1),temp(2)) == 1
                             %disp(['already done [',num2str(isoKInd),' x ',num2str(isoLInd),']'])
@@ -787,23 +820,44 @@ if size(chosenFlies,2) > 1
                             uniqueNess(temp(1),temp(2)) = 1;
                         end
     
-                        superTimeCorr = nan( nTimepoints , nTimepoints ); %Time x Time within Isomer
-                        superTimeP = nan( nTimepoints , nTimepoints );
-                        for subl = 1:nTimepoints
-                            for subk = 1:nTimepoints
-                                [temR, temP] = corrcoef( isoMax(subl).mean(isoKInd,reOrder)' , isoMax(subk).mean(isoLInd,reOrder)' );
+                        superTimeCorr = nan( nTimepointsActual , nTimepointsActual ); %Time x Time within Isomer
+                        superTimeP = nan( nTimepointsActual , nTimepointsActual );
+                        %blirg = nan( nTimepoints^2, 4 ); %Uncomment if you want to see which elements of this matrix are associated with which isomers/times
+                        %e = 1;
+                        for subl = 1:nTimepointsActual
+                            for subk = 1:nTimepointsActual
+                                %[temR, temP] = corrcoef( isoMax(subl).mean(isoKInd,reOrder)' , isoMax(subk).mean(isoLInd,reOrder)' );
+                                %[temR, temP] = corrcoef( isoMax(subl).mean(isoLInd,reOrder)' , isoMax(subk).mean(isoKInd,reOrder)' );
+                                [temR, temP] = corrcoef( thisIsoStruct(subl).mean(isoLInd,reOrder)' , thisIsoStruct(subk).mean(isoKInd,reOrder)' );
                                     %Note: Sometimes diagonals not perfectly equal to 1?
-                                if subl == subk
+                                if subl == subk && (isoKInd == isoLInd) %Only obliterate diagonal where guaranteed 100% correlation (i.e. Self correlations)
                                     superTimeCorr(subl,subk) = NaN;
                                     superTimeP(subl,subk) = NaN; 
                                 else
                                     superTimeCorr(subl,subk) = temR(1,2); %Only 'one' comp
                                     superTimeP(subl,subk) = temP(1,2);
                                 end
+                                %blirg(e,1) = isoLInd; blirg(e,2) = isoKInd; blirg(e,3) = subl; blirg(e,4) = subk;
+                                %e = e + 1; 
                             end
                         end
 
-                        superTimeP = superTimeP * ( (nTimepoints^2)*0.5 - nTimepoints);
+                        disp(['Isom ',num2str(isoKInd),' x Isom ',num2str(isoLInd),' TriU - TriL value:'])
+                        disp([num2str(nansum(triu(superTimeCorr),'all') - nansum(tril(superTimeCorr),'all'))]) %Should be zero, hopefully
+                            %If not zero, implies that the upper and lower parts of the correlation calc are not equal
+                                %This is not so great for self-isomer correlations, and is normal for cross-isomer correlations
+
+                        if useBootlegBonff
+                            bootBonfVal = NaN;
+                            if isoKInd == isoLInd
+                                bootBonfVal = ( (nTimepointsActual^2)*0.5 - nTimepointsActual);
+                                %superTimeP = superTimeP * bootBonfVal;
+                            else
+                                bootBonfVal = (nTimepointsActual^2);
+                                %superTimeP = superTimeP * bootBonfVal;
+                            end
+                            superTimeP = superTimeP * bootBonfVal;
+                        end
         
                         %superTimeCorr( superTimeCorr == 1 ) = NaN; %This is handled by the loop now, to simplify certain things
         
@@ -813,12 +867,16 @@ if size(chosenFlies,2) > 1
                         imagesc( superTimeCorr )
                         set(gca,'YDir','normal')
                         colorbar
-                        %xticks(1:nTimepoints)
-                        %yticks(1:nTimepoints)
-                        %xticklabels([isoMax.timep])
-                        %yticklabels([isoMax.timep])
-                        xlabel('Time (frame)')
-                        ylabel('Time (frame)')
+                        if crossFlyCorrUseTime
+                            xticks(1:nTimepointsActual)
+                            yticks(1:nTimepointsActual)
+                            xticklabels([thisIsoStruct.timep])
+                            yticklabels([thisIsoStruct.timep])
+                        end
+                        %xlabel('Time (frame)')
+                        %ylabel('Time (frame)')
+                        xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
                         title(['Cross-fly isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
                         %{
                         %(Granular P-value display disabled)
@@ -852,9 +910,23 @@ if size(chosenFlies,2) > 1
                         clim([-2,2])
                         colormap(ax2,jet)
                         colorbar
-                        xlabel('Time (frame)')
-                        ylabel('Time (frame)')
-                        title(['Pos./Neg. corr [+ / -], p<',num2str(alphaVal),' [1], p<',num2str(alphaVal/5),' [2] [Boot. Bonff.])'])
+                        %xlabel('Time (frame)')
+                        %ylabel('Time (frame)')
+                        if crossFlyCorrUseTime
+                            xticks(1:nTimepointsActual)
+                            yticks(1:nTimepointsActual)
+                            xticklabels([thisIsoStruct.timep])
+                            yticklabels([thisIsoStruct.timep])
+                        end
+                        xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        titleStr = ['Pos./Neg. corr [+ / -], p<',num2str(alphaVal),' [1], p<',num2str(alphaVal/5),' [2] '];
+                        if useBootlegBonff
+                            titleStr = [titleStr,'[Boot. Bonff. @ ',num2str(bootBonfVal),']'];
+                        else
+                            titleStr = [titleStr,'[No Bonff.]'];
+                        end
+                        title(titleStr)
                         %hold off
                         set(gcf,'Name',['Cross-fly isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
     
@@ -862,7 +934,7 @@ if size(chosenFlies,2) > 1
                 end
                 
 
-            end
+            end %doCorrPlots end
         
         end %transecting end
 
