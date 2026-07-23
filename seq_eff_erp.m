@@ -44,7 +44,7 @@ scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence
 arrowMode = 0; %Whether to apply 'Arrow of Time' control to data (Collection of data from immediately before stimuli)
     %arrowMode = 1 - randomSequence read backwards, data collected from 'behind' and is backwards (e.g. n1:5 is read as 5:1, and window is 0:1 etc)
     %arrowMode = 1.5 - As above, but LFP/PHOT/Times are reflipped to return them to their 'true' orientation
-firstLastPlot = 1; %Whether to do an arrow-associated plot of the first/last capture
+firstLastPlot = 0; %Whether to do an arrow-associated plot of the first/last capture
 
 %Ordering for plots
 %reOrder = [9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8]; %Reorders plots (and labels ofc) 
@@ -143,11 +143,16 @@ switch selectionMode
         
         % filter in keywords
         %filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
-        filterIn = {'sleepdep1','104y'};
+        filterIn = {'sleepdep1','104y'}; %Must be cell array
 
         if ~isempty(filterIn)
             for i = 1:length(filterIn)
                 fly_record = fly_record(contains(fly_record.Comments,filterIn{i},'IgnoreCase',true),:);
+                %Report, in case of issue
+                if size(fly_record,1) == 0
+                    ['-# Alert: Inclusion criteria "',filterIn{i},'" has reduced fly_record size to 0 #-']
+                    crash = yes
+                end
             end
         end
         
@@ -155,9 +160,19 @@ switch selectionMode
         %filter out example: {'wiChr','baseline','255'};
         % cell array of keywords
         %filterOut = {}; %Matt default
-        filterOut = {'dodgy','wichr'};
+        filterOut = {'dodgy','wichr'}; %Note: Must be cell array, for below
         
-        fly_record = fly_record(~contains(fly_record.Comments,filterOut,'IgnoreCase',true),:);
+        %fly_record = fly_record(~contains(fly_record.Comments,filterOut,'IgnoreCase',true),:); %OG method
+        if ~isempty(filterOut)
+            for i = 1:length(filterOut)
+                fly_record = fly_record(~contains(fly_record.Comments,filterOut{i},'IgnoreCase',true),:); %New, iterative method
+                %Report, in case of issue
+                if size(fly_record,1) == 0
+                    ['-# Alert: Exclusion criteria "',filterOut{i},'" has reduced fly_record size to 0 #-']
+                    crash = yes
+                end
+            end
+        end
         
         % choose flies and experiments
         whichFly = fly_record.Fly.';
@@ -184,10 +199,10 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [131]; %Singular
+        chosenFlies = [127]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[2]}; %Specify one block per fly (e.g. {[13],[17]}
+        chosenBlocks = {[4]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
 
@@ -344,8 +359,8 @@ if additionalIsomerPlots
     [CROSSISOMER] = extraIsomerAnalyses(FLIES, chosenFlies, resultsDirectory,'correctForNTimepoints',1,'showPValPlots',1,...
         'patchMethod','lowestP', 'n_back',n_back,'reOrder',reOrder,'plotSelector',plotSelector,...
         'plotIndividualFlies',plotIndividualFlies, ...
-        'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2,...
-        'limitIsomTime',122, 'doCorrPlots',1,'useBootlegBonff',0);
+        'timeStep',10, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2,...
+        'limitIsomTime',[], 'doCorrPlots',1,'useBootlegBonff',0, 'manualMultiCorrectValue', 8, 'crossIsomerSeqCorrTime',[]);
 end
 
 %% Report about potential scrambling
