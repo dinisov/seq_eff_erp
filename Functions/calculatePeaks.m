@@ -11,7 +11,12 @@ photMovMaxWindow = options.photMovMaxWindow;
 
 for b = 1:length(blocks)
     
-    peakThreshold = blocks(b).peakThreshold;
+    peakThreshold = blocks(b).peakThreshold; %Note: Implicitly this is the threshold for PHOT2
+    if isfield(blocks,'peakThresholdOne') %Acquire 'new' threshold for PHOT1
+        peakThresholdOne = blocks(b).peakThresholdOne;
+    else
+        peakThresholdOne = .1; %Old default value
+    end
     ISI = blocks(b).ISI;
     resampleFreq = blocks(b).resampleFreq;
     
@@ -29,7 +34,7 @@ for b = 1:length(blocks)
             figure; plot(PHOT);
         end
         %PHOT = movmax(PHOT,[20 20]);
-        PHOT = movmax(PHOT,photMovMaxWindow)
+        PHOT = movmax(PHOT,photMovMaxWindow);
         if aux_plots    
             hold on; plot(PHOT);
         end
@@ -37,7 +42,9 @@ for b = 1:length(blocks)
         blocks(b).PHOT = [PHOT; PHOT; PHOT];
 
         % find peaks
-        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .1 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        %[PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , .1 , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
+        %[PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(PHOT , 'MinPeakHeight' , peakThreshold , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); 
+        [PKS_PHOT1,LOCS_PHOT1] = findpeaksbase(PHOT, 'MinPeakHeight' , peakThresholdOne , 'MinPeakDistance' , 1/2*ISI*resampleFreq );
         [PKS_PHOT2,LOCS_PHOT2] = findpeaksbase(PHOT , 'MinPeakHeight' , peakThreshold , 'MinPeakDistance' , 1/2*ISI*resampleFreq ); 
 
         [LOCS_PHOT1, ind_locs_phot1] = setdiff(LOCS_PHOT1, LOCS_PHOT2);

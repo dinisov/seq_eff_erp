@@ -25,6 +25,8 @@ arguments
     options.manualMultiCorrectValue double = []; %If non-empty, specifies a manual value to use for multiple comparisons correction for certain, indicated plots (Mutually exclusive with bootlegBonff)
     options.crossIsomerSeqCorrTime double = []; %If non-empty, specifies a time (in frames) to calculate the Bhanu-suggested cross-fly isomer seq x isomer seq plot
     options.doTestatoryTimeCorrsPlot double = 0; %Enacts a very specific, very slow isom 1 vs 2 plot for time corrs
+    options.customSaveName char = []; %If non-empty, adds this string to the name certain plots/video are saved under
+    options.useTrueTimeX double = 1; %Where applicable attempts to use true calculated time, rather than 'frames' etc [WIP]
 end
 
 alphaVal = options.alphaVal;
@@ -47,6 +49,8 @@ useBootlegBonff = options.useBootlegBonff;
 manualMultiCorrectValue = options.manualMultiCorrectValue;
 crossIsomerSeqCorrTime = options.crossIsomerSeqCorrTime;
 doTestatoryTimeCorrsPlot = options.doTestatoryTimeCorrsPlot;
+customSaveName = options.customSaveName;
+useTrueTimeX = options.useTrueTimeX;
 
 %%
 
@@ -83,6 +87,13 @@ if useBootlegBonff == 1 && ~isempty(manualMultiCorrectValue)
     ['## Please deselect one or both ##']
     crash = yes
 end
+
+if ~isempty(customSaveName)
+    customSaveNameClean = matlab.lang.makeValidName(customSaveName);
+else
+    customSaveNameClean = [];
+end
+warning('off', 'MATLAB:handle_graphics:exceptions:SceneNode');
 
 %%
 
@@ -163,7 +174,8 @@ for fly = 1:size(chosenFlies,2)
         line([0,size(pVals,2)],[effectiveAlpha,effectiveAlpha],'LineStyle',':','Color','k')
         ylim([0,effectiveAlpha*1.5])
         title(['P-values zoom, wrt p<',num2str(effectiveAlpha)])
-        saveas(gcf,[ resultsDirectory '/' 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
+        %saveas(gcf,[ resultsDirectory '/' 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
+        saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
     end
 
     %Profile/s for sig over time
@@ -274,7 +286,8 @@ for fly = 1:size(chosenFlies,2)
                 legend({['R1'],['R2']})
             end
             %end
-            saveas(gcf,[ resultsDirectory '/' 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
+            %saveas(gcf,[ resultsDirectory '/' 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
+            saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
         end
 
     end
@@ -332,7 +345,8 @@ for fly = 1:size(chosenFlies,2)
         end
         legend({'R1','R2'})
         set(gcf,'Name',['IsomxTime' '_fly' num2str(thisFly)])
-        saveas(gcf,[ resultsDirectory '/' 'IsomxTime' '_fly' num2str(thisFly) '.png']);
+        %saveas(gcf,[ resultsDirectory '/' 'IsomxTime' '_fly' num2str(thisFly) '.png']);
+        saveas(gcf,[ resultsDirectory '/' customSaveName 'IsomxTime' '_fly' num2str(thisFly) '.png']);
 
         if doCorrPlots
             uniqueNess = nan( size(isomTime(1).data,1) , size(isomTime(1).data,1) ); %Will be used to check uniqueness of isomer combinations
@@ -408,10 +422,18 @@ for fly = 1:size(chosenFlies,2)
                     end
                     xticks(1:timeLimit)
                     yticks(1:timeLimit)
-                    xticklabels([isomTime(1:timeLimit).timep])
-                    yticklabels([isomTime(1:timeLimit).timep])
-                    xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
-                    ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations 
+                    if ~useTrueTimeX
+                        xticklabels([isomTime(1:timeLimit).timep])
+                        yticklabels([isomTime(1:timeLimit).timep])
+                        xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations 
+                    else
+                        xticklabels(round( [isomTime(1:timeLimit).trueTime]*1000 ,2))
+                        yticklabels(round( [isomTime(1:timeLimit).trueTime]*1000 ,2))
+                        xlabel(['Isomer ',num2str(isoKInd),' time (ms)'])
+                        ylabel(['Isomer ',num2str(isoLInd),' time (ms)'])    
+                    end
+                    
                     titleStr = ['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] )'];
                     if useBootlegBonff
                         titleStr = [titleStr,'[Boot. Bonff. @ ',num2str(multiCompVal),']'];
@@ -451,7 +473,12 @@ if size(chosenFlies,2) > 1
         %Note: Only 80% confident that fieldnames follows the known ordering, but this saves effort on hardcoding each plot type
     isomerNames = fieldnames( FLIES(chosenFlies(1)).ISOMER);
     isomerCount = size(isomerNames,1);
-    isomerColours = jet(isomerCount);
+    if isomerCount > 2 %Not (current) normal
+        isomerColours = jet(isomerCount);
+    else
+        isomerColours = [0,0,1;... %Blue for Isomer 1
+                         1,0,0]; %Red for Isomer 2
+    end
     %Quick check of timepoints in ERPs, since it is important to be consistent
     temp = [];
     for fly = chosenFlies
@@ -655,7 +682,8 @@ if size(chosenFlies,2) > 1
             end
             legend({'R1','R2'})
             set(gcf,'Name',['Cross-fly IsomxTime'])
-            saveas(gcf,[ resultsDirectory '/' 'Cross-fly IsomxTime.png']);
+            %saveas(gcf,[ resultsDirectory '/' 'Cross-fly IsomxTime.png']);
+            saveas(gcf,[ resultsDirectory '/' customSaveName 'Cross-fly IsomxTime.png']);
 
 
             if doAnimatedPlot
@@ -687,7 +715,7 @@ if size(chosenFlies,2) > 1
                 %Similar, for individuals
 
                 if saveFigVid
-                    vidName = [ resultsDirectory , filesep, 'isomAnim.mp4'];
+                    vidName = [ resultsDirectory , filesep, customSaveName, 'isomAnim.mp4'];
                     disp(['Saving figure video to ',vidName])
                     %figxtory = getframe(hfCollab);
                     figVidWrite = VideoWriter(vidName, 'MPEG-4')
@@ -695,7 +723,8 @@ if size(chosenFlies,2) > 1
                     open(figVidWrite)                    
                 end
 
-                hfCollab = figure;
+                %hfCollab = figure;
+                hfCollab = figure('Color','white');
                 %isomerNamesSeq = {};
                 if extraFigSubplots == 1
                     set(hfCollab,'units','normalized','outerposition',[0 0 0.4 1])
@@ -715,14 +744,15 @@ if size(chosenFlies,2) > 1
                     %Basal
                     hold on
                     for isoI = 1:size(isoMax(t).mean,1)
-                        errorbar( isoMax(t).mean(isoI,reOrder), isoMax(t).SEM(isoI,reOrder) )
+                        errorbar( isoMax(t).mean(isoI,reOrder), isoMax(t).SEM(isoI,reOrder), 'Color', isomerColours(isoI,:) )
                     end
                     xticks([1:size(isoMax(t).mean,2)])
                     xticklabels(exLabels(reOrder))
                     xtickangle(270)
                     xlim([0,size(isoMax(t).mean,2)+1])
                     legend(isomerNames)
-                    title('Cross-fly isomers at t = ',num2str(t))
+                    %title('Cross-fly isomers at t = ',num2str(t))
+                    title(['Cross-fly isomers at t = ',num2str(t), [' (',num2str(isoMax(t).trueTime*1000,2),'ms)']])
                     %Extra
                     if extraFigSubplots == 1 || extraFigSubplots == 2
                         %Mean isomer ERP/s
@@ -770,8 +800,24 @@ if size(chosenFlies,2) > 1
 
                         yLim = get(gca,'YLim'); %Might be slow?
                         line([isoMax(t).timep,isoMax(t).timep],[yLim(1),yLim(2)],'LineWidth',2,'LineStyle',':','Color','g')
-                        xlim([0,size(superERPMeanIsom{isoI},1)])
-                        xlabel('Frame') %Note: Only correct as long as isoMax iterates at 1:1
+                        %xlim([0,size(superERPMeanIsom{isoI},1)])
+                        %xlabel('Frame') %Note: Only correct as long as isoMax iterates at 1:1
+                        xlim([1,size(superERPMeanIsom{isoI},1)])
+                        if ~useTrueTimeX
+                            xlabel('Frame')
+                        else
+                            xeel = get(gca,'XTick');
+                            try
+                                xticklabels(round( [isoMax(xeel).trueTime]*1000 , 2 )); %If this fails, xticks were fractional
+                                xlabel('Time (ms)')
+                            catch
+                                if t == 1
+                                    ['## Caution: Failure in using true time as X tick labels ##']
+                                end
+                            end
+                        end
+                        
+                        title(customSaveNameClean)
 
                         %Separated sequence isomer ERPs rolling
                         if extraFigSubplots == 1
@@ -922,8 +968,21 @@ if size(chosenFlies,2) > 1
                         end
                         %xlabel('Time (frame)')
                         %ylabel('Time (frame)')
-                        xlabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
-                        ylabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        if ~useTrueTimeX
+                            xlabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                            ylabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        else
+                            xeel = get(gca,'XTick');
+                            try
+                                xticklabels(round( [thisIsoStruct(xeel).trueTime]*1000 , 2 )); %If this fails, xticks were fractional
+                                yticklabels(round( [thisIsoStruct(xeel).trueTime]*1000 , 2 ));
+                                xlabel('Time (ms)')   
+                                ylabel('Time (ms)')  
+                            catch
+                                ['## Failure to acquire true time for X labels ##']
+                            end
+                        end
+                        
                         title(['Cross-fly isomer ',num2str(isoLInd),'vs ',num2str(isoKInd),' corr. across timep'])
                         %{
                         %(Granular P-value display disabled)
@@ -965,8 +1024,23 @@ if size(chosenFlies,2) > 1
                             xticklabels([thisIsoStruct.timep])
                             yticklabels([thisIsoStruct.timep])
                         end
-                        xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
-                        ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        %xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        %ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        if ~useTrueTimeX
+                            xlabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                            ylabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                        else
+                            xeel = get(gca,'XTick');
+                            try
+                                xticklabels(round( [thisIsoStruct(xeel).trueTime]*1000 , 2 )); %If this fails, xticks were fractional
+                                yticklabels(round( [thisIsoStruct(xeel).trueTime]*1000 , 2 ));
+                                xlabel('Time (ms)')   
+                                ylabel('Time (ms)')  
+                            catch
+                                ['## Failure to acquire true time for X labels ##']
+                            end
+                        end
+                        
                         titleStr = ['Pos./Neg. corr [+ / -], p<',num2str(alphaVal),' [1], p<',num2str(alphaVal/5),' [2] '];
                         if useBootlegBonff
                             titleStr = [titleStr,'[Boot. Bonff. @ ',num2str(multiCompVal),']'];

@@ -1,4 +1,5 @@
-function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots, zeroShiftMode, signalInversion,overrideChannel,rawDataPlot, behavState, sepTimeThreshold)
+function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots, zeroShiftMode,...
+    signalInversion,overrideChannel,rawDataPlot, behavState, sepTimeThreshold, altHomeDirectory, shuffleMode)
 %collateEphysData Summary of this function goes here
 %   Detailed explanation goes here
     if exist('overrideChannel') && ~isempty(overrideChannel)
@@ -9,6 +10,18 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
     end
     if exist('behavState') && ~isempty(behavState) && behavState ~= -1
         disp(['Behavioural state will be processed'])
+    end
+    homeState = 0; %1 - Normal home directory, 2 - Alternate, manually specified home directory
+    if exist('homeDirectory') && isempty( homeDirectory )
+        if exist('altHomeDirectory') && ~isempty( altHomeDirectory )
+            disp(['-# Using alternate home directory specification #-'])
+            homeState = 2;
+        else
+            ['## No home directory or alt home directory specified #-']
+            crash = yes
+        end
+    elseif exist('homeDirectory') && ~isempty( homeDirectory )
+        homeState = 1;
     end
 
     BLOCKS = struct;
@@ -23,8 +36,17 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
 
         % load this block's data
         %[homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_Block' block '/' date '_chunk_0']
-        load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_Block' block '/' date '_chunk_0'],'EEG');
-        disp(['Loaded ',homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_Block' block '/' date '_chunk_0'])
+        if homeState == 1
+            load([homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_Block' block '/' date '_chunk_0'],'EEG');
+            disp(['Loaded ',homeDirectory '/SEoutput/' date '/LFP/Analyzed_TagTrials_Block' block '/' date '_chunk_0'])
+        elseif homeState == 2
+            fileName = [altHomeDirectory filesep date '/LFP/Analyzed_TagTrials_Block' block '/' date '_chunk_0'];
+            load(fileName,'EEG');
+            disp(['Loaded ',fileName])            
+        else
+            ['## home directory failure ##']
+            crash = yes
+        end
 
         if ~exist('overrideChannel') || isempty(overrideChannel)
             chanToUse = fly_record.LFPChannel(b);
@@ -121,8 +143,12 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         else %Multichannel data, probably processed like Synapse data
             photOneChannel = 1;
             photTwoChannel = 4;
+            photThreeChannel = 2; %Empirically correct; Relates to posDots
+            %PHOT = [PHOT(photOneChannel,:);...
+            %    PHOT(photTwoChannel,:)]; %Alter phot structure to be 2x1, as Synapse data presumably is
             PHOT = [PHOT(photOneChannel,:);...
-                PHOT(photTwoChannel,:)]; %Alter phot structure to be 2x1, as Synapse data presumably is
+                PHOT(photTwoChannel,:);...
+                PHOT(photThreeChannel,:)]; %Alter phot structure to be 2x1, as Synapse data presumably is
             disp(['(Altered phot channels used for multi analysis)'])
         end
         if ~dataIsMulti %Don't do this inversion with multichannel data (for now)
@@ -150,7 +176,8 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
                 tempInds = find(temp > tempMed + tempSD);
                 capInds = [capInds,tempInds'];
     
-                subplot(1,2,pInd)
+                %subplot(1,2,pInd)
+                subplot(1,size(PHOT,1),pInd)
                 plot(temp)
                 hold on
                 line([0,size(temp,1)],[tempMed+tempSD,tempMed+tempSD])
@@ -218,7 +245,12 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         PHOT = trim_phot_outliers(PHOT, 12);
 
         %behavioural separation
-        PHOT = ePhysBehavSep(PHOT, EEG.timestart, EEG.timeend, fly, block, date, behavState, homeDirectory, sepTimeThreshold);
+        if homeState == 1
+            PHOT = ePhysBehavSep(PHOT, EEG.timestart, EEG.timeend, fly, block, date, behavState, homeDirectory, sepTimeThreshold, shuffleMode);
+        else
+            PHOT = ePhysBehavSep(PHOT, EEG.timestart, EEG.timeend, fly, block, date, behavState, [altHomeDirectory,filesep,'..\'], sepTimeThreshold, shuffleMode);
+                %The rather contrived homeDirectory here is because altHomeDirectory (currently) points one level lower than homeDirectory 
+        end
 
         % trim LFP (remove anything from LFP beyond some sd set in fly_record)
         LFP = trimLFP(LFP,fly_record.LFPsd(b),aux_plots);
@@ -270,6 +302,9 @@ function BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency
         BLOCKS(b).ISI = fly_record.ISI(b) + fly_record.SDT(b);
     %     BLOCKS(b).SDT = fly_record.SDT(b);
         BLOCKS(b).peakThreshold = fly_record.Threshold(b);
+        if ismember('ThresholdOne', fly_record.Properties.VariableNames)
+            BLOCKS(b).peakThresholdOne = fly_record.ThresholdOne(b);            
+        end
 
         % whether to do a 1 or 2 photodiode analysis
         % 2 is better currently but 1 is more universal/convenient

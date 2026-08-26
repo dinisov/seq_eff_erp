@@ -27,8 +27,10 @@ timeFrequency = 0;
 n_back = 5;
 
 %behavioural separation
-behavState = -1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
+behavState = 0; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
 sepTimeThreshold = 30; % time threshold to classify minimum duration of an inactivity bout
+shuffleMode = 2; %Whether to do ac/inac shuffling
+    %0 - Do nothing, 1 - Use random positions within opposite state pair matches, 2 - Use first X seconds based on pair match length, 3 - As with 2, but use last X seconds
 
 %error method (0 - a la Bruno and Matt; 1- propagation )
 errorMethod = 0;
@@ -95,8 +97,8 @@ additionalTransectPlots = 0; %Whether to do additional transect calcs (all-timep
 additionalIsomerPlots = 1; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
 
 % whether to plot auxiliary plots (some are always plotted)
-aux_plots = 1;
-rawDataPlot = 1;
+aux_plots = 0;
+rawDataPlot = 0;
 
 %%
 
@@ -107,13 +109,22 @@ if numel(reOrder) ~= 0.5*(2^n_back)
 end
 
 %% load data
-homeDirectory = '../../Bruno';
-
+%Bruno
+%{
+homeDirectory = '../../Bruno'; 
+altHomeDirectory = []; %Empty for Bruno
 resultsDirectory = [homeDirectory '/Results/12dot5Hz/'];
-
-struct_name = 'freq12dot5hz';
-
+%struct_name = 'freq12dot5hz';
 fly_record = readtable([homeDirectory '/Fly record/fly_record.xlsx']);
+%}
+
+%Bhanu
+%{{
+homeDirectory = []; %Used for loading files and not much else
+altHomeDirectory = 'C:\Users\uqmvan13\ANALYSIS\Bruno\SEOutputBhanu'; %Unlike homeDirectory, this points directly to the respective output folder
+resultsDirectory = ['C:\Users\uqmvan13\ANALYSIS\Bruno\Results\Bhanu\']; %Manually specify, because homeDirectory empty
+fly_record = readtable(["I:\BVS2026TWCF-Q9201\Bhanu\Fly record\fly_record_Bhanu.xlsx"]);
+%}
 
 %% remove flies to be excluded (usually because data is unsound for some obvious reason)
 
@@ -121,7 +132,7 @@ fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'keywords'; %keywords or manual; Modify this
+selectionMode = 'manual'; %keywords or manual; Modify this
 
 %%
 
@@ -199,10 +210,10 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [127]; %Singular
+        chosenFlies = [56]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[4]}; %Specify one block per fly (e.g. {[13],[17]}
+        chosenBlocks = {[5]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
 
@@ -243,6 +254,8 @@ switch selectionMode
         chosenFlies = chosenFliesActual;
         whichFly = chosenFlies; %Necessary for synchrony with keywords system
 
+        filterIn = {'manual'}; %Not actually used (in this mode) for anything other than some naming down lower
+
 
 end
 
@@ -270,7 +283,7 @@ end
 
 %BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots);
 BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots,...
-    zeroShiftMode,'+',overrideChannel,rawDataPlot, behavState, sepTimeThreshold); %'-' for multichannel, '+' for single
+    zeroShiftMode,'+',overrideChannel,rawDataPlot, behavState, sepTimeThreshold, altHomeDirectory, shuffleMode); %'-' for multichannel, '+' for single
 
 %% analyse data for each fly (can include multiple blocks)
 % IMPORTANT: make sure window is the same for all blocks belonging to the
@@ -344,7 +357,7 @@ end
 %% time-frequency analysis
 if timeFrequency
     %timeFrequencyAnalysis(FLIES, '..', plotIndividualFlies);
-    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [8,1 ; 1,2 ; 4,5],n_back,...
+    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [8,1 ; 1,2 ; 4,5; 9,1],n_back,...
         'isoMode',1);
 end
 
@@ -359,7 +372,7 @@ if additionalIsomerPlots
     [CROSSISOMER] = extraIsomerAnalyses(FLIES, chosenFlies, resultsDirectory,'correctForNTimepoints',1,'showPValPlots',1,...
         'patchMethod','lowestP', 'n_back',n_back,'reOrder',reOrder,'plotSelector',plotSelector,...
         'plotIndividualFlies',plotIndividualFlies, ...
-        'timeStep',10, 'doAnimatedPlot',0, 'saveFigVid',0, 'extraFigSubplots',2,...
+        'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',1, 'extraFigSubplots',2, 'customSaveName', [cell2mat(filterIn),'_'],...
         'limitIsomTime',[], 'doCorrPlots',1,'useBootlegBonff',0, 'manualMultiCorrectValue', 8, 'crossIsomerSeqCorrTime',[]);
 end
 
