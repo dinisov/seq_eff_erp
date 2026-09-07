@@ -66,6 +66,16 @@ firstLastPlot = options.firstLastPlot;
         
         for n = n_back:sequenceLength
 
+            %Pre-check to make sure not attempting to acquire LFP data from after end  of experiment (i.e. If stimuli still occurring at end)
+            if ~arrowMode && ( LOCS(n) + window(2) > size(LFP,2) ) %Borrow below indicising
+                disp(['-# Attempted acquisition of event #',num2str(n),' would exceed LFP data; Skipping #-'])
+                continue %NOTE: MAY HAVE ISSUES BY LEAVING NaNs IN ERPS?
+                %Note: Choosing deliberately to not modify randomSequence, but if it is to ever be returned, this will be a potential issue
+            elseif arrowMode && ( arrowLOCS(n) + window(2) > size(LFP,2) ) %Ditto
+                disp(['-# Attempted acquisition of event #',num2str(n),' would exceed LFP data; Skipping #-'])
+                continue %NOTE: MAY HAVE ISSUES BY LEAVING NaNs IN ERPS?
+            end
+
             % decimal value of binary sequence of length n_back
             %%seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
             if ~arrowMode

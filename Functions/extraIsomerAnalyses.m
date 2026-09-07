@@ -175,7 +175,7 @@ for fly = 1:size(chosenFlies,2)
         ylim([0,effectiveAlpha*1.5])
         title(['P-values zoom, wrt p<',num2str(effectiveAlpha)])
         %saveas(gcf,[ resultsDirectory '/' 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
-        saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
     end
 
     %Profile/s for sig over time
@@ -287,7 +287,7 @@ for fly = 1:size(chosenFlies,2)
             end
             %end
             %saveas(gcf,[ resultsDirectory '/' 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
-            saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
         end
 
     end
@@ -346,7 +346,7 @@ for fly = 1:size(chosenFlies,2)
         legend({'R1','R2'})
         set(gcf,'Name',['IsomxTime' '_fly' num2str(thisFly)])
         %saveas(gcf,[ resultsDirectory '/' 'IsomxTime' '_fly' num2str(thisFly) '.png']);
-        saveas(gcf,[ resultsDirectory '/' customSaveName 'IsomxTime' '_fly' num2str(thisFly) '.png']);
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'IsomxTime' '_fly' num2str(thisFly) '.png']);
 
         if doCorrPlots
             uniqueNess = nan( size(isomTime(1).data,1) , size(isomTime(1).data,1) ); %Will be used to check uniqueness of isomer combinations
@@ -683,7 +683,7 @@ if size(chosenFlies,2) > 1
             legend({'R1','R2'})
             set(gcf,'Name',['Cross-fly IsomxTime'])
             %saveas(gcf,[ resultsDirectory '/' 'Cross-fly IsomxTime.png']);
-            saveas(gcf,[ resultsDirectory '/' customSaveName 'Cross-fly IsomxTime.png']);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'Cross-fly IsomxTime.png']);
 
 
             if doAnimatedPlot

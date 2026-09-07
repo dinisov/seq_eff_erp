@@ -27,7 +27,7 @@ timeFrequency = 0;
 n_back = 5;
 
 %behavioural separation
-behavState = 0; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
+behavState = -1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
 sepTimeThreshold = 30; % time threshold to classify minimum duration of an inactivity bout
 shuffleMode = 2; %Whether to do ac/inac shuffling
     %0 - Do nothing, 1 - Use random positions within opposite state pair matches, 2 - Use first X seconds based on pair match length, 3 - As with 2, but use last X seconds
@@ -110,7 +110,7 @@ end
 
 %% load data
 %Bruno
-%{
+%{{
 homeDirectory = '../../Bruno'; 
 altHomeDirectory = []; %Empty for Bruno
 resultsDirectory = [homeDirectory '/Results/12dot5Hz/'];
@@ -119,7 +119,7 @@ fly_record = readtable([homeDirectory '/Fly record/fly_record.xlsx']);
 %}
 
 %Bhanu
-%{{
+%{
 homeDirectory = []; %Used for loading files and not much else
 altHomeDirectory = 'C:\Users\uqmvan13\ANALYSIS\Bruno\SEOutputBhanu'; %Unlike homeDirectory, this points directly to the respective output folder
 resultsDirectory = ['C:\Users\uqmvan13\ANALYSIS\Bruno\Results\Bhanu\']; %Manually specify, because homeDirectory empty
@@ -132,7 +132,7 @@ fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'manual'; %keywords or manual; Modify this
+selectionMode = 'keywords'; %keywords or manual; Modify this
 
 %%
 
@@ -153,8 +153,8 @@ switch selectionMode
         end
         
         % filter in keywords
-        %filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
-        filterIn = {'sleepdep1','104y'}; %Must be cell array
+        filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
+        %filterIn = {'sleepdep1','104y'}; %Must be cell array
 
         if ~isempty(filterIn)
             for i = 1:length(filterIn)
@@ -170,8 +170,8 @@ switch selectionMode
         % filter out keywords
         %filter out example: {'wiChr','baseline','255'};
         % cell array of keywords
-        %filterOut = {}; %Matt default
-        filterOut = {'dodgy','wichr'}; %Note: Must be cell array, for below
+        filterOut = {}; %Matt default
+        %filterOut = {'dodgy','wichr'}; %Note: Must be cell array, for below
         
         %fly_record = fly_record(~contains(fly_record.Comments,filterOut,'IgnoreCase',true),:); %OG method
         if ~isempty(filterOut)
