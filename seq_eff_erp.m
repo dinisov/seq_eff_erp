@@ -19,12 +19,13 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
-timeFrequency = 0;
+timeFrequency = 1;
 
 %% toggles
 
 %n-back
-n_back = 5;
+n_back = -4; %If positive, performs as usual, if negative performs asymmetric transition probability analysis where the value specifies the number of stimuli
+    %As of currently, transition probability experiments have a hardcoded nBack of 2
 
 %behavioural separation
 behavState = -1; %what state to analyse (-1 = no separation, 0 = active, 1 = inactive)
@@ -46,10 +47,11 @@ scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence
 arrowMode = 0; %Whether to apply 'Arrow of Time' control to data (Collection of data from immediately before stimuli)
     %arrowMode = 1 - randomSequence read backwards, data collected from 'behind' and is backwards (e.g. n1:5 is read as 5:1, and window is 0:1 etc)
     %arrowMode = 1.5 - As above, but LFP/PHOT/Times are reflipped to return them to their 'true' orientation
-firstLastPlot = 0; %Whether to do an arrow-associated plot of the first/last capture
+firstLastPlot = 1; %Whether to do an arrow-associated plot of the first/last capture
 
 %Ordering for plots
 %reOrder = [9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8]; %Reorders plots (and labels ofc) 
+%Original
 if n_back == 5
     reOrder = [9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8];
 elseif n_back == 6
@@ -64,6 +66,14 @@ elseif n_back == 4
 elseif n_back == 3
     reOrder = [3,4,1,2];
 
+%Transition probabilities
+elseif n_back == -2
+    reOrder = [1:2]; %Note: Use of reOrder with transition probabilities should be treated as highly experimental
+
+elseif n_back == -4
+    reOrder = [1:4]; 
+
+%Unspecified
 else
     reOrder = [];
 end
@@ -78,7 +88,7 @@ zeroShiftMode = 1; %1 - Add the abs of the literal minimum to all elements
 overrideChannel = []; %If non-empty will override the fly_record LFPChannel for collateEphysData and beyond
                                      
 % fit model
-fitModel = 0;
+fitModel = 0; %Note: Incompatible with transition probabilities analysis
 
 %Suppress ANOVA calcs
 suppressANOVA = 1;
@@ -93,24 +103,24 @@ plotSelector = [0 1 0 0 0 1 0];
 %%transectTime = 122; %frames; Always calculate
 %end
 %Note: This data is collated in groupFlies, collected initially in [processBlocks->analyseSequentialEffects->]calculateSEs
-additionalTransectPlots = 0; %Whether to do additional transect calcs (all-timepoint transect sig, transect window, etc)
+additionalTransectPlots = 1; %Whether to do additional transect calcs (all-timepoint transect sig, transect window, etc)
 additionalIsomerPlots = 1; %Whether to calculate isomer correlations across time, similar to above extra transect analyses
 
 % whether to plot auxiliary plots (some are always plotted)
-aux_plots = 0;
-rawDataPlot = 0;
+aux_plots = 1;
+rawDataPlot = 1;
 
 %%
 
 %QAs
-if numel(reOrder) ~= 0.5*(2^n_back)
+if n_back > 0 && numel(reOrder) ~= 0.5*(2^n_back)
     ['-# Alert: Mismatch between requested order and n_back #-']
     crash = yes
 end
 
 %% load data
 %Bruno
-%{{
+%{
 homeDirectory = '../../Bruno'; 
 altHomeDirectory = []; %Empty for Bruno
 resultsDirectory = [homeDirectory '/Results/12dot5Hz/'];
@@ -126,13 +136,21 @@ resultsDirectory = ['C:\Users\uqmvan13\ANALYSIS\Bruno\Results\Bhanu\']; %Manuall
 fly_record = readtable(["I:\BVS2026TWCF-Q9201\Bhanu\Fly record\fly_record_Bhanu.xlsx"]);
 %}
 
+%Mae
+%{{
+homeDirectory = []; %Used for loading files and not much else
+altHomeDirectory = 'C:\Users\uqmvan13\ANALYSIS\Bruno\SEOutputMae'; %Unlike homeDirectory, this points directly to the respective output folder
+resultsDirectory = ['C:\Users\uqmvan13\ANALYSIS\Bruno\Results\Mae\']; %Manually specify, because homeDirectory empty
+fly_record = readtable(["C:\Users\uqmvan13\ANALYSIS\Bruno\Fly record\fly_record_Mae.xlsx"]);
+%}
+
 %% remove flies to be excluded (usually because data is unsound for some obvious reason)
 
 fly_record = fly_record(~logical(fly_record.Exclude),:);
 
 %%
 
-selectionMode = 'keywords'; %keywords or manual; Modify this
+selectionMode = 'manual'; %keywords or manual; Modify this
 
 %%
 
@@ -210,10 +228,10 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [56]; %Singular
+        chosenFlies = [110]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[5]}; %Specify one block per fly (e.g. {[13],[17]}
+        chosenBlocks = {[21]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
 
@@ -357,7 +375,7 @@ end
 %% time-frequency analysis
 if timeFrequency
     %timeFrequencyAnalysis(FLIES, '..', plotIndividualFlies);
-    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [8,1 ; 1,2 ; 4,5; 9,1],n_back,...
+    timeFrequencyAnalysis(FLIES, chosenFlies, '..', plotIndividualFlies, plotComponents, [],n_back,...
         'isoMode',1);
 end
 

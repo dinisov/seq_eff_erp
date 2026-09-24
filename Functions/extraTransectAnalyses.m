@@ -24,25 +24,47 @@ plotIndividualFlies = options.plotIndividualFlies;
 
 %%
 
-%Matthew system for turning Dinis X labels into something conveniently usable
-switch n_back
-    case 5
-        load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
-        labels = binomial_x_labels_latex;
-    otherwise
-        loadName = [num2str(n_back),'-back_legend.mat'];
-        eval(['load ',loadName])
-        %labels = anynomial_x_labels_latex; %Old style; Native ordering
-        labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects
+if ~FLIES( chosenFlies(1) ).transProbDesign
+
+    transProbDesign = 0;
+    %Matthew system for turning Dinis X labels into something conveniently usable
+    switch n_back
+        case 5
+            load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
+            labels = binomial_x_labels_latex;
+        otherwise
+            loadName = [num2str(n_back),'-back_legend.mat'];
+            eval(['load ',loadName])
+            %labels = anynomial_x_labels_latex; %Old style; Native ordering
+            labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects
+    end
+    %this is just to help turn horizontal sequences into vertical ones
+    %ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]); %Hardcoded n-back of 5
+    ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]); %Dynamic
+    exLabels = [];
+    for s = 1:size(labels,2)
+        %exLabels{s} = binomial_x_labels_latex{s}(ind_horiz);
+        exLabels{s} = labels{s}(ind_horiz);
+    end
+
+    reOrderActual = reOrder;
+
+else
+    
+    transProbDesign = 1;
+    labels = FLIES( chosenFlies(1) ).transProbAncillary.transLabels;
+    exLabels = {};
+    exLabelsSafe = {};
+    for s = 1:size(labels,1)
+        exLabels{s} = labels(s,:);
+        exLabelsSafe{s} = strrep( labels(s,:), '->', 'to' ); %Make a safer version of the labels, for saving
+    end
+
+    reOrderActual = FLIES( chosenFlies(1) ).transProbAncillary.reOrderActual; %Use full form, since not separated by isomer?
+
 end
-%this is just to help turn horizontal sequences into vertical ones
-%ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]); %Hardcoded n-back of 5
-ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]); %Dynamic
-exLabels = [];
-for s = 1:size(labels,2)
-    %exLabels{s} = binomial_x_labels_latex{s}(ind_horiz);
-    exLabels{s} = labels{s}(ind_horiz);
-end
+
+
 
 resultsDirectory = [resultsDirectory '\Transect\'];
 if exist(resultsDirectory) ~= 7
@@ -61,7 +83,7 @@ for fly = 1:size(chosenFlies,2)
     thisFlyData = FLIES(thisFly);
 
     %QA for n-back
-    if size(thisFlyData.nERPs,2) ~= 0.5*2^n_back
+    if size(thisFlyData.nERPs,2) ~= 0.5*2^n_back && ~transProbDesign
         ['## Alert: Potentially incorrect n_back being used for extra transect analyses ##']
         crash = yes
         %Mostly a concern for figure labels/etc
@@ -200,10 +222,12 @@ for fly = 1:size(chosenFlies,2)
         for sigpa = 1:numSig
             subplot(2,numSig,numSig+sigpa)
             %errorbar(sigProfiles{sigpa}{1},sigProfiles{sigpa}{2})
-            errorbar(sigProfiles{sigpa}{1}(reOrder),sigProfiles{sigpa}{2}(reOrder))
+            %errorbar(sigProfiles{sigpa}{1}(reOrder),sigProfiles{sigpa}{2}(reOrder))
+            errorbar(sigProfiles{sigpa}{1}(reOrderActual),sigProfiles{sigpa}{2}(reOrderActual))
             xticks([1:size(meanData,2)]) %Note: Not inherently reordered
             %xticklabels(exLabels)
-            xticklabels(exLabels(reOrder))
+            %xticklabels(exLabels(reOrder))
+            xticklabels(exLabels(reOrderActual))
             xtickangle(270)
             xlim([0,size(meanData,2)+1])
             title(['Sig. patch #',num2str(sigpa),' ',patchMethod,' (Ind:',num2str(sigProfiles{sigpa}{3}),') profile (n per seq = ~',num2str(floor( nanmean(underN)) ),')'])

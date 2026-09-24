@@ -1,5 +1,6 @@
-function plotSeparateERPs(allERPs)
+function plotSeparateERPs(allERPs,transProbAncillary)
 
+if isempty(transProbAncillary) %Use as a proxy to infer no transition probability type
     % calculate ERP for stimuli 0 and 1
     %allERPs0 = allERPs(:,1:2:31,:); allERPs0 = sum(allERPs0,2); %Hardcoded 5back
     %allERPs1 = allERPs(:,2:2:32,:); allERPs1 = sum(allERPs1,2);
@@ -35,3 +36,38 @@ function plotSeparateERPs(allERPs)
     plot(mean(allERPs1,3,'omitnan')-semERPs1,'r:');
     
     legend([h1 h2],{'Stimulus 1','Stimulus 2'});
+
+else %Transition probability
+
+    nStimuli = transProbAncillary.nStimuli;
+    nBack = transProbAncillary.nBackActual;
+
+    colMap = jet(nStimuli);
+
+    %Do everything online in one figure
+        %cowabunga
+    figure
+    hold on
+    legList = {};
+    for stimi = 1:nStimuli
+
+        thisERPs = allERPs(:, (1:nStimuli) + (stimi-1)*nStimuli ,:); %Should acquire 1:4, 5:8, etc, based on canonical order
+        thisERPs = nansum(thisERPs,2);
+        thisERPs(thisERPs == 0) = NaN;
+
+        nERPs = sum(~isnan(thisERPs(1,1,:)), 3);
+        sdERPs = std(thisERPs,[],3,'omitnan');
+        semERPs = sdERPs ./ sqrt(nERPs);
+
+        %Plot
+        plot(mean(thisERPs,3,'omitnan'),'Color',colMap(stimi,:));
+        plot(mean(thisERPs,3,'omitnan')+semERPs,'Color',colMap(stimi,:),'LineStyle',':');
+        plot(mean(thisERPs,3,'omitnan')-semERPs,'Color',colMap(stimi,:),'LineStyle',':');
+        
+        legList = [legList,{['Stim. ',num2str(stimi),' mean']},{['Stim. ',num2str(stimi),' SEM']},{['Stim. ',num2str(stimi),' SEM']}];
+
+    end
+    legend(legList)
+
+
+end

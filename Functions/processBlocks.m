@@ -26,11 +26,12 @@ firstLastPlot = options.firstLastPlot;
 photMovMaxWindow = options.photMovMaxWindow;
 
 disp(['Using window of ',num2str(photMovMaxWindow), ' for phot movmax calcs'])
-blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow);
+%blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow);
+blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow,'n_back',n_back);
 
 blocks = inferRandomSequence(blocks);
 
-blocks = calculateBadTrials(blocks, aux_plots);
+blocks = calculateBadTrials(blocks, aux_plots, n_back);
 
 if isempty(blocks)
     ['-# Block skipped #-']

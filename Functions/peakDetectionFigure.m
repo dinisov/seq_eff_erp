@@ -25,6 +25,13 @@ function peakDetectionFigure(blocks)
             plot(blocks(b).PHOT(1,:)); plot(blocks(b).PHOT(2,:));
             scatter(blocks(b).LOCS_PHOT1,zeros(size(blocks(b).LOCS_PHOT1)),'b','filled');
             scatter(blocks(b).LOCS_PHOT2,zeros(size(blocks(b).LOCS_PHOT2)),'r','filled');
+
+            %Transition probability data
+            if blocks(b).transProbDesign
+                plot(blocks(b).PHOT(3,:)); %If this crashes, you have probably specified fly_record incorrectly
+                scatter(blocks(b).LOCS_PHOT3,zeros(size(blocks(b).LOCS_PHOT3)),'g','filled');                
+            end
+
         end
 
         if isfield(blocks,'focusPeaks')
@@ -32,6 +39,6 @@ function peakDetectionFigure(blocks)
         else
             scatter(blocks(b).badLOCS, zeros(size(blocks(b).badLOCS)),40,'m','filled');
         end
-        title(['Peak detection figure - ', blocks(b).date,' B',blocks(b).block, ' (Phot: ',num2str(blocks(b).PHOTType),')'])
+        title(['Peak detection figure - ', blocks(b).date,' B',blocks(b).block, ' (Phot type: ',num2str(blocks(b).PHOTType),')'])
     end
 end

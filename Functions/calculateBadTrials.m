@@ -1,4 +1,4 @@
-function blocks = calculateBadTrials(blocks, aux_plots)
+function blocks = calculateBadTrials(blocks, aux_plots, n_back)
 %calculateBadTrials Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -9,7 +9,7 @@ for b = 1:length(blocks)
         LOCS = blocks(b).LOCS;
    
         %we must get rid of trials where we could not get a peak and the
-        %subsequent four trials
+        %subsequent n_back-1 trials (Was previously hardcoded as 4)
         badLOCS = LOCS([false diff(LOCS) > (1.5*ISI*resampleFreq)] | [false diff(LOCS) < (0.5*ISI*resampleFreq)]); % index of trials where gap was too long or too short
 
         %create logical vector of which trials are bad
@@ -21,7 +21,10 @@ for b = 1:length(blocks)
 
         %add four trials subsequent to the bad trials vector
         indBadTrials = find(badTrials);
-        badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
+        %badTrials([indBadTrials+1 indBadTrials+2 indBadTrials+3 indBadTrials+4]) = 1;
+        for i = 1:n_back-1
+            badTrials([indBadTrials+i]) = 1;            
+        end
 
         percentDataLost = nnz(badTrials)/length(badTrials);
         disp(['Data lost due to bad peak detection: ' num2str(percentDataLost*100) '% (ignore if block experiment)']);

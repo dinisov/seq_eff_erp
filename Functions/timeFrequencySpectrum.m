@@ -1,10 +1,16 @@
-function R = timeFrequencySpectrum(R, blocks, n_back)
+function R = timeFrequencySpectrum(R, blocks, n_back, nOverride)
 %timeFrequencyAnalysis Summary of this function goes here
 %   Detailed explanation goes here
     cwtERPs = [];
+
+    if isempty(nOverride)
+        nActual = 0.5*2^n_back;
+    else
+        nActual = nOverride; %Note that nActual here is not an nBack per se, but rather just a list of how many elements are in meanERPs etc
+    end
     
     %300 Hz seems like a sensible upper limit
-    for s = 1:0.5*2^n_back
+    for s = 1:nActual
         try
             [wt,f] = cwt(R.meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
             cwtERPs(:,s,:) = wt; %#ok<AGROW>
@@ -31,7 +37,8 @@ function R = timeFrequencySpectrum(R, blocks, n_back)
             cwtERPs = [];
     
             %300 Hz seems like a sensible upper limit
-            for s = 1:0.5*2^n_back
+            %for s = 1:nActual
+            for s = 1:size(R.ISOMER.(thisIsom).meanERPs,2) %Switch to using size, for simplicity, rather than encoding two parallel nActuals
                %[wt,f] = cwt(R.meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);
                try
                     [wt,f] = cwt(R.ISOMER.(thisIsom).meanERPs(:,s),blocks(1).resampleFreq,'FrequencyLimits',[0 300]);

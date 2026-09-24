@@ -1,8 +1,21 @@
-function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back)
+function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFreq, transectTime, avTransectWindow, plotSelector, n_back, nBackOverride, labels)
 %calculateSEs Takes a matrix of ERPs separated by sequence and calculates SEs
 %   Detailed explanation goes here
 
-    nActive = 0.5*2^n_back; %Replaces hardcoded 16 in multiple places
+    if isempty( nBackOverride )
+        %QA
+        if isempty(n_back)
+            ['## Alert: No n_back specified ##']
+            crash = yes
+        end
+        nActive = 0.5*2^n_back; %Replaces hardcoded 16 in multiple places
+        labels = []; %Will be loaded by sections below for this case
+    else
+        n_back = [];
+        nActive = nBackOverride;
+        labels = labels; %Symbolic
+        disp(['Using override nActive of ',num2str(nActive)])
+    end
 
     R = struct;
     
@@ -164,25 +177,34 @@ function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFr
         
         figure;
 
-        switch n_back
-            case 5
-                load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
-                labels = binomial_x_labels_latex;
-            otherwise
-                loadName = [num2str(n_back),'-back_legend.mat'];
-                eval(['load ',loadName])
-                %labels = anynomial_x_labels_latex; %Old style; Native ordering
-                labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects
-        end
+        if isempty( nBackOverride ) %Normal
 
-        %this is just to help turn horizontal sequences into vertical ones
-        %ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]);
-        ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]);
-        %labels{i}(ind_horiz)
+            switch n_back
+                case 5
+                    load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
+                    labels = binomial_x_labels_latex;
+                otherwise
+                    loadName = [num2str(n_back),'-back_legend.mat'];
+                    eval(['load ',loadName])
+                    %labels = anynomial_x_labels_latex; %Old style; Native ordering
+                    labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects
+            end
+
+            %this is just to help turn horizontal sequences into vertical ones
+            %ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]);
+            ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]);
+            %labels{i}(ind_horiz)
+
+        else %Transition probability
+
+            labels = labels;
+
+        end
 
         for i = 1:nActive
            %subplot(4,4,i);
-           subplot(ceil(sqrt(0.5*2^n_back)),ceil(sqrt(0.5*2^n_back)),i);
+           %subplot(ceil(sqrt(0.5*2^n_back)),ceil(sqrt(0.5*2^n_back)),i);
+           subplot(ceil(sqrt(nActive)),ceil(sqrt(nActive)),i);
            plot(normalize(meanERPs(:,i)));
            hold on;
            scatter(ind_max_erp(i), 0,40,'r','filled');
@@ -190,7 +212,11 @@ function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFr
            plot(normalize(meanPHOTs(:,i)));
 %            plot([window(1) window(1)],ylim,'r');
            %title(binomial_x_labels_latex{i}(ind_horiz));
-           title(labels{i}(ind_horiz));
+           if isempty( nBackOverride )
+               title(labels{i}(ind_horiz));
+           else
+               title(labels(i,:))
+           end
         end
     end
     

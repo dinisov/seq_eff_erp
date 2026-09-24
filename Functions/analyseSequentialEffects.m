@@ -24,10 +24,36 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
 
     %n_back = 5;  %TODO: make n_back variable
     
+    %---------------------------------
+
     % sort according to sequence
     %blocks = sortSEs(blocks, n_back);
     blocks = sortSEs(blocks, n_back, ...
         'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);
+
+    %---------------------------------
+
+    %% Evaluate whether transition probability
+    transProbDesign = blocks(1).transProbDesign;
+    if transProbDesign
+        transProbAncillary = blocks(1).transProbAncillary; %Minor risk of not having all data, if blocks updated later on
+        %And append reOrder-related info, due to the slightly different way it works (Applied per stim) here
+        reOrderActual = [];
+        temp = [1:transProbAncillary.nStimuli^transProbAncillary.nBackActual];
+        for i = 1:transProbAncillary.nStimuli:size(transProbAncillary.transLabels,1) %Note: If this is modified, make sure to change the original version in create seq eff plot
+            theseRowInds = [i:i+transProbAncillary.nStimuli-1];
+            theseRowIndsMod = [i+reOrder-1];
+            reOrderActual = [reOrderActual,temp(theseRowIndsMod)]; %Note: reOrderActual here behaves more like reOrder for SEs
+        end
+        transProbAncillary.reOrderActual = reOrderActual;
+        for b = 1:length(blocks)
+            blocks(b).transProbAncillary.reOrderActual = reOrderActual; %Might be redundant?
+        end
+    else
+        transProbAncillary = [];
+    end
+
+    %%
 
     %QA
     if size(blocks,2) > 1
@@ -132,7 +158,11 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     
     %plotSeparateERPs(allERPs);
     if plotIndividualFlies
-        plotSeparateERPs(allERPs);
+        %if transProbDesign
+            %plotSeparateERPs(allERPs,[]);
+        %else
+        plotSeparateERPs(allERPs,transProbAncillary);
+        %end
     end
     
     %% plot isomers
@@ -146,30 +176,35 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     [ISOMER] = plotIsomers(allERPs,[], window, n_back, blocks(1).resampleFreq,...
         blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, reOrder,...
         [blocks(1).date,' (#',num2str(blocks(1).fly),') B',blocks(1).block],...
-        plotIndividualFlies, allPHOTs, allTIMEs);
+        plotIndividualFlies, allPHOTs, allTIMEs, transProbDesign, transProbAncillary);
     
     %% calculate SEs
 
-    allERPs( isnan(allERPs) ) = 0; %This nonsensical step required because flipping below requires 0s
-        %That is, adding 0 to a value -> value, but adding NaN to a value -> NaN, so we briefly convert NaNs to 0s 
+    if ~transProbDesign
+        allERPs( isnan(allERPs) ) = 0; %This nonsensical step required because flipping below requires 0s
+            %That is, adding 0 to a value -> value, but adding NaN to a value -> NaN, so we briefly convert NaNs to 0s 
+        
+        % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
+        allERPs = allERPs + flip(allERPs,2);
+        allPHOTs = allPHOTs + flip(allPHOTs,2);
+        allTIMEs = allTIMEs + flip(allTIMEs,2);
+        %allERPs = allERPs(:,1:16,:);
+        %allPHOTs = allPHOTs(:,1:16,:);
+        allERPs = allERPs(:,1:0.5*2^n_back,:);
+        allPHOTs = allPHOTs(:,1:0.5*2^n_back,:);
+        allTIMEs = allTIMEs(:,1:0.5*2^n_back,:);
+        
+        % reorder according to the literature
+        allERPs = allERPs(:,seq_eff_order(n_back),:);
+        allPHOTs = allPHOTs(:,seq_eff_order(n_back),:);
+        allTIMEs = allTIMEs(:,seq_eff_order(n_back),:);
     
-    % join ERPs corresponding to the same pattern (01001 and 10110 and so on)
-    allERPs = allERPs + flip(allERPs,2);
-    allPHOTs = allPHOTs + flip(allPHOTs,2);
-    allTIMEs = allTIMEs + flip(allTIMEs,2);
-    %allERPs = allERPs(:,1:16,:);
-    %allPHOTs = allPHOTs(:,1:16,:);
-    allERPs = allERPs(:,1:0.5*2^n_back,:);
-    allPHOTs = allPHOTs(:,1:0.5*2^n_back,:);
-    allTIMEs = allTIMEs(:,1:0.5*2^n_back,:);
-    
-    % reorder according to the literature
-    allERPs = allERPs(:,seq_eff_order(n_back),:);
-    allPHOTs = allPHOTs(:,seq_eff_order(n_back),:);
-    allTIMEs = allTIMEs(:,seq_eff_order(n_back),:);
-
-    %MOVED HERE FROM calculateSEs TO SIMPLIFY ZERO-SHIFTING MATTERS
-    allERPs(allERPs == 0) = nan;
+        %MOVED HERE FROM calculateSEs TO SIMPLIFY ZERO-SHIFTING MATTERS
+        allERPs(allERPs == 0) = nan;
+    else
+        disp(['(Not merging isomers because transition probability)'])
+        %A case could be made for 1->4 and 4->1 etc being 'isomers' but we'll cross that bridge later
+    end
 
     %Shift all above zero, if requested (And data actually dips below zero)
         %Pushed into individual functions
@@ -178,8 +213,13 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     %    disp(['Zero shift applied'])
     %end
     
-    %R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
-    R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window,blocks(1).resampleFreq, blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, n_back);
+    if ~transProbDesign %Normal
+        %R = calculateSEs(allERPs,allPHOTs,aux_plots,window,blocks(1).resampleFreq);
+        R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window,blocks(1).resampleFreq, blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector, n_back, []);
+    else %Transition probability
+        R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window,blocks(1).resampleFreq, blocks(1).transectTime, blocks(1).avTransectWindow, plotSelector,...
+            [], transProbAncillary.nStimuli^transProbAncillary.nBackActual, transProbAncillary.transLabels ); %Use new argument for override
+    end
 
     %Check for nan problems (Empty data?)
     if nansum(isnan(R.meanERPs),'all') == numel(R.meanERPs)
@@ -191,18 +231,36 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     %Inject isomer data
     R.ISOMER = ISOMER;
     try
-        R = timeFrequencySpectrum(R, blocks, n_back);
+
+        if ~transProbDesign
+            R = timeFrequencySpectrum(R, blocks, n_back, []);
+        else
+            R = timeFrequencySpectrum(R, blocks, [], transProbAncillary.nStimuli^transProbAncillary.nBackActual); %Use new nOverride argument
+        end
+
     catch
+
         ['-# Alert: time/frequency failure for fly # ',num2str(blocks(1).fly),' block ',blocks(1).block,' #-']    
         R.magnitudeSEs = [];
         R.phaseSEs = [];
         R.f = [];
+        %Hardcoded empty data for two isomers
+        %{
         R.ISOMER.R1.magnitudeSEs = [];
         R.ISOMER.R1.phaseSEs = [];
         R.ISOMER.R1.f = [];        
-        R.ISOMER.R1.magnitudeSEs = [];
-        R.ISOMER.R1.phaseSEs = [];
-        R.ISOMER.R1.f = [];
+        R.ISOMER.R2.magnitudeSEs = [];
+        R.ISOMER.R2.phaseSEs = [];
+        R.ISOMER.R2.f = [];
+        %}
+        %Dynamic
+        theseIsom = fieldnames(R.ISOMER);
+        for iso = 1:size(theseIsom,1)
+            R.ISOMER.(thisIsom).magnitudeSEs = [];
+            R.ISOMER.(thisIsom).phaseSEs = [];
+            R.ISOMER.(thisIsom).f = [];
+        end
+
     end
     
     % add window to results structure for convenience
@@ -214,12 +272,21 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
     R.date = blocks(1).date;
     R.block = blocks(1).block;
 
+    R.transProbDesign = transProbDesign;
+    if transProbDesign
+        R.transProbAncillary = transProbAncillary;
+    end
+
     %R.SEQS = blocks(1).SEQS; %Disabled for the moment until flipped/compacted/etc (See above)
 
     
     %% ANOVA
     if ~suppressANOVA
-        SEAnova(R, reOrder, n_back);
+        if ~transProbDesign
+            SEAnova(R, reOrder, n_back, []);
+        else
+            SEAnova(R, reOrder, n_back, transProbAncillary);
+        end
     end
     
 end

@@ -41,24 +41,45 @@ if exist(resultsDirectory) ~= 7
     disp(resultsDirectory)
 end
 
-%Matthew system for turning Dinis X labels into something conveniently usable
-switch n_back
-    case 5
-        load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
-        labels = binomial_x_labels_latex;
-    otherwise
-        loadName = [num2str(n_back),'-back_legend.mat'];
-        eval(['load ',loadName])
-        %labels = anynomial_x_labels_latex; %Old style; Native ordering
-        labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects 
-end
-%this is just to help turn horizontal sequences into vertical ones
-%ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]); %Hardcoded n-back of 5
-ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]); %Dynamic
-exLabels = [];
-for s = 1:size(labels,2)
-    %exLabels{s} = binomial_x_labels_latex{s}(ind_horiz);
-    exLabels{s} = labels{s}(ind_horiz);
+transProbDesign = FLIES(1).transProbDesign; %An assumption, but is it even possible for this to be not representative?
+
+if ~transProbDesign
+
+    %Matthew system for turning Dinis X labels into something conveniently usable
+    switch n_back
+        case 5
+            load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
+            labels = binomial_x_labels_latex;
+        otherwise
+            loadName = [num2str(n_back),'-back_legend.mat'];
+            eval(['load ',loadName])
+            %labels = anynomial_x_labels_latex; %Old style; Native ordering
+            labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects 
+    end
+    %this is just to help turn horizontal sequences into vertical ones
+    %ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]); %Hardcoded n-back of 5
+    ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]); %Dynamic
+    exLabels = [];
+    for s = 1:size(labels,2)
+        %exLabels{s} = binomial_x_labels_latex{s}(ind_horiz);
+        exLabels{s} = labels{s}(ind_horiz);
+    end
+    exLabelsSafe = exLabels;
+
+else
+
+    if ~isoMode
+        labels = FLIES(1).transProbAncillary.transLabels;
+    else
+        labels = FLIES(1).transProbAncillary.histLabels;
+    end
+    exLabels = {};
+    exLabelsSafe = {};
+    for s = 1:size(labels,1)
+        exLabels{s} = labels(s,:);
+        exLabelsSafe{s} = strrep( labels(s,:), '->', '-to-' ); %Make a safer version of the labels, for saving
+    end
+
 end
 
 % individualFlies = false;
@@ -237,6 +258,11 @@ for iso = 1:isoN %Do even if using merged, for reasons of simplicity
             %}
     
             %Custom comparisons
+            %Pre QA
+            if nanmax(customComparisons,[],'all') > size(magSEs,2)
+                ['-# Alert: TimeFrequencyAnalysis requested custom comparison of sequence numbered higher than actually present in data #-']
+                crash = yes
+            end
             %{
             for comp = 1:size(customComparisons,1)
                 figure; 
@@ -261,20 +287,24 @@ for iso = 1:isoN %Do even if using merged, for reasons of simplicity
                         c1ActualLabel = 'all seq av.';
                     else
                         c1Actual = c1;
-                        c1ActualLabel = exLabels{c1Actual};
+                        %c1ActualLabel = exLabels{c1Actual};
+                        c1ActualLabel = exLabelsSafe{c1Actual};
                     end
                     if c2 == -1
                         c2Actual = [1:size(magSEs,2)]; %All chans
                         c2ActualLabel = 'all seq av';
                     else
                         c2Actual = c2;
-                        c2ActualLabel = exLabels{c2Actual};
+                        %c2ActualLabel = exLabels{c2Actual};
+                        c2ActualLabel = exLabelsSafe{c2Actual};
                     end
                 else %Normal case/s
                     c1Actual = c1;
                     c2Actual = c2;
-                    c1ActualLabel = exLabels{c1Actual};
-                    c2ActualLabel = exLabels{c2Actual};
+                    %c1ActualLabel = exLabels{c1Actual};
+                    %c2ActualLabel = exLabels{c2Actual};
+                    c1ActualLabel = exLabelsSafe{c1Actual};
+                    c2ActualLabel = exLabelsSafe{c2Actual};
                 end
                 %imagesc(squeeze(meanMagSEs(:,c1,:)) - squeeze(meanMagSEs(:,c2,:)),'xdata',time_bounds); colorbar;
                 imagesc(squeeze( nanmean(magSEs(:,c1Actual,:),2) ) - squeeze( nanmean(magSEs(:,c2Actual,:),2) ),'xdata',time_bounds); colorbar; %Add in nanmean to allow for averaging
@@ -388,20 +418,24 @@ for iso = 1:isoN
                 c1ActualLabel = 'all seq av.';
             else
                 c1Actual = c1;
-                c1ActualLabel = exLabels{c1Actual};
+                %c1ActualLabel = exLabels{c1Actual};
+                c1ActualLabel = exLabelsSafe{c1Actual};
             end
             if c2 == -1
                 c2Actual = [1:size(meanMagSEs,2)]; %All chans
                 c2ActualLabel = 'all seq av';
             else
                 c2Actual = c2;
-                c2ActualLabel = exLabels{c2Actual};
+                %c2ActualLabel = exLabels{c2Actual};
+                c2ActualLabel = exLabelsSafe{c2Actual};
             end
         else %Normal case/s
             c1Actual = c1;
             c2Actual = c2;
-            c1ActualLabel = exLabels{c1Actual};
-            c2ActualLabel = exLabels{c2Actual};
+            %c1ActualLabel = exLabels{c1Actual};
+            %c2ActualLabel = exLabels{c2Actual};
+            c1ActualLabel = exLabelsSafe{c1Actual};
+            c2ActualLabel = exLabelsSafe{c2Actual};
         end
         %imagesc(squeeze(meanMagSEs(:,c1,:)) - squeeze(meanMagSEs(:,c2,:)),'xdata',time_bounds); colorbar;
         imagesc(squeeze( nanmean(meanMagSEs(:,c1Actual,:),2) ) - squeeze( nanmean(meanMagSEs(:,c2Actual,:),2) ),'xdata',time_bounds); colorbar; %Add in nanmean to allow for averaging

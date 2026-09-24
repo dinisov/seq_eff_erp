@@ -27,6 +27,7 @@ arguments
     options.doTestatoryTimeCorrsPlot double = 0; %Enacts a very specific, very slow isom 1 vs 2 plot for time corrs
     options.customSaveName char = []; %If non-empty, adds this string to the name certain plots/video are saved under
     options.useTrueTimeX double = 1; %Where applicable attempts to use true calculated time, rather than 'frames' etc [WIP]
+    options.nOverride double = []; %Similar to other functions, if non-empty acts as a forced override for the n of sequences (not nBack)
 end
 
 alphaVal = options.alphaVal;
@@ -51,27 +52,63 @@ crossIsomerSeqCorrTime = options.crossIsomerSeqCorrTime;
 doTestatoryTimeCorrsPlot = options.doTestatoryTimeCorrsPlot;
 customSaveName = options.customSaveName;
 useTrueTimeX = options.useTrueTimeX;
+nOverride = options.nOverride;
 
 %%
 
-%Matthew system for turning Dinis X labels into something conveniently usable
-switch n_back
-    case 5
-        load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
-        labels = binomial_x_labels_latex;
-    otherwise
-        loadName = [num2str(n_back),'-back_legend.mat'];
-        eval(['load ',loadName])
-        %labels = anynomial_x_labels_latex; %Old style; Native ordering
-        labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects
+transProbDesign = 0;
+if FLIES(chosenFlies(1)).transProbDesign
+    transProbDesign = 1;
 end
-%this is just to help turn horizontal sequences into vertical ones
-%ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]); %Hardcoded n-back of 5
-ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]); %Dynamic
-exLabels = [];
-for s = 1:size(labels,2)
-    %exLabels{s} = binomial_x_labels_latex{s}(ind_horiz);
-    exLabels{s} = labels{s}(ind_horiz);
+
+if ~transProbDesign
+
+    %Matthew system for turning Dinis X labels into something conveniently usable
+    switch n_back
+        case 5
+            load('binomial_x_labels_latex_alt_rep.mat','binomial_x_labels_latex');
+            labels = binomial_x_labels_latex;
+        otherwise
+            loadName = [num2str(n_back),'-back_legend.mat'];
+            eval(['load ',loadName])
+            %labels = anynomial_x_labels_latex; %Old style; Native ordering
+            labels = anynomial_x_labels_latex_canonical; %Matches what is applied by seq_eff_order in analyseSequentialEffects
+    end
+    %this is just to help turn horizontal sequences into vertical ones
+    %ind_horiz = sub2ind(size(binomial_x_labels_latex{1}),1:4,[1 1 1 5]); %Hardcoded n-back of 5
+    ind_horiz = sub2ind(size(labels{1}),1:n_back-1,[ones(1,n_back-2) 5]); %Dynamic
+    exLabels = [];
+    for s = 1:size(labels,2)
+        %exLabels{s} = binomial_x_labels_latex{s}(ind_horiz);
+        exLabels{s} = labels{s}(ind_horiz);
+    end
+
+    nActual = 0.5*2^n_back;
+
+else
+
+    %if ~isoMode
+    %    labels = FLIES(1).transProbAncillary.transLabels;
+    %else
+    labels = FLIES(chosenFlies(1)).transProbAncillary.histLabels;
+    %end
+    exLabels = {};
+    exLabelsSafe = {};
+    for s = 1:size(labels,1)
+        exLabels{s} = labels(s,:);
+        exLabelsSafe{s} = strrep( labels(s,:), '->', '-to-' ); %Make a safer version of the labels, for saving
+    end
+
+    nActual = FLIES(chosenFlies(1)).transProbAncillary.nStimuli;%^FLIES(chosenFlies(1)).transProbAncillary.nBackActual;
+    %nIsomerActual = FLIES(chosenFlies(1)).transProbAncillary.nStimuli; %How many 'sequences' in an isomer
+
+    %reOrderActual = FLIES(chosenFlies(1)).transProbAncillary.reOrderActual; 
+
+end
+
+if ~isempty(nOverride)
+    nActual = nOverride;
+    disp(['# of sequences for isomer analysis overridden to ',num2str(nActual)])
 end
 
 resultsDirectory = [resultsDirectory '\Transect\'];
@@ -103,362 +140,414 @@ for fly = 1:size(chosenFlies,2)
     thisFly = chosenFlies(fly);
     %disp(['Now analysing fly #',num2str(thisFly),' for extra transect analyses'])
     thisFlyData = FLIES(thisFly);
+    disp(['Now analysing isomers for Fly ',num2str(thisFlyData.fly),' Block ',thisFlyData.block])
     %Pre-data QA
     if ~isfield(thisFlyData,'ISOMER')
         ['-# Alert: Fly #',num2str(thisFly),' lacks stored ISOMER data #-']
         continue
     end
     numIsomers = size(fieldnames(thisFlyData.ISOMER),1); %Futureproofing?
-    if numIsomers > 2
-        ['## Caution: Code case not written for >2 isomers yet ##']
-        crash = yes %cbf right now writing true generalised (and combinatorial) code for multiple isomer comparison
-    end
-    R1 = thisFlyData.ISOMER.R1;
-    R2 = thisFlyData.ISOMER.R2;
-
-    %QA for n-back
-    if size(thisFlyData.nERPs,2) ~= 0.5*2^n_back
-        ['## Alert: Potentially incorrect n_back being used for extra isomer analyses ##']
-        crash = yes
-        %Mostly a concern for figure labels/etc
-    end
-
-    %Testatory figure
-    %{
-    figure
-    hold on
-    for seq = 1:size(thisFlyData.meanERPs,2)
-        plot(thisFlyData.meanERPs(:,seq))
-    end
-    title([thisFlyData.date,' - B',num2str(thisFlyData.block),' mean ERPs'])
-    %}
-
-    %Decide on P value
-    if ~correctForNTimepoints
-        effectiveAlpha = alphaVal;
-    else
-        effectiveAlpha = alphaVal / size( thisFlyData.allERPs, 1 );
-    end
-
-    rVals = [];
-    pVals = [];
-    for timep = 1:size( thisFlyData.allERPs, 1 )
-        %[pVals(timep),ANOVATAB,STATS] = anova1( squeeze( thisFlyData.allERPs(timep,:,:) ).', [], 'off' ); %Need to use all ERPs data for ANOVA because n
-        [R,P] = corrcoef(R1.meanERPs(timep,:),R2.meanERPs(timep,:)); %Note: Will crash if allERPs and meanERPs different size, but bigger issues if so
-        rVals(timep) = R(2,1); %ONLY VALID AS LONG AS ONLY TWO ISOMERS BEING COMPARED
-        pVals(timep) = P(2,1);
-    end
-
-    %sigPatches = bwlabel( pVals < alphaVal );
-    sigPatches = bwlabel( pVals < effectiveAlpha );
-    numSig = nanmax(sigPatches);
-
-    %And another
-    if showPValPlots && plotIndividualFlies
-        figure
-        subplot(3,1,1)
-        hold on
-        %for seq = 1:size(thisFlyData.meanERPs,2)
-        %    plot(thisFlyData.meanERPs(:,seq))
-        %end
-        plot(rVals,'Color','m')
-        title([thisFlyData.date,' - B',num2str(thisFlyData.block),' R vals'])
-        subplot(3,1,2)
-        plot(pVals,'Color','m')
-        hold on
-        %line([0,size(pVals,2)],[effectiveAlpha,effectiveAlpha],'LineStyle',':','Color','k')
-        title(['(',num2str(thisFly),') ',thisFlyData.date,' - B',num2str(thisFlyData.block),' inter-profile corr. P-values'])
-        subplot(3,1,3)
-        plot(pVals,'Color','m')
-        hold on
-        line([0,size(pVals,2)],[effectiveAlpha,effectiveAlpha],'LineStyle',':','Color','k')
-        ylim([0,effectiveAlpha*1.5])
-        title(['P-values zoom, wrt p<',num2str(effectiveAlpha)])
-        %saveas(gcf,[ resultsDirectory '/' 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
-    end
-
-    %Profile/s for sig over time
-    sigProfiles = {};
-    if numSig > 0
-        for sigpa = 1:nanmax(sigPatches)
-            meanData = [];
-            switch patchMethod
-                case 'average'
-                    thesePInd = find( sigPatches == sigpa ); %Both indices and logicals work here
-                    %sigDataAll = squeeze( thisFlyData.allERPs( thesePInd , : , : ) ); %Time x Seq x Instance; Absed
-                    %    %Note that at any one 'instance', there will only be one non-NaN Time x Seq, due to sparse nature
-                    %sigData = abs( nanmean( sigDataAll, 3 ) ); %Time x Seq [Instances averaged]
-                    meanData{1} = nanmean(R1.meanERPs(thesePInd,:),1); 
-                    meanData{2} = nanmean(R2.meanERPs(thesePInd,:),1); 
-                    %meanData = nanmean( sigData, 1 );
-                    %    %Note: Profiles 'averaged' by virtue of underlying numbers, not profiles themselves
-                    %underN = size(sigData,1);
-                    %meanSEM = nanstd( sigData, [], 1 ) / sqrt( underN );
-                        %Note: SEM here represents error across time (e.g. 25 frames)
-                    %As below wrt not using allERPs
-                    rData = nanmean(rVals(thesePInd));
-                    pData = nanmean(pVals(thesePInd));
-                case 'lowestP'
-                    [theseP, thesePInd] = min( pVals( sigPatches == sigpa ) );
-                    thesePInd = thesePInd + find(sigPatches == sigpa,1,'first') - 1; %Necessary because thesePInd originally in patch-specific reference frame
-                    %sigData = abs( squeeze( thisFlyData.allERPs( thesePInd , : , : ) ) )'; %Instance x Seq; Absed
-                    %    %Sparse as above, now manifesting as one element per row (rather than layer)
-                    %meanData = nanmean(sigData,1); %Apply abs
-                    meanData{1} = nanmean(R1.meanERPs(thesePInd,:),1); 
-                    meanData{2} = nanmean(R2.meanERPs(thesePInd,:),1); 
-                    %underN = nansum( ~isnan( sigData ) , 1 );
-                    %meanSEM = nanstd( sigData, [], 1 ) ./ sqrt( underN );
-                        %Note: Different to above, SEM here represents # of actual instances of seq (e.g. 210)
-                    %Note: Since errorless meanERP is what is fed to corrcoef, this is used in this plot too
-                        %With a little divergence, the actual underlying error could be shown
-                    rData = nanmean(rVals(thesePInd));
-                    pData = nanmean(pVals(thesePInd));
-            end
-
-            %Individual figure
-            %{
-            figure
-            %errorbar(blerg,blergSEM)
-            plot(meanData{1})
-            hold on
-            plot(meanData{2})
-            %indivPos = floor(size(blorg,1)/2);
-            %errorbar(blorg( indivPos, : ),blergSEM) %Plot just one transect
-            xticks([1:size(meanData{1},2)])
-            xticklabels(exLabels)
-            xtickangle(270)
-            title(['R sig. patch #',num2str(sigpa),' isomers (Not reordered)'])
-            %}
-
-            sigProfiles{sigpa}{1} = meanData; %Mean profile
-            %sigProfiles{sigpa}{2} = meanSEM; %SEM of above
-            sigProfiles{sigpa}{3} = [ unique( [min(thesePInd),max(thesePInd)] ) ]; %Lowest/Highest index for sampled area (Unitary if lowestP)
-            sigProfiles{sigpa}{4} = rData;
-            sigProfiles{sigpa}{5} = pData;
-        end
+    %if numIsomers > 2
+    %    ['## Caution: Code case not written for >2 isomers yet ##']
+    %    crash = yes %cbf right now writing true generalised (and combinatorial) code for multiple isomer comparison
     %end
 
-        if plotIndividualFlies
-            %Display of sig across time
-            figure
-            subplot(2,numSig,[1:numSig]) %subplot across first row
-            hold on
-            for seq = 1:size(thisFlyData.meanERPs,2)
-                plot(thisFlyData.meanERPs(:,seq))
-            end
-            yLim = get(gca,'YLim');
-            safeAlt = max( yLim );
-            if numSig > 0
-                for sigpa = 1:numSig
-                    startEnd = [ find(sigPatches == sigpa,1,'first'), find(sigPatches == sigpa,1,'last') ];
-                    line([startEnd],[safeAlt,safeAlt],'LineWidth',2,'Color','k')
-                    %text(nanmean(startEnd),safeAlt-20,num2str(sigpa),'Color','k')
-                    text(nanmean(startEnd),nanmax(yLim)*0.9,num2str(sigpa),'Color','k')
-                end
-            end
-            if safeAlt < 0
-                ylim([min(yLim),safeAlt*0.9])
-            else
-                ylim([min(yLim),safeAlt*1.1]) %Too lazy to perform sign-invariant y limit calcs
-            end
-            title(['(#',num2str(thisFly),') ',thisFlyData.date,' - B',num2str(thisFlyData.block),' sig. (p<',num2str(effectiveAlpha),') across time'])
-            %Quick QA
-            if max(get(gca,'YLim')) < safeAlt
-                ['-# Caution: Sig. displayed outside figure Y limits! #-']
-                ylim([min(yLim),safeAlt])
-            end
-            %Sig profiles
-            %if numSig > 0
-            for sigpa = 1:numSig
-                subplot(2,numSig,numSig+sigpa)
-                %errorbar(sigProfiles{sigpa}{1},sigProfiles{sigpa}{2})
-                %errorbar(sigProfiles{sigpa}{1}(reOrder),sigProfiles{sigpa}{2}(reOrder))
-                plot(sigProfiles{sigpa}{1}{1}(reOrder),'Color','b')
-                hold on
-                plot(sigProfiles{sigpa}{1}{2}(reOrder),'Color','r')
-                xticks([1:size(sigProfiles{sigpa}{1}{1},2)]) 
-                %xticklabels(exLabels)
-                xticklabels(exLabels(reOrder))
-                xtickangle(270)
-                xlim([0,size(sigProfiles{sigpa}{1}{1},2)+1])
-                title(['Sig. patch #',num2str(sigpa),' ',patchMethod,' (Ind:',num2str(sigProfiles{sigpa}{3}),') profile (Mean R value: ',num2str(sigProfiles{sigpa}{4}),' [p=',num2str(sigProfiles{sigpa}{5}),'])'])
-                legend({['R1'],['R2']})
-            end
-            %end
-            %saveas(gcf,[ resultsDirectory '/' 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
-        end
-
+    if numIsomers > 2 && numIsomers <= 7 %Not (current) normal
+        %isomerColours = jet(isomerCount);
+        isomerColours = orderedcolors("gem"); %Only has 7 elements
+    elseif numIsomers > 7
+        isomerColours = jet(isomerCount); %Theoretically infinite
+    else
+        isomerColours = [0,0,1;... %Blue for Isomer 1
+                         1,0,0]; %Red for Isomer 2
     end
 
-    %masses
+    %Find all potential (unique) isomer combinations
+    isoNames = fieldnames( thisFlyData.ISOMER );
+    isoCombs = nchoosek([1:size( isoNames , 1)],2); %Only support for 2-back isomer comparison btw
 
-    if plotIndividualFlies
-        %Plot of all isomers across time
-        isomTime = struct;
-        a = 1;
-        for timep = 1:timeStep:size( thisFlyData.allERPs, 1 )
-            isomTime(a).timep = timep;
-            isomTime(a).data = [R1.meanERPs(timep,:);R2.meanERPs(timep,:)];
-            isomTime(a).mean = [nanmean(squeeze(R1.allERPs(timep,:,:)),2)';...
-                                nanmean(squeeze(R2.allERPs(timep,:,:)),2)'];
-            %isomTime(a).SEM = [nanstd(squeeze(R1.allERPs(timep,:,:)),[],2)' ./ nansum( ~isnan( squeeze(R1.allERPs(timep,:,:)) ), 2 )';... %A REMINDER OF MISTAKES
-            %                   nanstd(squeeze(R2.allERPs(timep,:,:)),[],2)' ./ nansum( ~isnan( squeeze(R2.allERPs(timep,:,:)) ), 2 )'];
-            isomTime(a).SEM = [nanstd(squeeze(R1.allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(R1.allERPs(timep,:,:)) ), 2 ) )';...
-                               nanstd(squeeze(R2.allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(R2.allERPs(timep,:,:)) ), 2 ) )'];
-            isomTime(a).trueTime = nanmean([R1.meanTIMEs(timep,:); R2.meanTIMEs(timep,:)],'all'); %As below, we probably don't care about per-sequence true time
-            a = a + 1;
-        end
+    superUniqueness = nan( numIsomers , numIsomers ); %Same as uniqueNess below, but at a meta level
+    
+    for isoC = 1:size(isoCombs,1)
 
-        %Define limits
-        timeLimit = [];
-        if ~isempty(limitIsomTime)
-            temp = find([isomTime.timep] <= limitIsomTime, 1, 'last');
-            timeLimit = temp;
-            %QA
-            if isempty(timeLimit)
-                ['-# Alert: Time limit cutoff for Isom x Time plot returned empty #-']
-                crash = yes %Highly likely an error made with limitIsomTime, or something odd with timeframe
-            end
-        else
-            timeLimit = size(isomTime,2);
+        thisIsoComb = isoCombs(isoC,:);
+
+        %R1 = thisFlyData.ISOMER.R1; %Old, hardcoded isomer reference
+        %R2 = thisFlyData.ISOMER.R2;
+        firstIsomer = thisFlyData.ISOMER.(isoNames{thisIsoComb(1)});
+        firstIsomer.name = isoNames{thisIsoComb(1)};
+        secondIsomer = thisFlyData.ISOMER.(isoNames{thisIsoComb(2)});
+        secondIsomer.name = isoNames{thisIsoComb(2)};
+
+        thisNames = {firstIsomer.name,secondIsomer.name};
+        disp(['Now comparing isomer ',thisNames{1},' and ',thisNames{2}])
+    
+        %QA for n-back
+        if size(thisFlyData.nERPs,2) ~= nActual && ~transProbDesign
+            ['## Alert: Potentially incorrect n_back being used for extra isomer analyses ##']
+            crash = yes
+            %Mostly a concern for figure labels/etc
         end
+    
+        %Testatory figure
+        %{
         figure
-        for subl = 1:timeLimit
-            subplot(1,timeLimit,subl)
-            %plot(isomTime(subl).data(1,reOrder),'Color','b')
-            errorbar( isomTime(subl).mean(1,reOrder), isomTime(subl).SEM(1,reOrder), 'Color', 'b' )
-            hold on
-            %plot(isomTime(subl).data(2,reOrder),'Color','r')
-            errorbar( isomTime(subl).mean(2,reOrder), isomTime(subl).SEM(2,reOrder), 'Color', 'r' )
-            xticks([1:size(isomTime(subl).data,2)])
-            xticklabels([])
-            yticklabels([])
-            %xticks([])
-            %title(['T:',num2str(isomTime(subl).timep)])
-            titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
-            if subl == timeLimit && (timeLimit ~= size(isomTime,2))
-                titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
-            end
-            title(titleStr)
+        hold on
+        for seq = 1:size(thisFlyData.meanERPs,2)
+            plot(thisFlyData.meanERPs(:,seq))
         end
-        legend({'R1','R2'})
-        set(gcf,'Name',['IsomxTime' '_fly' num2str(thisFly)])
-        %saveas(gcf,[ resultsDirectory '/' 'IsomxTime' '_fly' num2str(thisFly) '.png']);
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'IsomxTime' '_fly' num2str(thisFly) '.png']);
-
-        if doCorrPlots
-            uniqueNess = nan( size(isomTime(1).data,1) , size(isomTime(1).data,1) ); %Will be used to check uniqueness of isomer combinations
-            for isoKInd = 1:size(isomTime(1).data,1)
-                for isoLInd = 1:size(isomTime(1).data,1)
-                    temp = sort( [isoKInd,isoLInd] );
-                    if uniqueNess(temp(1),temp(2)) == 1
-                        %disp(['already done [',num2str(isoKInd),' x ',num2str(isoLInd),']'])
-                        continue
-                    else
-                        uniqueNess(temp(1),temp(2)) = 1;
-                    end                   
-
-                    superTimeCorr = nan( timeLimit , timeLimit ); %Time x Time within Isomer
-                    superTimeP = nan( timeLimit , timeLimit );
-                    for subl = 1:timeLimit
-                        for subk = 1:timeLimit
-                            [temR, temP] = corrcoef( isomTime(subl).mean(isoKInd,reOrder)' , isomTime(subk).mean(isoLInd,reOrder)' );
-                                %Note: Sometimes diagonals not perfectly equal to 1?
-                            if subl == subk && (isoKInd == isoLInd)
-                                superTimeCorr(subl,subk) = NaN;
-                                superTimeP(subl,subk) = NaN; 
-                            else
-                                superTimeCorr(subl,subk) = temR(1,2); %Only 'one' comp
-                                superTimeP(subl,subk) = temP(1,2);
+        title([thisFlyData.date,' - B',num2str(thisFlyData.block),' mean ERPs'])
+        %}
+    
+        %Decide on P value
+        if ~correctForNTimepoints
+            effectiveAlpha = alphaVal;
+        else
+            effectiveAlpha = alphaVal / size( thisFlyData.allERPs, 1 );
+        end
+    
+        rVals = [];
+        pVals = [];
+        for timep = 1:size( thisFlyData.allERPs, 1 )
+            %[pVals(timep),ANOVATAB,STATS] = anova1( squeeze( thisFlyData.allERPs(timep,:,:) ).', [], 'off' ); %Need to use all ERPs data for ANOVA because n
+            [R,P] = corrcoef(firstIsomer.meanERPs(timep,:),secondIsomer.meanERPs(timep,:)); %Note: Will crash if allERPs and meanERPs different size, but bigger issues if so
+            rVals(timep) = R(2,1); %ONLY VALID AS LONG AS ONLY TWO ISOMERS BEING COMPARED
+            pVals(timep) = P(2,1);
+        end
+    
+        %sigPatches = bwlabel( pVals < alphaVal );
+        sigPatches = bwlabel( pVals < effectiveAlpha );
+        numSig = nanmax(sigPatches);
+    
+        %And another
+        if showPValPlots && plotIndividualFlies
+            figure
+            subplot(3,1,1)
+            hold on
+            %for seq = 1:size(thisFlyData.meanERPs,2)
+            %    plot(thisFlyData.meanERPs(:,seq))
+            %end
+            plot(rVals,'Color','m')
+            title([thisFlyData.date,' - B',num2str(thisFlyData.block),' R vals'])
+            subplot(3,1,2)
+            plot(pVals,'Color','m')
+            hold on
+            %line([0,size(pVals,2)],[effectiveAlpha,effectiveAlpha],'LineStyle',':','Color','k')
+            title(['(',num2str(thisFly),') ',thisFlyData.date,' - B',num2str(thisFlyData.block),' inter-profile corr. P-values'])
+            subplot(3,1,3)
+            plot(pVals,'Color','m')
+            hold on
+            line([0,size(pVals,2)],[effectiveAlpha,effectiveAlpha],'LineStyle',':','Color','k')
+            ylim([0,effectiveAlpha*1.5])
+            title(['P-values zoom, wrt p<',num2str(effectiveAlpha)])
+            %saveas(gcf,[ resultsDirectory '/' 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffPVal' '_fly' num2str(thisFly) '.png']);
+        end
+    
+        %Profile/s for sig over time
+        sigProfiles = {};
+        if numSig > 0
+            for sigpa = 1:nanmax(sigPatches)
+                meanData = [];
+                switch patchMethod
+                    case 'average'
+                        thesePInd = find( sigPatches == sigpa ); %Both indices and logicals work here
+                        %sigDataAll = squeeze( thisFlyData.allERPs( thesePInd , : , : ) ); %Time x Seq x Instance; Absed
+                        %    %Note that at any one 'instance', there will only be one non-NaN Time x Seq, due to sparse nature
+                        %sigData = abs( nanmean( sigDataAll, 3 ) ); %Time x Seq [Instances averaged]
+                        meanData{1} = nanmean(firstIsomer.meanERPs(thesePInd,:),1); 
+                        meanData{2} = nanmean(secondIsomer.meanERPs(thesePInd,:),1); 
+                        %meanData = nanmean( sigData, 1 );
+                        %    %Note: Profiles 'averaged' by virtue of underlying numbers, not profiles themselves
+                        %underN = size(sigData,1);
+                        %meanSEM = nanstd( sigData, [], 1 ) / sqrt( underN );
+                            %Note: SEM here represents error across time (e.g. 25 frames)
+                        %As below wrt not using allERPs
+                        rData = nanmean(rVals(thesePInd));
+                        pData = nanmean(pVals(thesePInd));
+                    case 'lowestP'
+                        [theseP, thesePInd] = min( pVals( sigPatches == sigpa ) );
+                        thesePInd = thesePInd + find(sigPatches == sigpa,1,'first') - 1; %Necessary because thesePInd originally in patch-specific reference frame
+                        %sigData = abs( squeeze( thisFlyData.allERPs( thesePInd , : , : ) ) )'; %Instance x Seq; Absed
+                        %    %Sparse as above, now manifesting as one element per row (rather than layer)
+                        %meanData = nanmean(sigData,1); %Apply abs
+                        meanData{1} = nanmean(firstIsomer.meanERPs(thesePInd,:),1); 
+                        meanData{2} = nanmean(secondIsomer.meanERPs(thesePInd,:),1); 
+                        %underN = nansum( ~isnan( sigData ) , 1 );
+                        %meanSEM = nanstd( sigData, [], 1 ) ./ sqrt( underN );
+                            %Note: Different to above, SEM here represents # of actual instances of seq (e.g. 210)
+                        %Note: Since errorless meanERP is what is fed to corrcoef, this is used in this plot too
+                            %With a little divergence, the actual underlying error could be shown
+                        rData = nanmean(rVals(thesePInd));
+                        pData = nanmean(pVals(thesePInd));
+                end
+    
+                %Individual figure
+                %{
+                figure
+                %errorbar(blerg,blergSEM)
+                plot(meanData{1})
+                hold on
+                plot(meanData{2})
+                %indivPos = floor(size(blorg,1)/2);
+                %errorbar(blorg( indivPos, : ),blergSEM) %Plot just one transect
+                xticks([1:size(meanData{1},2)])
+                xticklabels(exLabels)
+                xtickangle(270)
+                title(['R sig. patch #',num2str(sigpa),' isomers (Not reordered)'])
+                %}
+    
+                sigProfiles{sigpa}{1} = meanData; %Mean profile
+                %sigProfiles{sigpa}{2} = meanSEM; %SEM of above
+                sigProfiles{sigpa}{3} = [ unique( [min(thesePInd),max(thesePInd)] ) ]; %Lowest/Highest index for sampled area (Unitary if lowestP)
+                sigProfiles{sigpa}{4} = rData;
+                sigProfiles{sigpa}{5} = pData;
+            end
+        %end
+    
+            if plotIndividualFlies
+                %Display of sig across time
+                figure
+                subplot(2,numSig,[1:numSig]) %subplot across first row
+                hold on
+                for seq = 1:size(thisFlyData.meanERPs,2)
+                    plot(thisFlyData.meanERPs(:,seq))
+                end
+                yLim = get(gca,'YLim');
+                safeAlt = max( yLim );
+                if numSig > 0
+                    for sigpa = 1:numSig
+                        startEnd = [ find(sigPatches == sigpa,1,'first'), find(sigPatches == sigpa,1,'last') ];
+                        line([startEnd],[safeAlt,safeAlt],'LineWidth',2,'Color','k')
+                        %text(nanmean(startEnd),safeAlt-20,num2str(sigpa),'Color','k')
+                        text(nanmean(startEnd),nanmax(yLim)*0.9,num2str(sigpa),'Color','k')
+                    end
+                end
+                if safeAlt < 0
+                    ylim([min(yLim),safeAlt*0.9])
+                else
+                    ylim([min(yLim),safeAlt*1.1]) %Too lazy to perform sign-invariant y limit calcs
+                end
+                title(['(#',num2str(thisFly),') ',thisFlyData.date,' - B',num2str(thisFlyData.block),' sig. (p<',num2str(effectiveAlpha),') across time'])
+                %Quick QA
+                if max(get(gca,'YLim')) < safeAlt
+                    ['-# Caution: Sig. displayed outside figure Y limits! #-']
+                    ylim([min(yLim),safeAlt])
+                end
+                %Sig profiles
+                %if numSig > 0
+                for sigpa = 1:numSig
+                    subplot(2,numSig,numSig+sigpa)
+                    %errorbar(sigProfiles{sigpa}{1},sigProfiles{sigpa}{2})
+                    %errorbar(sigProfiles{sigpa}{1}(reOrder),sigProfiles{sigpa}{2}(reOrder))
+                    plot(sigProfiles{sigpa}{1}{1}(reOrder),'Color','b')
+                    hold on
+                    plot(sigProfiles{sigpa}{1}{2}(reOrder),'Color','r')
+                    xticks([1:size(sigProfiles{sigpa}{1}{1},2)]) 
+                    %xticklabels(exLabels)
+                    xticklabels(exLabels(reOrder))
+                    xtickangle(270)
+                    xlim([0,size(sigProfiles{sigpa}{1}{1},2)+1])
+                    title(['Sig. patch #',num2str(sigpa),' ',patchMethod,' (Ind:',num2str(sigProfiles{sigpa}{3}),') profile (Mean R value: ',num2str(sigProfiles{sigpa}{4}),' [p=',num2str(sigProfiles{sigpa}{5}),'])'])
+                    %legend({['R1'],['R2']})
+                    legend({[firstIsomer.name],[secondIsomer.name]})
+                end
+                %end
+                %saveas(gcf,[ resultsDirectory '/' 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
+            end
+    
+        end
+    
+        %masses
+    
+        if plotIndividualFlies
+            %Plot of all isomers across time
+            isomTime = struct;
+            a = 1;
+            for timep = 1:timeStep:size( thisFlyData.allERPs, 1 )
+                isomTime(a).timep = timep;
+                isomTime(a).data = [firstIsomer.meanERPs(timep,:);secondIsomer.meanERPs(timep,:)];
+                isomTime(a).mean = [nanmean(squeeze(firstIsomer.allERPs(timep,:,:)),2)';...
+                                    nanmean(squeeze(secondIsomer.allERPs(timep,:,:)),2)'];
+                %isomTime(a).SEM = [nanstd(squeeze(R1.allERPs(timep,:,:)),[],2)' ./ nansum( ~isnan( squeeze(R1.allERPs(timep,:,:)) ), 2 )';... %A REMINDER OF MISTAKES
+                %                   nanstd(squeeze(R2.allERPs(timep,:,:)),[],2)' ./ nansum( ~isnan( squeeze(R2.allERPs(timep,:,:)) ), 2 )'];
+                isomTime(a).SEM = [nanstd(squeeze(firstIsomer.allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(firstIsomer.allERPs(timep,:,:)) ), 2 ) )';...
+                                   nanstd(squeeze(secondIsomer.allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(secondIsomer.allERPs(timep,:,:)) ), 2 ) )'];
+                isomTime(a).trueTime = nanmean([firstIsomer.meanTIMEs(timep,:); secondIsomer.meanTIMEs(timep,:)],'all'); %As below, we probably don't care about per-sequence true time
+                a = a + 1;
+            end
+    
+            %Define limits
+            timeLimit = [];
+            if ~isempty(limitIsomTime)
+                temp = find([isomTime.timep] <= limitIsomTime, 1, 'last');
+                timeLimit = temp;
+                %QA
+                if isempty(timeLimit)
+                    ['-# Alert: Time limit cutoff for Isom x Time plot returned empty #-']
+                    crash = yes %Highly likely an error made with limitIsomTime, or something odd with timeframe
+                end
+            else
+                timeLimit = size(isomTime,2);
+            end
+            figure
+            for subl = 1:timeLimit
+                subplot(1,timeLimit,subl)
+                hold on
+                %Hardcoded colours
+                %{
+                %plot(isomTime(subl).data(1,reOrder),'Color','b')
+                errorbar( isomTime(subl).mean(1,reOrder), isomTime(subl).SEM(1,reOrder), 'Color', 'b' )
+                hold on
+                %plot(isomTime(subl).data(2,reOrder),'Color','r')
+                errorbar( isomTime(subl).mean(2,reOrder), isomTime(subl).SEM(2,reOrder), 'Color', 'r' )
+                %}
+                %Dynamic, more or less
+                errorbar( isomTime(subl).mean(1,reOrder), isomTime(subl).SEM(1,reOrder), 'Color', isomerColours(thisIsoComb(1),:) )
+                errorbar( isomTime(subl).mean(2,reOrder), isomTime(subl).SEM(2,reOrder), 'Color', isomerColours(thisIsoComb(2),:) )
+                xticks([1:size(isomTime(subl).data,2)])
+                xticklabels([])
+                yticklabels([])
+                xlim([0,size(isomTime(subl).mean,2)+1])
+                %xticks([])
+                %title(['T:',num2str(isomTime(subl).timep)])
+                titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
+                if subl == timeLimit && (timeLimit ~= size(isomTime,2))
+                    titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
+                end
+                title(titleStr)
+            end
+            %legend({'R1','R2'})
+            legend({firstIsomer.name,secondIsomer.name})
+            set(gcf,'Name',['IsomxTime' '_fly' num2str(thisFly)])
+            %saveas(gcf,[ resultsDirectory '/' 'IsomxTime' '_fly' num2str(thisFly) '.png']);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'IsomxTime' '_fly' num2str(thisFly) '.png']);
+    
+            if doCorrPlots
+                uniqueNess = nan( size(isomTime(1).data,1) , size(isomTime(1).data,1) ); %Will be used to check uniqueness of isomer combinations
+                for isoKInd = 1:size(isomTime(1).data,1)
+                    for isoLInd = 1:size(isomTime(1).data,1)
+                        temp = sort( [isoKInd,isoLInd] );
+                        if uniqueNess(temp(1),temp(2)) == 1
+                            %disp(['already done [',num2str(isoKInd),' x ',num2str(isoLInd),']'])
+                            continue
+                        elseif superUniqueness( thisIsoComb(isoKInd) , thisIsoComb(isoLInd) ) == 1
+                            %disp(['Already done (meta level) [',num2str(thisIsoComb(isoKInd)),'x',num2str(thisIsoComb(isoLInd)),']'])
+                            continue
+                        else
+                            uniqueNess(temp(1),temp(2)) = 1;
+                            superUniqueness( thisIsoComb(isoKInd) , thisIsoComb(isoLInd) ) = 1; 
+                        end                   
+    
+                        superTimeCorr = nan( timeLimit , timeLimit ); %Time x Time within Isomer
+                        superTimeP = nan( timeLimit , timeLimit );
+                        for subl = 1:timeLimit
+                            for subk = 1:timeLimit
+                                [temR, temP] = corrcoef( isomTime(subl).mean(isoKInd,reOrder)' , isomTime(subk).mean(isoLInd,reOrder)' );
+                                    %Note: Sometimes diagonals not perfectly equal to 1?
+                                if subl == subk && (isoKInd == isoLInd)
+                                    superTimeCorr(subl,subk) = NaN;
+                                    superTimeP(subl,subk) = NaN; 
+                                else
+                                    superTimeCorr(subl,subk) = temR(1,2); %Only 'one' comp
+                                    superTimeP(subl,subk) = temP(1,2);
+                                end
                             end
                         end
-                    end
-
-                    %superTimeP = superTimeP * ((timeLimit^2)*0.5 - timeLimit); %Bootleg Bonff. correction
-                    if useBootlegBonff
-                        multiCompVal = NaN;
-                        if isoKInd == isoLInd
-                            multiCompVal = ( (timeLimit^2)*0.5 - timeLimit);
-                        else
-                            multiCompVal = (timeLimit^2);
-                        end
-                        superTimeP = superTimeP * multiCompVal;
-                    elseif ~isempty(manualMultiCorrectValue)
-                        multiCompVal = manualMultiCorrectValue;
-                        superTimeP = superTimeP * multiCompVal;
-                    end
     
-                    %superTimeCorr( superTimeCorr == 1 ) = NaN; %This is handled by the loop now, to simplify certain things
-    
-                    %Plot
-                    figure
-                    subplot(1,2,1)
-                    imagesc( superTimeCorr )
-                    set(gca,'YDir','normal')
-                    colorbar
-                    xticks(1:timeLimit)
-                    yticks(1:timeLimit)
-                    xticklabels([isomTime(1:timeLimit).timep])
-                    yticklabels([isomTime(1:timeLimit).timep])
-                    xlabel('Time')
-                    ylabel('Time')
-                    title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
-                    subplot(1,2,2)
-                    imagesc(superTimeP)
-                    set(gca,'YDir','normal')
-                    colorbar
-                    %Plot P-vals too
-                    hold on
-                    %[r,c] = ind2sub( [7,7], find(superTimeP < alphaVal ) ); %Hardcoded size of 7 for some reason
-                    [r,c] = ind2sub( [size(superTimeP,1),size(superTimeP,2)], find(superTimeP < alphaVal ) ); %Find coordinates of all P values < 0.05
-                    for scatInd = 1:size(r,1)
-                        if superTimeP( r(scatInd),c(scatInd) ) < (alphaVal/5)
-                            scatter(r(scatInd),c(scatInd),'filled','w')
-                        else
-                            scatter(r(scatInd),c(scatInd),'filled','r')
+                        %superTimeP = superTimeP * ((timeLimit^2)*0.5 - timeLimit); %Bootleg Bonff. correction
+                        if useBootlegBonff
+                            multiCompVal = NaN;
+                            if isoKInd == isoLInd
+                                multiCompVal = ( (timeLimit^2)*0.5 - timeLimit);
+                            else
+                                multiCompVal = (timeLimit^2);
+                            end
+                            superTimeP = superTimeP * multiCompVal;
+                        elseif ~isempty(manualMultiCorrectValue)
+                            multiCompVal = manualMultiCorrectValue;
+                            superTimeP = superTimeP * multiCompVal;
                         end
-                    end
-                    xticks(1:timeLimit)
-                    yticks(1:timeLimit)
-                    if ~useTrueTimeX
+        
+                        %superTimeCorr( superTimeCorr == 1 ) = NaN; %This is handled by the loop now, to simplify certain things
+        
+                        %Plot
+                        figure
+                        subplot(1,2,1)
+                        imagesc( superTimeCorr )
+                        set(gca,'YDir','normal')
+                        colorbar
+                        xticks(1:timeLimit)
+                        yticks(1:timeLimit)
                         xticklabels([isomTime(1:timeLimit).timep])
                         yticklabels([isomTime(1:timeLimit).timep])
-                        xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
-                        ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations 
-                    else
-                        xticklabels(round( [isomTime(1:timeLimit).trueTime]*1000 ,2))
-                        yticklabels(round( [isomTime(1:timeLimit).trueTime]*1000 ,2))
-                        xlabel(['Isomer ',num2str(isoKInd),' time (ms)'])
-                        ylabel(['Isomer ',num2str(isoLInd),' time (ms)'])    
+                        xlabel('Time')
+                        ylabel('Time')
+                        %title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. across timep'])
+                        title(['Isomer ',thisNames{isoKInd},' vs ',thisNames{isoLInd},' corr. across timep'])
+                        subplot(1,2,2)
+                        imagesc(superTimeP)
+                        set(gca,'YDir','normal')
+                        colorbar
+                        %Plot P-vals too
+                        hold on
+                        %[r,c] = ind2sub( [7,7], find(superTimeP < alphaVal ) ); %Hardcoded size of 7 for some reason
+                        [r,c] = ind2sub( [size(superTimeP,1),size(superTimeP,2)], find(superTimeP < alphaVal ) ); %Find coordinates of all P values < 0.05
+                        for scatInd = 1:size(r,1)
+                            if superTimeP( r(scatInd),c(scatInd) ) < (alphaVal/5)
+                                scatter(r(scatInd),c(scatInd),'filled','w')
+                            else
+                                scatter(r(scatInd),c(scatInd),'filled','r')
+                            end
+                        end
+                        xticks(1:timeLimit)
+                        yticks(1:timeLimit)
+                        if ~useTrueTimeX
+                            xticklabels([isomTime(1:timeLimit).timep])
+                            yticklabels([isomTime(1:timeLimit).timep])
+                            %xlabel(['Isomer ',num2str(isoKInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                            %ylabel(['Isomer ',num2str(isoLInd),' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations 
+                            xlabel(['Isomer ',thisNames{isoKInd},' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations
+                            ylabel(['Isomer ',thisNames{isoLInd},' time (frame)']) %Only about 66% confident on this when not doing self-isomer correlations 
+                        else
+                            xticklabels(round( [isomTime(1:timeLimit).trueTime]*1000 ,2))
+                            yticklabels(round( [isomTime(1:timeLimit).trueTime]*1000 ,2))
+                            %xlabel(['Isomer ',num2str(isoKInd),' time (ms)'])
+                            %ylabel(['Isomer ',num2str(isoLInd),' time (ms)'])    
+                            xlabel(['Isomer ',thisNames{isoKInd},' time (ms)'])
+                            ylabel(['Isomer ',thisNames{isoLInd},' time (ms)'])    
+                        end
+                        
+                        titleStr = ['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] )'];
+                        if useBootlegBonff
+                            titleStr = [titleStr,'[Boot. Bonff. @ ',num2str(multiCompVal),']'];
+                        elseif ~isempty(manualMultiCorrectValue)
+                            titleStr = [titleStr,'[Manual mult. comp. correction @ ',num2str(multiCompVal),']'];
+                        else
+                            titleStr = [titleStr,'[No mult. correction]'];
+                        end
+                        %title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] [Boot. Bonff.])'])
+                        title(titleStr)
+                        hold off
+                        %set(gcf,'Name',['Fly ',num2str(thisFly),' isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
+                        set(gcf,'Name',['Fly ',num2str(thisFly),' isom ',thisNames{isoKInd},'x',thisNames{isoLInd},' - time corrs'])
+    
                     end
-                    
-                    titleStr = ['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] )'];
-                    if useBootlegBonff
-                        titleStr = [titleStr,'[Boot. Bonff. @ ',num2str(multiCompVal),']'];
-                    elseif ~isempty(manualMultiCorrectValue)
-                        titleStr = [titleStr,'[Manual mult. comp. correction @ ',num2str(multiCompVal),']'];
-                    else
-                        titleStr = [titleStr,'[No mult. correction]'];
-                    end
-                    %title(['Isomer ',num2str(isoKInd),'vs ',num2str(isoLInd),' corr. P-vals across timep (p<',num2str(alphaVal),' [Red], p<',num2str(alphaVal/5),' [White] [Boot. Bonff.])'])
-                    title(titleStr)
-                    hold off
-                    set(gcf,'Name',['Fly ',num2str(thisFly),' isom ',num2str(isoKInd),'x',num2str(isoLInd),' - time corrs'])
-
                 end
-            end
-
+    
+                
+    
+            end %doCorrPlots end
             
+            clear isomTime
+    
+        end %plotIndividualFlies end
+    
+        %clear R1 R2 %Safety
+        clear firstIsomer secondIsomer %Safety
 
-        end %doCorrPlots end
-        
-        clear isomTime
-
-    end %plotIndividualFlies end
-
-    clear R1 R2 %Safety
+    end
 end
 
 %Cross-fly isomers (if applicable)
@@ -473,8 +562,11 @@ if size(chosenFlies,2) > 1
         %Note: Only 80% confident that fieldnames follows the known ordering, but this saves effort on hardcoding each plot type
     isomerNames = fieldnames( FLIES(chosenFlies(1)).ISOMER);
     isomerCount = size(isomerNames,1);
-    if isomerCount > 2 %Not (current) normal
-        isomerColours = jet(isomerCount);
+    if isomerCount > 2 && isomerCount <= 7 %Not (current) normal
+        %isomerColours = jet(isomerCount);
+        isomerColours = orderedcolors("gem"); %Only has 7 elements
+    elseif isomerCount > 7
+        isomerColours = jet(isomerCount); %Theoretically infinite
     else
         isomerColours = [0,0,1;... %Blue for Isomer 1
                          1,0,0]; %Red for Isomer 2
@@ -493,7 +585,8 @@ if size(chosenFlies,2) > 1
     %Derive true time
     crossTimeFull = cell(isomerCount,1);
     for isoI = 1:isomerCount
-        crossTimeFull{isoI} = nan(nTimepoints, 0.5*2^n_back, size(chosenFlies,2));
+        %crossTimeFull{isoI} = nan(nTimepoints, 0.5*2^n_back, size(chosenFlies,2));
+        crossTimeFull{isoI} = nan(nTimepoints, nActual , size(chosenFlies,2)); %Use nActual derived above, which should be okay even if derived from first/last individual?
         temp = [];
         for flyI = 1:size(chosenFlies,2)
             thisFly = chosenFlies(flyI);
@@ -513,11 +606,11 @@ if size(chosenFlies,2) > 1
         else
             transecting = 0;
         end
-        crossMean = nan(0.5*2^n_back, isomerCount);
-        crossSEM = nan(0.5*2^n_back, isomerCount);
+        crossMean = nan(nActual, isomerCount);
+        crossSEM = nan(nActual, isomerCount);
         for isoI = 1:isomerCount
-            crossData{isoI} = nan(0.5*2^n_back, size(chosenFlies,2)); %e.g. 16 seqs x 5 flies
-            crossDataFull{isoI} = nan(nTimepoints, 0.5*2^n_back, size(chosenFlies,2)); %Note different architecture, for ease of data intake
+            crossData{isoI} = nan(nActual, size(chosenFlies,2)); %e.g. 16 seqs x 5 flies
+            crossDataFull{isoI} = nan(nTimepoints, nActual, size(chosenFlies,2)); %Note different architecture, for ease of data intake
 
             %Collect flies data
             for flyI = 1:size(chosenFlies,2)
@@ -570,16 +663,29 @@ if size(chosenFlies,2) > 1
             %Based on implementation in plotIsomers
         figure; 
         %create_seq_eff_plot([thisData1.' thisData2.'],[],'errors',[thisError1.' thisError2.'],...
-        create_seq_eff_plot([crossMean],[],'errors',[crossSEM],...
-            'reOrder', reOrder,'n_back',n_back,'histlength',n_back-1);
+        if ~transProbDesign %SEs
+            create_seq_eff_plot([crossMean],[],'errors',[crossSEM],...
+                'reOrder', reOrder,'n_back',n_back,'histlength',n_back-1);
+        else %Transition probabilities
+            create_seq_eff_plot([crossMean],[],'errors',[crossSEM],...
+                'reOrder', reOrder,...
+                'n_back',-FLIES(chosenFlies(1)).transProbAncillary.nStimuli,... %Note the use of negative nStimuli to denote transition probabilities
+                'histlength',FLIES(chosenFlies(1)).transProbAncillary.nBackActual-1,...
+                'nStimuli', FLIES(chosenFlies(1)).transProbAncillary.nStimuli,...
+                'overrideLabels',FLIES(chosenFlies(1)).transProbAncillary.histLabels...
+                );
+
+        end
         %h = legend({'First Isomer','Second Isomer'});
         h = legend(isomerNames);
         %title([flyID,' isomers - ',thisName,char(10),'Iso #1 n: ',num2str(nERPs1(reOrder)),char(10),'Iso #2 n: ',num2str(nERPs2(reOrder))], 'FontSize', 8 )
         title(['Cross-fly isomers - ',plotTypes{plotI},' - (N=',num2str(size(chosenFlies,2)),')'])
         set(h,'FontSize',6);
         
+        if ~transProbDesign
         h = findobj(gca,'Type','ErrorBar');
         set(h(1),'color','r');
+        end
 
         %Testatory double-check
         %{
@@ -640,16 +746,16 @@ if size(chosenFlies,2) > 1
             a = 1;
             for timep = 1:timeStep:nTimepoints
                 isomTime(a).timep = timep;
-                isomTime(a).mean = isoMax(timep).mean;
+                isomTime(a).mean = isoMax(timep).mean; %Note: If testing with only 1 fly, this may be oriented incorrectly
                 isomTime(a).SEM = isoMax(timep).SEM;
                 isomTime(a).trueTime = isoMax(timep).trueTime;
                 a = a + 1;
             end
 
             %And plot
-            if isoI > 2
-                ['## Alert: Subsequent plot not equipped to deal with more than 2 isomers ##']
-            end
+            %if isoI > 2
+            %    ['## Alert: Subsequent plot not equipped to deal with more than 2 isomers ##']
+            %end
             timeLimit = [];
             if ~isempty(limitIsomTime)
                 temp = find([isomTime.timep] <= limitIsomTime, 1, 'last');
@@ -665,22 +771,34 @@ if size(chosenFlies,2) > 1
             figure
             for subl = 1:timeLimit
                 subplot(1,timeLimit,subl)
+                hold on
+                %Old, hardcoded 2 isomers
+                %{
                 %plot(isomTime(subl).data(1,reOrder),'Color','b')
                 errorbar( isomTime(subl).mean(1,reOrder), isomTime(subl).SEM(1,reOrder), 'Color', 'b' ) %Note: Hardcoded 2 isomers displayed
                 hold on
                 %plot(isomTime(subl).data(2,reOrder),'Color','r')
                 errorbar( isomTime(subl).mean(2,reOrder), isomTime(subl).SEM(2,reOrder), 'Color', 'r' )
+                %}
+                %New, dynamic
+                for isoI = 1:numIsomers
+                    errorbar( isomTime(subl).mean(isoI,reOrder), isomTime(subl).SEM(isoI,reOrder), 'Color', isomerColours(isoI,:) )
+                    %errorbar( isomTime(subl).mean(isoI,reOrder), isomTime(subl).SEM(isoI,reOrder) ) %Don't use colours, for legibility (And keeps closer to default Dinis colours)
+                end
                 %xticks([1:size(isomTime(subl).data,2)])
                 xticklabels([])
                 yticklabels([])
+                xlim([0,size( isomTime(subl).mean , 2)+1])
                 %title(['T:',num2str(isomTime(subl).timep)])
                 titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
                 if subl == timeLimit && (timeLimit ~= size(isomTime,2))
                     titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
                 end
+                hold off
                 title(titleStr)
             end
-            legend({'R1','R2'})
+            %legend({'R1','R2'})
+            legend(isomerNames)
             set(gcf,'Name',['Cross-fly IsomxTime'])
             %saveas(gcf,[ resultsDirectory '/' 'Cross-fly IsomxTime.png']);
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'Cross-fly IsomxTime.png']);

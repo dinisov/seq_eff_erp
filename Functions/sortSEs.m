@@ -9,15 +9,47 @@ arguments
     options.firstLastPlot double = 0 %Whether to do a testatory first/last plot
 end
 
-arrowMode = options.arrowMode;
-if arrowMode
-    disp(['-> Arrow mode requested <-'])
-end
-firstLastPlot = options.firstLastPlot;
+    arrowMode = options.arrowMode;
+    if arrowMode
+        disp(['-> Arrow mode requested <-'])
+    end
+    firstLastPlot = options.firstLastPlot;
 
-    n_seq = 2^n_back;
+    %n_seq = 2^nBackActual;
 
     for b = 1:length(blocks)
+
+        transProbDesign = blocks(b).transProbDesign;
+        if ~transProbDesign
+            n_seq = 2^n_back; %Moved slightly inefficiently here so as to be part of per-block type checking
+            nBackActual = n_back; %Use active form for multiple type support
+        else
+            disp(['Block to be sorted for transition probability nature'])
+            n_stimuli = blocks(b).transProbAncillary.nStimuli;
+            nBackActual = 2; %Hardcoded, for now
+            disp([num2str(n_stimuli),' stimuli x ',num2str(nBackActual),' transition nBack = ',num2str(n_stimuli^nBackActual),' "sequences"'])
+            %Old, calculated-here system
+            %{
+            transMatrix = []; %TO DO: SWITCH TO LOADING THIS FROM A CENTRAL FILE?
+            for r = 1:n_stimuli
+                for c = 1:n_stimuli
+                    transMatrix{r,c} = [r,c];
+                end
+            end
+            transMatrix = cell2mat( reshape(transMatrix, n_stimuli^nBackActual, 1) );
+                %Thus, canonically, the sequences will be ordered as 1->1, 2->1, 3->1, 4->1, 1->2, etc
+            %}
+            %New, load-from-central system
+            try
+                temp = load(['transMatrix_',num2str(n_stimuli),'stim_',num2str(nBackActual),'back.mat']);
+                transMatrix = temp.transMatrix;
+                transLabels = temp.transMatrixLegend; %Save legend for later use with calculateSEs; Note that this is the full form, like transMatrix
+                histLabels = temp.transMatrixHistLabels; %Save isomer-friendly version as well
+            catch
+                ['-# Could not load transition probability legend/matrix #-']
+                crash = yes
+            end
+        end
         
         LOCS = blocks(b).LOCS;
         LFP = blocks(b).LFP;
@@ -35,13 +67,21 @@ firstLastPlot = options.firstLastPlot;
         window = floor(resampleFreq*blocks(b).window);
 
         sequenceLength = length(randomSequence);
+        %Note: No explicit check that this will match up with transProb nBack?
 
-        %ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
-        %seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
-        ERPS = nan(length(window(1):window(2)), n_seq, sequenceLength); %Switch to NaN because zero issues
-        seqPHOT = nan(length(window(1):window(2)), n_seq, sequenceLength);
-        seqTIME = nan(length(window(1):window(2)), n_seq, sequenceLength);
-        SEQS = cell(1,n_seq);
+        if ~transProbDesign 
+            %ERPS = zeros(length(window(1):window(2)), n_seq, sequenceLength);
+            %seqPHOT = zeros(length(window(1):window(2)), n_seq, sequenceLength);
+            ERPS = nan(length(window(1):window(2)), n_seq, sequenceLength); %Switch to NaN because zero issues
+            seqPHOT = nan(length(window(1):window(2)), n_seq, sequenceLength);
+            seqTIME = nan(length(window(1):window(2)), n_seq, sequenceLength);
+            SEQS = cell(1,n_seq);
+        else
+            ERPS = nan(length(window(1):window(2)), n_stimuli^nBackActual, sequenceLength); %Switch to NaN because zero issues
+            seqPHOT = nan(length(window(1):window(2)), n_stimuli^nBackActual, sequenceLength);
+            seqTIME = nan(length(window(1):window(2)), n_stimuli^nBackActual, sequenceLength);
+            STIMS = cell(1,n_stimuli^nBackActual);
+        end
 
         %Pre-check for 'true' NaNs
         if any(isnan(LFP))
@@ -64,26 +104,46 @@ firstLastPlot = options.firstLastPlot;
             c = 1;
         end
         
-        for n = n_back:sequenceLength
+        for n = nBackActual:sequenceLength
 
             %Pre-check to make sure not attempting to acquire LFP data from after end  of experiment (i.e. If stimuli still occurring at end)
-            if ~arrowMode && ( LOCS(n) + window(2) > size(LFP,2) ) %Borrow below indicising
+            if ~arrowMode && ( ( LOCS(n) + window(2) > size(LFP,2) ) || ( LOCS(n) + window(2) > size(PHOT,2) )  ) %Borrow below indicising
                 disp(['-# Attempted acquisition of event #',num2str(n),' would exceed LFP data; Skipping #-'])
                 continue %NOTE: MAY HAVE ISSUES BY LEAVING NaNs IN ERPS?
                 %Note: Choosing deliberately to not modify randomSequence, but if it is to ever be returned, this will be a potential issue
-            elseif arrowMode && ( arrowLOCS(n) + window(2) > size(LFP,2) ) %Ditto
+            elseif arrowMode && ( (arrowLOCS(n) + window(2) > size(LFP,2)) || (arrowLOCS(n) + window(2) > size(PHOT,2)) ) %Ditto
                 disp(['-# Attempted acquisition of event #',num2str(n),' would exceed LFP data; Skipping #-'])
                 continue %NOTE: MAY HAVE ISSUES BY LEAVING NaNs IN ERPS?
             end
 
-            % decimal value of binary sequence of length n_back
-            %%seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
+            % decimal value of binary sequence of length nBackActual
+            %%seq = bin2dec(num2str(randomSequence(n-nBackActual+1:n))) + 1;
             if ~arrowMode
-                seq = bin2dec(num2str(randomSequence(n-n_back+1:n))) + 1;
-                SEQS{1,seq} = randomSequence(n-n_back+1:n); %Store this for posterity
+                if ~transProbDesign
+                    seq = bin2dec(num2str(randomSequence(n-nBackActual+1:n))) + 1; %This should evaluate to a number between 1 and 32 eg
+                    SEQS{1,seq} = randomSequence(n-nBackActual+1:n); %Store this for posterity
+                else
+                    [yen,seq] = ismember( randomSequence(n-nBackActual+1:n) , transMatrix, 'rows' );
+                    %QA
+                    if yen == 0
+                        ['## Transition sequence not found in matrix! ##']
+                        crash = yes
+                    end
+                    STIMS{1,seq} = randomSequence(n-nBackActual+1:n);
+                end
             else
-                seq = bin2dec(num2str(arrowSequence(n-n_back+1:n))) + 1;
-                SEQS{1,seq} = arrowSequence(n-n_back+1:n);
+                if ~transProbDesign
+                    seq = bin2dec(num2str(arrowSequence(n-nBackActual+1:n))) + 1;
+                    SEQS{1,seq} = arrowSequence(n-nBackActual+1:n);
+                else
+                    [yen,seq] = ismember( arrowSequence(n-nBackActual+1:n) , transMatrix, 'rows' );
+                    %QA
+                    if yen == 0
+                        ['## (Arrowed) Transition sequence not found in matrix! ##']
+                        crash = yes
+                    end
+                    STIMS{1,seq} = arrowSequence(n-nBackActual+1:n);
+                end
             end
 
             % stack ERPs and PHOTs along third dimension (first two dims are sequence and
@@ -95,32 +155,44 @@ firstLastPlot = options.firstLastPlot;
             if ~arrowMode
                 theseLOCInds = LOCS(n) + window(1) : LOCS(n) + window(2);
                 ERPS(:, seq, n) = LFP( theseLOCInds );
-                seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), theseLOCInds ));
+                if ~transProbDesign
+                    seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), theseLOCInds )); %seqPHOT is a rather sneaky use of randomSequence to pull applicable PHOT channel
+                else
+                    seqPHOT(:, seq, n) = normalize(nansum( PHOT(:, theseLOCInds ),1) ); %For transition probabilities I currently cannot be bothered to preserve the individual phot channel information
+                end
                 seqTIME(:, seq, n) = TIMES( theseLOCInds );
             else
                 theseLOCInds = arrowLOCS(n) + window(1) : arrowLOCS(n) + window(2);
                 if arrowMode == 1
                     ERPS(:, seq, n) = arrowLFP( theseLOCInds );
-                    seqPHOT(:, seq, n) = normalize(arrowPHOT(2-arrowSequence(n), theseLOCInds ));
-                    %Note: This selects the applicable phot row for this event, 
-                    % but if the window spans >1 event, the next event may be not shown, 
-                    % because it occurred in the other channel
+                    if ~transProbDesign
+                        seqPHOT(:, seq, n) = normalize(arrowPHOT(2-arrowSequence(n), theseLOCInds ));
+                        %Note: This selects the applicable phot row for this event, 
+                        % but if the window spans >1 event, the next event may be not shown, 
+                        % because it occurred in the other channel
+                    else
+                        seqPHOT(:, seq, n) = normalize(nansum( PHOT(:, theseLOCInds ),1) ); %This may misrepresent the data?
+                    end
                     seqTIME(:, seq, n) = arrowTIMES( theseLOCInds );
                 elseif arrowMode == 1.5
                     ERPS(:, seq, n) = fliplr( arrowLFP( theseLOCInds ) );
-                    seqPHOT(:, seq, n) = fliplr( normalize(arrowPHOT(2-arrowSequence(n), theseLOCInds )) );
+                    if ~transProbDesign
+                        seqPHOT(:, seq, n) = fliplr( normalize(arrowPHOT(2-arrowSequence(n), theseLOCInds )) );
+                    else
+                        seqPHOT(:, seq, n) = normalize(nansum( PHOT(:, theseLOCInds ),1) ); %Again: Not tested for arrowMode
+                    end
                     seqTIME(:, seq, n) = fliplr( arrowTIMES( theseLOCInds ) );
                 end
             end
 
-            %SEQS{1,seq} = randomSequence(n-n_back+1:n); %Store this for posterity
+            %SEQS{1,seq} = randomSequence(n-nBackActual+1:n); %Store this for posterity
 
             %Testatory plots, if requested
             if firstLastPlot
                 %h = figure;
                 %c = 1;
                 figure(h)
-                if n == n_back || n == sequenceLength
+                if n == nBackActual || n == sequenceLength
                     subplot(2,1,c)
                     ploti = 1:resampleFreq/100:numel(LFP); %Subsample so plot isn't as supermassive
                     %Plot base LFP data
@@ -148,8 +220,8 @@ firstLastPlot = options.firstLastPlot;
                     line([theseLOCIndsActual(end),theseLOCIndsActual(end)],[nanmin(LFP),nanmax(LFP)],'Color','r')
 
                     scatter( LOCSActual, LFP(LOCSActual) ) %All LOCS
-                    scatter( LOCSActual( n-n_back+1:n ) , repmat( nanmax(LFP)*0.8 , 1 , n_back ) )
-                    for i = n-n_back+1:n
+                    scatter( LOCSActual( n-nBackActual+1:n ) , repmat( nanmax(LFP)*0.8 , 1 , nBackActual ) )
+                    for i = n-nBackActual+1:n
                         text([LOCSActual(i)],[nanmax(LFP)*0.78],num2str(i))
                     end
 
@@ -161,10 +233,10 @@ firstLastPlot = options.firstLastPlot;
                         %Without sort, the ERP should be read from green to red to understand its shape
                         %Secondary note: Since no subsampling, may look different to 'original' base LFP data, even if same orientation
 
-                    xlim([ nanmin(theseLOCIndsActual)-n_back*range(theseLOCIndsActual)*1.1 ,...
-                        nanmax(theseLOCIndsActual)+n_back*range(theseLOCIndsActual)*1.1 ])
+                    xlim([ nanmin(theseLOCIndsActual)-nBackActual*range(theseLOCIndsActual)*1.1 ,...
+                        nanmax(theseLOCIndsActual)+nBackActual*range(theseLOCIndsActual)*1.1 ])
 
-                    titleStr = ['n ',num2str(n-n_back+1),' : ',num2str(n), ' capture'];
+                    titleStr = ['n ',num2str(n-nBackActual+1),' : ',num2str(n), ' capture'];
                     if arrowMode 
                         titleStr =  [titleStr,' [arrowMode ',num2str(arrowMode),']'];
                     end
@@ -224,7 +296,15 @@ firstLastPlot = options.firstLastPlot;
         blocks(b).badTrials = badTrials;
         blocks(b).seqPHOT = seqPHOT;
         blocks(b).seqTIME = seqTIME;
-        blocks(b).SEQS = SEQS;
+        if ~transProbDesign
+            blocks(b).SEQS = SEQS;
+        else
+            blocks(b).STIM = STIMS;
+            blocks(b).transMatrix = transMatrix;
+            blocks(b).transProbAncillary.nBackActual = nBackActual;
+            blocks(b).transProbAncillary.transLabels = transLabels;
+            blocks(b).transProbAncillary.histLabels = histLabels;
+        end
     
     end
     
