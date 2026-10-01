@@ -103,6 +103,8 @@ end
             set(gcf,'Name', ['Fly ',num2str(blocks(b).fly), ' Block ',blocks(b).block,' First/Last plot'])
             c = 1;
         end
+
+        %input('Salting of 3->2 to a factor of 5 will be performed') %Enable this to perform 'salting' of specific transition probability sequence (Relatively easily expanded to SEs)
         
         for n = nBackActual:sequenceLength
 
@@ -126,7 +128,7 @@ end
                     [yen,seq] = ismember( randomSequence(n-nBackActual+1:n) , transMatrix, 'rows' );
                     %QA
                     if yen == 0
-                        ['## Transition sequence not found in matrix! ##']
+                        ['## Transition sequence not found in matrix! ##'] %Note: Can happen if nStimuli set wrong?
                         crash = yes
                     end
                     STIMS{1,seq} = randomSequence(n-nBackActual+1:n);
@@ -154,7 +156,13 @@ end
 
             if ~arrowMode
                 theseLOCInds = LOCS(n) + window(1) : LOCS(n) + window(2);
+
                 ERPS(:, seq, n) = LFP( theseLOCInds );
+
+                %if seq == 7 %Salting
+                %    ERPS(:, seq, n) = ERPS(:, seq, n)*5;
+                %end
+
                 if ~transProbDesign
                     seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), theseLOCInds )); %seqPHOT is a rather sneaky use of randomSequence to pull applicable PHOT channel
                 else
@@ -191,16 +199,18 @@ end
             if firstLastPlot
                 %h = figure;
                 %c = 1;
-                figure(h)
+                %%figure(h) %Moved below for speed
                 if n == nBackActual || n == sequenceLength
+                    figure(h)
                     subplot(2,1,c)
                     ploti = 1:resampleFreq/100:numel(LFP); %Subsample so plot isn't as supermassive
                     %Plot base LFP data
                     plot( ploti , LFP(ploti) ) %Only plot OG data?
                     hold on
                     photi = [1:size(PHOT,2)]; %No subsampling?
+                    temp = [nanmin(LFP)+0.1*range(LFP), nanmin(LFP)+0.2*range(LFP)];
                     for i = 1:size(PHOT,1)
-                        plot( photi, normalize( PHOT(i,photi), 'range', [nanmin(LFP)+0.1*range(LFP), nanmin(LFP)+0.2*range(LFP)] ) )
+                        plot( photi, normalize( PHOT(i,photi), 'range', temp ) )
                     end
                     %plot()
                     %Plot associated LOCs
@@ -221,9 +231,26 @@ end
 
                     scatter( LOCSActual, LFP(LOCSActual) ) %All LOCS
                     scatter( LOCSActual( n-nBackActual+1:n ) , repmat( nanmax(LFP)*0.8 , 1 , nBackActual ) )
+                    %Add n number
                     for i = n-nBackActual+1:n
                         text([LOCSActual(i)],[nanmax(LFP)*0.78],num2str(i))
                     end
+                    %Add stim identity
+                    for i = n-nBackActual+1:n
+                        text([LOCSActual(i)],[LFP(LOCSActual(i))*0.95],num2str( randomSequence(i) ),'Color','m')
+                    end
+                    for i = 1:numel(randomSequence) %Note: Makes plot very slow to scroll
+                        text([LOCSActual(i)],[temp(2)*1.25],num2str( randomSequence(i) ),'Color','c') %Still correct for arrow?
+                    end
+                    %Add seq identity
+                    if ~transProbDesign
+                        temptext = SEQS{1,seq};
+                    else
+                        temptext = STIMS{1,seq};
+                    end
+                    text([ theseLOCIndsActual(floor(0.5*numel(theseLOCIndsActual))) ],...
+                        nanmean([LFP(theseLOCIndsActual(1)),LFP(theseLOCIndsActual(end))]),...
+                        ['Seq #',num2str(seq),char(10),num2str(temptext)], 'Color','m')
 
                     %Plot ERP
                     %plot( sort(theseLOCIndsActual), ERPS(:, seq, n) ) %Borrow from above

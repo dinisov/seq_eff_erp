@@ -85,12 +85,23 @@ if ~transProbDesign
 
     nActual = 0.5*2^n_back;
 
+
+    
+    reOrderActual = []; %Makes a full-sized (e.g. 32) copy of reOrder
+    labelsFull = {};
+    for ison = 1:size( fieldnames( FLIES( chosenFlies(1) ).ISOMER ),1 ) %number of isoemers
+        reOrderActual = [reOrderActual, reOrder + (ison-1)*size(reOrder,2)];
+        labelsFull = [labelsFull,exLabels]; %Rather crude; No indication of sidedness in labels
+    end
+
 else
+
+    transProbAncillary = FLIES(chosenFlies(1)).transProbAncillary;
 
     %if ~isoMode
     %    labels = FLIES(1).transProbAncillary.transLabels;
     %else
-    labels = FLIES(chosenFlies(1)).transProbAncillary.histLabels;
+    labels = transProbAncillary.histLabels;
     %end
     exLabels = {};
     exLabelsSafe = {};
@@ -99,10 +110,12 @@ else
         exLabelsSafe{s} = strrep( labels(s,:), '->', '-to-' ); %Make a safer version of the labels, for saving
     end
 
-    nActual = FLIES(chosenFlies(1)).transProbAncillary.nStimuli;%^FLIES(chosenFlies(1)).transProbAncillary.nBackActual;
+    nActual = transProbAncillary.nStimuli;%^FLIES(chosenFlies(1)).transProbAncillary.nBackActual;
     %nIsomerActual = FLIES(chosenFlies(1)).transProbAncillary.nStimuli; %How many 'sequences' in an isomer
 
-    %reOrderActual = FLIES(chosenFlies(1)).transProbAncillary.reOrderActual; 
+    reOrderActual = transProbAncillary.reOrderActual; 
+
+    labelsFull = transProbAncillary.transLabels;
 
 end
 
@@ -548,7 +561,93 @@ for fly = 1:size(chosenFlies,2)
         clear firstIsomer secondIsomer %Safety
 
     end
-end
+
+    %chikoi
+    %Plot flat version of above isom x time
+    if plotIndividualFlies
+        %Calculate
+        flatIsomTime = struct;
+        a = 1;
+        for timep = 1:timeStep:size( thisFlyData.allERPs, 1 )
+            flatIsomTime(a).timep = timep;
+            for ison = 1:size(isoNames,1)
+                flatIsomTime(a).data(ison,:) = thisFlyData.ISOMER.( isoNames{ison} ).meanERPs(timep,:);
+                    %Reminder: For here, row will be isomer number, column will be 'sequence'
+                flatIsomTime(a).mean(ison,:) = [nanmean(squeeze(thisFlyData.ISOMER.( isoNames{ison} ).allERPs(timep,:,:)),2)'];
+                flatIsomTime(a).SEM(ison,:) = [nanstd(squeeze(thisFlyData.ISOMER.( isoNames{ison} ).allERPs(timep,:,:)),[],2)' ./ sqrt( nansum( ~isnan( squeeze(thisFlyData.ISOMER.( isoNames{ison} ).allERPs(timep,:,:)) ), 2 ) )'];
+            end
+            flatIsomTime(a).trueTime = thisFlyData.ISOMER.( isoNames{1} ).meanTIMEs(timep); %Use first isomer for time, for simplicity
+            a = a + 1;
+        end
+
+        %Plot
+        figure
+        for subl = 1:timeLimit
+            subplot(1,timeLimit,subl)
+            %New, dynamic
+            temp = reshape(flatIsomTime(subl).mean', 1, [] ); %Leaving second dim empty allows for both SEs and trans prob to be calculated in one line
+            %Reshapes an Isomer x Seq array to Isomer 1 Seq 1, Isomer 1 Seq 2, Isomer 2 Seq 1, Isomer 2 Seq 2, etc array
+            temp = temp( reOrderActual );
+            temp2 = reshape(flatIsomTime(subl).SEM', 1, [] );
+            temp2 = temp2( reOrderActual );                
+
+            errorbar( temp , temp2 , 'Color', 'k' )
+            %end
+            xticks([1:size(temp,2)])
+            %if subl == 1
+            xticklabels( labelsFull )
+            %else
+            %    xticklabels([])
+            %end
+            yticklabels([])
+            %xlim([0,transProbAncillary.nStimuli^transProbAncillary.nBackActual+1])
+            xlim([0,size(temp,2)+1])
+            %title(['T:',num2str(isomTime(subl).timep)])
+            titleStr = ['T:',num2str(flatIsomTime(subl).timep),char(10),' (',num2str(flatIsomTime(subl).trueTime,2),'s)'];
+            if subl == timeLimit && (timeLimit ~= size(flatIsomTime,2))
+                titleStr = [titleStr,' [+',num2str( size(flatIsomTime,2) - timeLimit),' times exc.]'];
+            end
+            hold off
+            title(titleStr)
+        end
+        %legend({'R1','R2'})
+        %legend(isomerNames)
+        %set(gcf,'Name',['Cross-fly FlatIsomxTime'])
+        set(gcf,'Name',['FlatIsomxTime' '_fly' num2str(thisFly)])
+
+        %Plot all isomers at once (if not already functionally done)
+        if numIsomers > 2
+
+            figure
+            for subl = 1:timeLimit
+                subplot(1,timeLimit,subl)
+                hold on
+
+                for ison = 1:numIsomers
+                    errorbar( flatIsomTime(subl).mean(ison,:) , flatIsomTime(subl).SEM(ison,:) , 'Color', isomerColours(ison,:) )            
+                end
+                xticks([1:size(flatIsomTime(subl).mean,2)])
+                xticklabels( labels )
+                yticklabels([])
+                xlim([0,size(flatIsomTime(subl).mean,2)+1])
+                titleStr = ['T:',num2str(flatIsomTime(subl).timep),char(10),' (',num2str(flatIsomTime(subl).trueTime,2),'s)'];
+                if subl == timeLimit && (timeLimit ~= size(flatIsomTime,2))
+                    titleStr = [titleStr,' [+',num2str( size(flatIsomTime,2) - timeLimit),' times exc.]'];
+                end
+                hold off
+                title(titleStr)
+            end
+            %legend({'R1','R2'})
+            legend(isoNames)
+            %set(gcf,'Name',['Cross-fly FlatIsomxTime'])
+            set(gcf,'Name',['AllIsomxTime' '_fly' num2str(thisFly)])
+
+        end %numIsomers end
+
+    end %plotIndividualFlies end
+
+
+end %fly end
 
 %Cross-fly isomers (if applicable)
 CROSSISOMER = [];
@@ -669,10 +768,10 @@ if size(chosenFlies,2) > 1
         else %Transition probabilities
             create_seq_eff_plot([crossMean],[],'errors',[crossSEM],...
                 'reOrder', reOrder,...
-                'n_back',-FLIES(chosenFlies(1)).transProbAncillary.nStimuli,... %Note the use of negative nStimuli to denote transition probabilities
-                'histlength',FLIES(chosenFlies(1)).transProbAncillary.nBackActual-1,...
-                'nStimuli', FLIES(chosenFlies(1)).transProbAncillary.nStimuli,...
-                'overrideLabels',FLIES(chosenFlies(1)).transProbAncillary.histLabels...
+                'n_back',-transProbAncillary.nStimuli,... %Note the use of negative nStimuli to denote transition probabilities
+                'histlength',transProbAncillary.nBackActual-1,...
+                'nStimuli', transProbAncillary.nStimuli,...
+                'overrideLabels',transProbAncillary.histLabels...
                 );
 
         end
@@ -801,7 +900,72 @@ if size(chosenFlies,2) > 1
             legend(isomerNames)
             set(gcf,'Name',['Cross-fly IsomxTime'])
             %saveas(gcf,[ resultsDirectory '/' 'Cross-fly IsomxTime.png']);
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'Cross-fly IsomxTime.png']);
+            %saveas(gcf,[ resultsDirectory '/' customSaveName 'Cross-fly IsomxTime.png']);
+
+            %Repeat, with flattened isomers
+            figure
+            for subl = 1:timeLimit
+                subplot(1,timeLimit,subl)
+                %New, dynamic
+                %for isoI = 1:numIsomers
+                %temp = reshape(isomTime(subl).mean', 1, transProbAncillary.nStimuli^transProbAncillary.nBackActual ); %Reshaping correctness empirically confirmed
+                temp = reshape(isomTime(subl).mean', 1, [] ); %Leaving second dim empty allows for both SEs and trans prob to be calculated in one line
+                %Reshapes an Isomer x Seq array to Isomer 1 Seq 1, Isomer 1 Seq 2, Isomer 2 Seq 1, Isomer 2 Seq 2, etc array
+                temp = temp( reOrderActual );
+                temp2 = reshape(isomTime(subl).SEM', 1, [] );
+                temp2 = temp2( reOrderActual );                
+
+                errorbar( temp , temp2 , 'Color', 'k' )
+                %end
+                xticks([1:size(temp,2)])
+                %if subl == 1
+                xticklabels( labelsFull )
+                %else
+                %    xticklabels([])
+                %end
+                yticklabels([])
+                %xlim([0,transProbAncillary.nStimuli^transProbAncillary.nBackActual+1])
+                xlim([0,size(temp,2)+1])
+                %title(['T:',num2str(isomTime(subl).timep)])
+                titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
+                if subl == timeLimit && (timeLimit ~= size(isomTime,2))
+                    titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
+                end
+                hold off
+                title(titleStr)
+            end
+            %legend({'R1','R2'})
+            %legend(isomerNames)
+            set(gcf,'Name',['Cross-fly FlatIsomxTime'])
+
+            %Plot all, if applicable
+            if numIsomers > 2
+
+                figure
+                for subl = 1:timeLimit
+                    subplot(1,timeLimit,subl)
+                    hold on
+    
+                    for ison = 1:numIsomers
+                        errorbar( isomTime(subl).mean(ison,:) , isomTime(subl).SEM(ison,:) , 'Color', isomerColours(ison,:) )            
+                    end
+                    xticks([1:size(isomTime(subl).mean,2)])
+                    xticklabels( labels )
+                    yticklabels([])
+                    xlim([0,size(isomTime(subl).mean,2)+1])
+                    titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
+                    if subl == timeLimit && (timeLimit ~= size(isomTime,2))
+                        titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
+                    end
+                    hold off
+                    title(titleStr)
+                end
+                %legend({'R1','R2'})
+                legend(isomerNames)
+                set(gcf,'Name',['Cross-fly AllIsomxTime'])
+                %set(gcf,'Name',['AllIsomxTime' '_fly' num2str(thisFly)])
+                
+            end
 
 
             if doAnimatedPlot

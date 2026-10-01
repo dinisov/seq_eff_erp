@@ -46,11 +46,13 @@ end
 
     allERPs = R.allERPs;
     semERPs = R.semERPs;
-    
-    % full data for maxima and minima across all stimuli
-    aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';
-    
+        
     if ~transProbDesign
+
+        % full data for maxima and minima across all stimuli
+        aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';
+            %Collapses allERPs from T x Seq x Event(Sparse) to Event(Sparse) x TSeq[?]
+                %Thus, each event is represented on one row of aux, where column is T[?]
 
         % data tables for performing an ANOVA to check for the effect of
         % sequence
@@ -61,10 +63,25 @@ end
         dataAmplitude = dataMaxima-dataMinima;
 
     else
+        %Old, aux-based system that fails for trans prob
+        %aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';   
+        %dataMaxima = aux(:,sub2ind(size(semERPs),R.ind_max_erp, size(allERPs,2) )); %Replace nBack exponential with size query
+        %dataMinima = aux(:,sub2ind(size(semERPs),R.ind_min_erp, size(allERPs,2) ));
+        %dataAmplitude = dataMaxima-dataMinima;
 
-        dataMaxima = aux(:,sub2ind(size(semERPs),R.ind_max_erp, size(allERPs,2) )); %Replace nBack exponential with size query
-        dataMinima = aux(:,sub2ind(size(semERPs),R.ind_min_erp, size(allERPs,2) ));
-        dataAmplitude = dataMaxima-dataMinima;
+
+        %dataMaxima = allERPs( R.ind_max_erp , : , : ); %
+        dataMaxima = squeeze(allERPs([R.ind_max_erp],:,:));
+        dataMinima = squeeze(allERPs([R.ind_min_erp],:,:));
+            %Yields an nStimuli*nBackActual x nStimuli*nBackActual x Event # matrix
+                %'Duplication' of 'sequence' identity is because sparse in column *and* layer
+
+        dataAmplitude = dataMaxima - dataMinima; %Subtract at a per-event level (Why sparse is tolerated)
+        dataAmplitude = squeeze( nansum( dataAmplitude, 2) )'; %Collapse to an Event x Seq matrix as done for SEs
+        
+        ['## Alert: Math currently incorrect; Please suppress ANOVAs for now for trans probs ##']
+        crash = yes
+
 
     end
     

@@ -1,5 +1,5 @@
 % analyse sequential dependencies in fly ERPs
-close all;
+%close all;
 clear;
 
 %% load auxiliary functions
@@ -78,7 +78,11 @@ else
     reOrder = [];
 end
 if isempty(reOrder)
-    reOrder = [1:0.5*2^n_back];
+    if n_back > 0
+        reOrder = [1:0.5*2^n_back]; %SEs; Not a parameter
+    else
+        reOrder = [1:-n_back^2]; %Transition prob; Not a parameter (Assumes nBackActual of 2)
+    end
 end
 
 %Whether to artificially 'shift' all ERP data above zero, to assist with certain metrics
@@ -98,7 +102,7 @@ plotIndividualFlies = 1;
 plotComponents = 0; %Currently only applies to time/freq analysis, enables/disables SLRP, etc graphs
 
 % which SEs to plot (in order: amplitude, pos amplitude, neg amplitude, latency to peak, latency to trough, transect, average transect in window)
-plotSelector = [0 1 0 0 0 1 0];
+plotSelector = [1 0 0 0 0 1 0];
 %if plotSelector(6)
 %%transectTime = 122; %frames; Always calculate
 %end
@@ -139,9 +143,9 @@ fly_record = readtable(["I:\BVS2026TWCF-Q9201\Bhanu\Fly record\fly_record_Bhanu.
 %Mae
 %{{
 homeDirectory = []; %Used for loading files and not much else
-altHomeDirectory = 'C:\Users\uqmvan13\ANALYSIS\Bruno\SEOutputMae'; %Unlike homeDirectory, this points directly to the respective output folder
+altHomeDirectory = 'I:\BVS2026TWCF-Q9201\Mae 2026\SEoutput'; %Unlike homeDirectory, this points directly to the respective output folder
 resultsDirectory = ['C:\Users\uqmvan13\ANALYSIS\Bruno\Results\Mae\']; %Manually specify, because homeDirectory empty
-fly_record = readtable(["C:\Users\uqmvan13\ANALYSIS\Bruno\Fly record\fly_record_Mae.xlsx"]);
+fly_record = readtable(["I:\BVS2026TWCF-Q9201\Mae 2026\Fly Record\fly_record.xlsx"]);
 %}
 
 %% remove flies to be excluded (usually because data is unsound for some obvious reason)
@@ -163,16 +167,17 @@ switch selectionMode
         %----------------------
 
         % restrict to some frequency if desired
-        %frequency = [12];
-        frequency = [12.5];
+        frequency = [12]; %Mae
+        %frequency = [12.5]; %Bruno
         
         if ~isempty(frequency)
             fly_record = fly_record(fly_record.Frequency == frequency,:);
         end
         
         % filter in keywords
-        filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
+        %filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
         %filterIn = {'sleepdep1','104y'}; %Must be cell array
+        filterIn = {'W+ R23E10 / Cholinergic, Male, Transition Probabilities 2, 60/40'}; %Mae
 
         if ~isempty(filterIn)
             for i = 1:length(filterIn)
@@ -228,12 +233,17 @@ switch selectionMode
         %Specify flies/blocks manually
         %----------------------
 
-        chosenFlies = [110]; %Singular
+        %chosenFlies = [127]; %Singular
         %chosenBlocks = [];
         %chosenBlocks = {[26,28],[3,4,6]}; %If non-empty, must specify a block for each element of chosenFlies in the format {[<fly 1 block/s>],[<fly 2 blocks/s>], [etc]}, where multiple blocks can be selected for each fly if requested
-        chosenBlocks = {[21]}; %Specify one block per fly (e.g. {[13],[17]}
+        %chosenBlocks = {[2]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
+        chosenFlies = [127]; %Trans prob 4 stim
+        chosenBlocks = {[2]}; %Trans prob 4 stim
+        %chosenFlies = [102]; %SEs, presumably
+        %chosenBlocks = {[20]}; %SEs, presumably
+
 
         %QA
         if ~isempty(chosenBlocks) && size(chosenFlies,2) ~= size(chosenBlocks,2)
@@ -301,7 +311,7 @@ end
 
 %BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots);
 BLOCKS = collateEphysData(fly_record,chosenOnes,focusPeak,timeFrequency,homeDirectory,aux_plots,...
-    zeroShiftMode,'+',overrideChannel,rawDataPlot, behavState, sepTimeThreshold, altHomeDirectory, shuffleMode); %'-' for multichannel, '+' for single
+    zeroShiftMode,'-',overrideChannel,rawDataPlot, behavState, sepTimeThreshold, altHomeDirectory, shuffleMode); %'-' for multichannel, '+' for single
 
 %% analyse data for each fly (can include multiple blocks)
 % IMPORTANT: make sure window is the same for all blocks belonging to the

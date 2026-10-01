@@ -6,7 +6,7 @@ directoryNames = {'Amplitude','Positive amplitude','Negative amplitude','Latency
 
 addTitle = 1; %Whether to add a little title above the plot relating to the fly and block number
 
-if length(data) == 1 %Note: May not actually be reachable nowadays (Due to data being length maximum fly number)
+if length(data) == 1 %Note: Only reached when running ALLFLIES
 
     for p = find(plotSelector)
         
@@ -36,9 +36,11 @@ if length(data) == 1 %Note: May not actually be reachable nowadays (Due to data 
 
             figure('Name',seTypes{p},'NumberTitle','off');
             create_seq_eff_plot(data.PROFILE.(seTypes{p}).',[],'errors',data.ERROR.(seTypes{p}).',...
-                'reOrder', reOrder,'n_back',-data.transProbAncillary.nStimuli,'histlength',data.transProbAncillary.nBackActual,...
-                    'nStimuli',data.transProbAncillary.nStimuli); 
-                check parameter correctness
+                'reOrder', data.transProbAncillary.reOrderActual,...
+                'n_back',-data.transProbAncillary.nStimuli,...
+                'histlength',data.transProbAncillary.nBackActual,...
+                'nStimuli',data.transProbAncillary.nStimuli,...
+                'overrideLabels',data.transProbAncillary.transLabels); 
 
         end
         if scramLevel == 1

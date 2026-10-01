@@ -14,21 +14,43 @@ suppressANOVA = options.suppressANOVA;
 
 ALLFLIES = struct;
 
-%matrices to hold SE profiles for each fly
-%amplitudeSEs = zeros(16,length(chosenFlies));
-%negativeAmplitudeSEs = zeros(16,length(chosenFlies));
-%positiveAmplitudeSEs = zeros(16,length(chosenFlies));
-%latencyToPeakSEs = zeros(16,length(chosenFlies));
-%latencyToTroughSEs = zeros(16,length(chosenFlies));
-%transectSEs = zeros(16,length(chosenFlies)); %Borrow above structure
-%avTransectWindowSEs = zeros(16,length(chosenFlies)); %Borrow above structure
-amplitudeSEs = zeros(0.5*2^n_back,length(chosenFlies));
-negativeAmplitudeSEs = zeros(0.5*2^n_back,length(chosenFlies));
-positiveAmplitudeSEs = zeros(0.5*2^n_back,length(chosenFlies));
-latencyToPeakSEs = zeros(0.5*2^n_back,length(chosenFlies));
-latencyToTroughSEs = zeros(0.5*2^n_back,length(chosenFlies));
-transectSEs = zeros(0.5*2^n_back,length(chosenFlies)); %Borrow above structure
-avTransectWindowSEs = zeros(0.5*2^n_back,length(chosenFlies)); %Borrow above structure
+if ~FLIES( chosenFlies(1) ).transProbDesign %SEs
+
+    %matrices to hold SE profiles for each fly
+    %amplitudeSEs = zeros(16,length(chosenFlies));
+    %negativeAmplitudeSEs = zeros(16,length(chosenFlies));
+    %positiveAmplitudeSEs = zeros(16,length(chosenFlies));
+    %latencyToPeakSEs = zeros(16,length(chosenFlies));
+    %latencyToTroughSEs = zeros(16,length(chosenFlies));
+    %transectSEs = zeros(16,length(chosenFlies)); %Borrow above structure
+    %avTransectWindowSEs = zeros(16,length(chosenFlies)); %Borrow above structure
+    amplitudeSEs = zeros(0.5*2^n_back,length(chosenFlies));
+    negativeAmplitudeSEs = zeros(0.5*2^n_back,length(chosenFlies));
+    positiveAmplitudeSEs = zeros(0.5*2^n_back,length(chosenFlies));
+    latencyToPeakSEs = zeros(0.5*2^n_back,length(chosenFlies));
+    latencyToTroughSEs = zeros(0.5*2^n_back,length(chosenFlies));
+    transectSEs = zeros(0.5*2^n_back,length(chosenFlies)); %Borrow above structure
+    avTransectWindowSEs = zeros(0.5*2^n_back,length(chosenFlies)); %Borrow above structure
+
+    ALLFLIES.transProbDesign = 0; %Define early
+
+else %Trans prob
+    nSeq = FLIES( chosenFlies(1) ).transProbAncillary.nStimuli^FLIES( chosenFlies(1) ).transProbAncillary.nBackActual;
+
+    amplitudeSEs = zeros(nSeq,length(chosenFlies));
+    negativeAmplitudeSEs = zeros(nSeq,length(chosenFlies));
+    positiveAmplitudeSEs = zeros(nSeq,length(chosenFlies));
+    latencyToPeakSEs = zeros(nSeq,length(chosenFlies));
+    latencyToTroughSEs = zeros(nSeq,length(chosenFlies));
+    transectSEs = zeros(nSeq,length(chosenFlies)); %Borrow above structure
+    avTransectWindowSEs = zeros(nSeq,length(chosenFlies)); %Borrow above structure
+
+    ALLFLIES.transProbDesign = 1; %Define early
+    ALLFLIES.transProbAncillary = FLIES( chosenFlies(1) ).transProbAncillary;
+
+end
+
+
 nERPsFly = zeros(1,length(chosenFlies));
 
 %collect profiles and errors in matrix
