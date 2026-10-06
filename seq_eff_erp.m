@@ -1,5 +1,5 @@
 % analyse sequential dependencies in fly ERPs
-%close all;
+close all;
 clear;
 
 %% load auxiliary functions
@@ -95,7 +95,7 @@ overrideChannel = []; %If non-empty will override the fly_record LFPChannel for 
 fitModel = 0; %Note: Incompatible with transition probabilities analysis
 
 %Suppress ANOVA calcs
-suppressANOVA = 1;
+suppressANOVA = 0;
 
 % plot individual flies?
 plotIndividualFlies = 1;
@@ -341,7 +341,8 @@ for fly = chosenFlies
 
    R = processBlocks(thisFlyBlocks, aux_plots, plotSelector, reOrder, n_back, ...
        'suppressANOVA',suppressANOVA, 'plotIndividualFlies',plotIndividualFlies,...
-       'scramLevel',scramLevel, 'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot);%,...
+       'scramLevel',scramLevel, 'arrowMode',arrowMode, 'firstLastPlot',firstLastPlot,...
+       'transMergeWindow',0.2);%,...
        %'photMovMaxWindow',[20,20]);
    
    if ~isempty(R)

@@ -51,8 +51,8 @@ end
 
         % full data for maxima and minima across all stimuli
         aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';
-            %Collapses allERPs from T x Seq x Event(Sparse) to Event(Sparse) x TSeq[?]
-                %Thus, each event is represented on one row of aux, where column is T[?]
+            %Collapses allERPs from T x Seq x Event(Sparse) to Event(Sparse) x TSeq, where 'TSeq' is T*Seq i.e. Seq 1 will occupy Col 1:nVols, and seq 2 will occupt nVols+1:nVols*2 etc
+                %Thus, each event is represented on one row of aux, where column is T and Seq together
 
         % data tables for performing an ANOVA to check for the effect of
         % sequence
@@ -63,13 +63,19 @@ end
         dataAmplitude = dataMaxima-dataMinima;
 
     else
-        %Old, aux-based system that fails for trans prob
-        %aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';   
-        %dataMaxima = aux(:,sub2ind(size(semERPs),R.ind_max_erp, size(allERPs,2) )); %Replace nBack exponential with size query
-        %dataMinima = aux(:,sub2ind(size(semERPs),R.ind_min_erp, size(allERPs,2) ));
-        %dataAmplitude = dataMaxima-dataMinima;
+        %Old, aux-based system
+        aux = squeeze(reshape(allERPs,[1,size(allERPs,1)*size(allERPs,2),size(allERPs,3)])).';   
+        dataMaxima = aux(:,sub2ind(size(semERPs),R.ind_max_erp, 1:size(allERPs,2) )); %Replace nBack exponential with size query
+        dataMinima = aux(:,sub2ind(size(semERPs),R.ind_min_erp, 1:size(allERPs,2) ));
+            %Note: These matrices should be sparse within a row (Corresponding to seq #), but not across rows (Since each row is one event, and each event is a seq obvs)
+            %Secondary note: sub2ind should always evaluate to values separated by vaguely nVols (With a bit of jitter for different max/min ind across sequence), never monotonically ascending values/etc
+                %Basically, the sub2ind exists to pinpoint the T*Seq position for each sequence, at a T specified by the max or min ind
+                    %It is probably also 'over'-acquiring the max/min for seqs from events that were not that seq, hence why the result is sparse across column (i.e. Seq)
+        dataAmplitude = dataMaxima-dataMinima;
 
 
+        %{
+        %Emergency bespoke system when aux was not understood; Deprecated
         %dataMaxima = allERPs( R.ind_max_erp , : , : ); %
         dataMaxima = squeeze(allERPs([R.ind_max_erp],:,:));
         dataMinima = squeeze(allERPs([R.ind_min_erp],:,:));
@@ -78,10 +84,7 @@ end
 
         dataAmplitude = dataMaxima - dataMinima; %Subtract at a per-event level (Why sparse is tolerated)
         dataAmplitude = squeeze( nansum( dataAmplitude, 2) )'; %Collapse to an Event x Seq matrix as done for SEs
-        
-        ['## Alert: Math currently incorrect; Please suppress ANOVAs for now for trans probs ##']
-        crash = yes
-
+        %}
 
     end
     

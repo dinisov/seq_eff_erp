@@ -6,7 +6,7 @@ arguments
     aux_plots double
     options.photMovMaxWindow double = [20,20]
     options.n_back double = 5; %Adds support for negative n_back (Transition probabilities)
-    options.transMergeWindow double = 0.1; %Maximum ISI size that potentially simultaneous events are allowed to be
+    options.transMergeWindow double; %Maximum ISI size that potentially simultaneous events are allowed to be
 end
 photMovMaxWindow = options.photMovMaxWindow;
 n_back = options.n_back;
@@ -221,6 +221,8 @@ for b = 1:length(blocks)
         mergeLOCS = zeros( abs(n_back), length(blocks(b).PHOT) ); 
         diffMag = nan(1,size(allINDS,1));
         oblitInds = nan( size(multiLOCS,1) , size(allINDS,1)); %This is ostensibly nPhotChannels x nEvents, but its values will be derived from allINDs reference frame
+            %Thus, values here correspond to linearised phot channel indices?
+        oblitLOCS = []; %Inefficient to not pre-define, but eh    
         engramFailureCount = 0;
         for phote = 1:size(allINDS,1)
             %Check if already processed
@@ -281,6 +283,7 @@ for b = 1:length(blocks)
             subrCorrected( subr == r ) = []; %Ditto
             [oblind] = sub2ind( [size(multiLOCS)], subrCorrected, subcCorrected ); %Back-calculate allINDS index
             oblitInds(subrCorrected, phote) = oblind;
+            oblitLOCS = [ oblitLOCS, reshape( subcCorrected , 1, [] ) ]; %Reshape necessary to guarantee row-only nature
     
         end
 
@@ -293,6 +296,8 @@ for b = 1:length(blocks)
         if engramFailureCount ~= 0
             disp(['Engram failures occurred ',num2str(engramFailureCount),' time/s'])
         end
+        %oblitInds = oblitInds( ~isnan(oblitInds) ); %Collapse different phot channels
+
 
         %Logicalise
         mergeLOCS = logical(mergeLOCS);
@@ -349,11 +354,15 @@ for b = 1:length(blocks)
         
         blocks(b).LOCS = transLOCS; %Alter form of LOCS, given same name for simplicity
         blocks(b).mergeLOCS = mergeLOCS; %New variable that denotes identity (akin to the later-calculated randomSequence)
+        %blocks(b).oblitInds = oblitInds;
+        blocks(b).oblitLOCS = oblitLOCS;
         blocks(b).LOCS_PHOT1 = LOCS_PHOT1; %Unlike above, these do not unambiguously indicate stimulus identity
         blocks(b).LOCS_PHOT2 = LOCS_PHOT2;
         blocks(b).LOCS_PHOT3 = LOCS_PHOT3;
         blocks(b).transProbDesign = 1;
         blocks(b).transProbAncillary.nStimuli = abs(n_back);
+        blocks(b).transProbAncillary.transMergeWindow = transMergeWindow;
+        blocks(b).transProbAncillary.transMergeWindowActual = windowActual;
 
 
     end %nBack end

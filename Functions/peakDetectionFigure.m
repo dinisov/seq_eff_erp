@@ -29,7 +29,8 @@ function peakDetectionFigure(blocks)
             %Transition probability data
             if blocks(b).transProbDesign
                 plot(blocks(b).PHOT(3,:)); %If this crashes, you have probably specified fly_record incorrectly
-                scatter(blocks(b).LOCS_PHOT3,zeros(size(blocks(b).LOCS_PHOT3)),'g','filled');                
+                scatter(blocks(b).LOCS_PHOT3,zeros(size(blocks(b).LOCS_PHOT3)),'g','filled');  
+                scatter(blocks(b).oblitLOCS,ones(size(blocks(b).oblitLOCS))*0.02,'k','filled');  
             end
 
         end
@@ -39,6 +40,12 @@ function peakDetectionFigure(blocks)
         else
             scatter(blocks(b).badLOCS, zeros(size(blocks(b).badLOCS)),40,'m','filled');
         end
-        title(['Peak detection figure - ', blocks(b).date,' B',blocks(b).block, ' (Phot type: ',num2str(blocks(b).PHOTType),')'])
+        %title(['Peak detection figure - ', blocks(b).date,' B',blocks(b).block, ' (Phot type: ',num2str(blocks(b).PHOTType),')'])
+        titleStr = ['Peak detection figure - ', blocks(b).date,' B',blocks(b).block, ' (Phot type: ',num2str(blocks(b).PHOTType),')'];
+        if blocks(b).transProbDesign
+            titleStr = [titleStr,char(10),'Trans prob window: +-',num2str(blocks(b).transProbAncillary.transMergeWindow),'/',...
+                num2str(blocks(b).transProbAncillary.transMergeWindowActual),'samples'];
+        end
+        title(titleStr)
     end
 end

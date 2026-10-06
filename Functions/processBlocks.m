@@ -15,6 +15,7 @@ arguments
     options.arrowMode double = 0
     options.firstLastPlot double = 0
     options.photMovMaxWindow double = [20,20]; %What window to use for calculatePeaks
+    options.transMergeWindow double = [0.1]; %Proportion of ISI to look before/after trans prob events for simultaneity detection
 end
 
 %Extra
@@ -24,10 +25,14 @@ scramLevel = options.scramLevel;
 arrowMode = options.arrowMode;
 firstLastPlot = options.firstLastPlot;
 photMovMaxWindow = options.photMovMaxWindow;
+transMergeWindow = options.transMergeWindow;
 
 disp(['Using window of ',num2str(photMovMaxWindow), ' for phot movmax calcs'])
+disp(['(And transition probability simultaneity window of +-',...
+    num2str(transMergeWindow),'/',...
+    num2str(transMergeWindow*blocks(1).ISI*blocks(1).resampleFreq),' samples where applicable)'])
 %blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow);
-blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow,'n_back',n_back);
+blocks = calculatePeaks(blocks, aux_plots, 'photMovMaxWindow',photMovMaxWindow,'n_back',n_back, 'transMergeWindow',transMergeWindow);
 
 blocks = inferRandomSequence(blocks);
 
