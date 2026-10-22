@@ -121,8 +121,10 @@ for fly = 1:size(chosenFlies,2)
         subplot(3,1,1)
         hold on
         for seq = 1:size(thisFlyData.meanERPs,2)
-            plot(thisFlyData.meanERPs(:,seq))
+            plot(thisFlyData.meanERPs(:,seq),'LineWidth',1.25)
         end
+        %legend(exLabels,'Orientation','horizontal','Location','NorthWest')
+        legend(exLabels,'FontSize',6)
         title([thisFlyData.date,' - B',num2str(thisFlyData.block),' mean ERPs'])
         subplot(3,1,2)
         plot(pVals)
@@ -194,9 +196,12 @@ for fly = 1:size(chosenFlies,2)
         subplot(2,numSig,[1:numSig]) %subplot across first row
         hold on
         for seq = 1:size(thisFlyData.meanERPs,2)
-            plot(thisFlyData.meanERPs(:,seq))
+            %plot(thisFlyData.meanERPs(:,seq))
+            plot(thisFlyData.meanERPs(:,seq),"LineWidth",1.5)
         end
+        legend(exLabels, 'AutoUpdate','off')
         yLim = get(gca,'YLim');
+        xlim([1,size(thisFlyData.meanERPs,1)*1.3])
         safeAlt = max( yLim );
         if numSig > 0
             for sigpa = 1:numSig

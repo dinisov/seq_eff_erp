@@ -256,9 +256,9 @@ function R = analyseSequentialEffects(blocks, aux_plots, plotSelector, reOrder, 
         %Dynamic
         theseIsom = fieldnames(R.ISOMER);
         for iso = 1:size(theseIsom,1)
-            R.ISOMER.(thisIsom).magnitudeSEs = [];
-            R.ISOMER.(thisIsom).phaseSEs = [];
-            R.ISOMER.(thisIsom).f = [];
+            R.ISOMER.(theseIsom{iso}).magnitudeSEs = [];
+            R.ISOMER.(theseIsom{iso}).phaseSEs = [];
+            R.ISOMER.(theseIsom{iso}).f = [];
         end
 
     end

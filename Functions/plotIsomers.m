@@ -224,6 +224,10 @@ function [ISOMER] = plotIsomers(allERPs, isomer, window, n_back, resampleFreq,..
                     set(h,'FontSize',6);
                 end
             end
+
+            %Append indices
+            R1.indices = index1; %Note: Probably pre reOrder, obvs
+            R2.indices = index2;
     
             %Save isomer data
             ISOMER = struct;
@@ -265,6 +269,7 @@ function [ISOMER] = plotIsomers(allERPs, isomer, window, n_back, resampleFreq,..
                     [], nStimuli, [] );
                     %A new argument is added to calculateSEs that allows for an overridden nBack, which is useful here
                         %Note that we don't supply custom labels, which means we can't do aux plots here
+                Rs{stimi}.indices = indexes{stimi}; %Append indices, for later use
             end
                 %Reminder: Each cell of Rs is an isomer (equivalent to R1, R2, etc), which here are defined as "Transition ending in Stim #<stimi>"
                     %Columns within PROFILE etc are individual 'sequences' (e.g. 1->1, 2->1, 3->1, 4->1, etc)

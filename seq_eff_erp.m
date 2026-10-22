@@ -239,8 +239,8 @@ switch selectionMode
         %chosenBlocks = {[2]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
-        chosenFlies = [127]; %Trans prob 4 stim
-        chosenBlocks = {[2]}; %Trans prob 4 stim
+        chosenFlies = [134]; %Trans prob 4 stim
+        chosenBlocks = {[20]}; %Trans prob 4 stim
         %chosenFlies = [102]; %SEs, presumably
         %chosenBlocks = {[20]}; %SEs, presumably
 

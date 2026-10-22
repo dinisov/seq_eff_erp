@@ -28,6 +28,7 @@ arguments
     options.customSaveName char = []; %If non-empty, adds this string to the name certain plots/video are saved under
     options.useTrueTimeX double = 1; %Where applicable attempts to use true calculated time, rather than 'frames' etc [WIP]
     options.nOverride double = []; %Similar to other functions, if non-empty acts as a forced override for the n of sequences (not nBack)
+    options.isomDispMode char = 'separate'; %Whether to show ERPs on the Across Time ('sigP') plot as isomers ('isomer'), or separate ERPs ('separate')
 end
 
 alphaVal = options.alphaVal;
@@ -53,6 +54,7 @@ doTestatoryTimeCorrsPlot = options.doTestatoryTimeCorrsPlot;
 customSaveName = options.customSaveName;
 useTrueTimeX = options.useTrueTimeX;
 nOverride = options.nOverride;
+isomDispMode = options.isomDispMode;
 
 %%
 
@@ -323,9 +325,39 @@ for fly = 1:size(chosenFlies,2)
                 figure
                 subplot(2,numSig,[1:numSig]) %subplot across first row
                 hold on
+                %{
+                %Blindly plot all ERPs
                 for seq = 1:size(thisFlyData.meanERPs,2)
                     plot(thisFlyData.meanERPs(:,seq))
                 end
+                %}
+                switch isomDispMode
+                    case 'isomer'
+
+                        for seq = 1:size(firstIsomer.meanERPs,2)
+                            plot(firstIsomer.meanERPs(:,seq),'Color','b', 'LineWidth',1.5)
+                        end
+                        for seq = 1:size(secondIsomer.meanERPs,2)
+                            plot(secondIsomer.meanERPs(:,seq),'Color','r', 'LineWidth',1.5)
+                        end
+
+                    case 'separate'
+
+                        legList = [];
+                        for seq = 1:size(firstIsomer.indices,2)
+                            plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
+                            legList = [legList,{labelsFull(firstIsomer.indices(seq),:)}]; %Note: Dims not checked for SEs, only transProb
+                        end
+                        for seq = 1:size(secondIsomer.indices,2)
+                            plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
+                            legList = [legList,{labelsFull(secondIsomer.indices(seq),:)}];
+                        end
+
+                end
+                if isequal( isomDispMode, 'separate' )
+                    legend(legList,'AutoUpdate','off');
+                end
+                xlim([1,size(firstIsomer.meanERPs,1)*1.3])
                 yLim = get(gca,'YLim');
                 safeAlt = max( yLim );
                 if numSig > 0

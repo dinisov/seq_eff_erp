@@ -224,9 +224,18 @@ function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFr
     if aux_plots
         figure
         hold on
+        legList = [];
         for seq = 1:size(meanERPs,2)
             plot(meanERPs(:,seq))
+            if isempty( nBackOverride ) %How this function derives transition probability (in this case, not)
+                legList = [legList,{labels{seq}(ind_horiz)}];
+            end
         end
+        if ~isempty( nBackOverride ) %Trans prob
+            legList = labels; 
+        end
+        legend(legList,'AutoUpdate','off')
+        xlim([1,size(meanERPs,1)*1.3])
         yLim = get(gca,'YLim');
 
         if plotSelector(3)
@@ -244,13 +253,16 @@ function R = calculateSEs(allERPs,allPHOTs,allTIMEs,aux_plots,window, resampleFr
         end
 
         if plotSelector(1)
-        temp = nanmean( [nanmedian(ind_min_erp,'all'),nanmedian(ind_max_erp,'all')] );
-        line([temp,temp],[nanmedian(min_erp,'all'),nanmedian(max_erp,'all')],'Color','k')
-        text(temp,nanmedian(max_erp,'all'),'Amp.','Color','b')
+        %temp = nanmean( [nanmedian(ind_min_erp,'all'),nanmedian(ind_max_erp,'all')] );
+        temp = [nanmedian(ind_min_erp,'all'),nanmedian(ind_max_erp,'all')]; %Switch away from median
+        temp2 = [nanmedian(min_erp,'all'),nanmedian(max_erp,'all')];
+        line([temp(1),temp(2)],temp2,'Color','k','LineWidth',1.5)
+        %text(temp,nanmedian(max_erp,'all'),'Amp.','Color','b')
+        text(nanmean(temp),nanmean(temp2),'Amp.','Color','k')
         end
 
         if plotSelector(6)
-        line([transectTime,transectTime], [yLim(1),yLim(2)],'LineStyle','--','Color','c')
+        line([transectTime,transectTime], [yLim(1),yLim(2)],'LineStyle','--','Color','c',"LineWidth",1.5)
         text(transectTime,yLim(2),'Transect','Color','c')
         end
 

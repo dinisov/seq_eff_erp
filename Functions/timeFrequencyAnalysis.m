@@ -34,6 +34,12 @@ if ~isempty(missDataList)
     disp([num2str(numel(missDataList)),' dataset/s were removed'])
 end
 
+%Check if any actual datasets still remain
+if size(FLIES,2) == 0
+    ['-# No datasets apparently remain #-']
+    return
+end
+
 resultsDirectory = [homeDirectory '\Results_Time_Frequency\'];
 if exist(resultsDirectory) ~= 7
     mkdir(resultsDirectory)
