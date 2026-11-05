@@ -29,6 +29,8 @@ arguments
     options.useTrueTimeX double = 1; %Where applicable attempts to use true calculated time, rather than 'frames' etc [WIP]
     options.nOverride double = []; %Similar to other functions, if non-empty acts as a forced override for the n of sequences (not nBack)
     options.isomDispMode char = 'separate'; %Whether to show ERPs on the Across Time ('sigP') plot as isomers ('isomer'), or separate ERPs ('separate')
+    options.useDynamicIsomerAllocation double = 0; %Whether to dynamically assign isomers for cross-isomer analysis based on sign
+    options.dynamicAllocationTimeP double = 1; %Which timepoint to use, if doing the above
 end
 
 alphaVal = options.alphaVal;
@@ -55,6 +57,8 @@ customSaveName = options.customSaveName;
 useTrueTimeX = options.useTrueTimeX;
 nOverride = options.nOverride;
 isomDispMode = options.isomDispMode;
+useDynamicIsomerAllocation = options.useDynamicIsomerAllocation;
+dynamicAllocationTimeP = options.dynamicAllocationTimeP;
 
 %%
 
@@ -147,6 +151,11 @@ else
 end
 warning('off', 'MATLAB:handle_graphics:exceptions:SceneNode');
 
+if useDynamicIsomerAllocation && transProbDesign
+    ['## Alert: Dynamic isomers not tested for trans prob design ##']
+    crash = yes
+end
+
 %%
 
 %All Timepoint ANOVA
@@ -176,6 +185,12 @@ for fly = 1:size(chosenFlies,2)
         isomerColours = [0,0,1;... %Blue for Isomer 1
                          1,0,0]; %Red for Isomer 2
     end
+    fullColours = jet( numel(labelsFull) ); %Needed in case 'separate' is used for isomDispMode
+
+
+    %Plot isomer ERPs for convenience
+    
+
 
     %Find all potential (unique) isomer combinations
     isoNames = fieldnames( thisFlyData.ISOMER );
@@ -343,14 +358,36 @@ for fly = 1:size(chosenFlies,2)
 
                     case 'separate'
 
-                        legList = [];
-                        for seq = 1:size(firstIsomer.indices,2)
-                            plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
-                            legList = [legList,{labelsFull(firstIsomer.indices(seq),:)}]; %Note: Dims not checked for SEs, only transProb
-                        end
-                        for seq = 1:size(secondIsomer.indices,2)
-                            plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
-                            legList = [legList,{labelsFull(secondIsomer.indices(seq),:)}];
+                        if ~transProbDesign
+
+                            legList = [];
+                            for seq = 1:size(firstIsomer.indices,2)
+                                %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
+                                %plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5 )
+                                plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
+                                legList = [legList,{[firstIsomer.name,'-',labelsFull{firstIsomer.indices(seq)}]}];
+                            end
+                            for seq = 1:size(secondIsomer.indices,2)
+                                %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
+                                %plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5 )
+                                plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) )
+                                legList = [legList,{[secondIsomer.name,'-',labelsFull{secondIsomer.indices(seq)}]}];
+                            end
+
+                        else
+
+                            legList = [];
+                            for seq = 1:size(firstIsomer.indices,2)
+                                %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
+                                plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
+                                legList = [legList,{[firstIsomer.name,'-',labelsFull(firstIsomer.indices(seq),:)]}]; 
+                            end
+                            for seq = 1:size(secondIsomer.indices,2)
+                                %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
+                                plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) ) %nActual validity not checked for trans prob
+                                legList = [legList,{[secondIsomer.name,'-',labelsFull(secondIsomer.indices(seq),:)]}];
+                            end
+
                         end
 
                 end
@@ -841,6 +878,109 @@ if size(chosenFlies,2) > 1
         if transecting %Note: Depending on plotSelector complement, this process may be done twice
             %Borrow from above single-fly method
             isoMax = struct;
+
+            %Assign isomers dynamically if requested
+            if useDynamicIsomerAllocation
+                timep = dynamicAllocationTimeP; %No support for average, etc
+                temP = [];
+                temR = [];
+                for isoI = 1:size(crossDataFull,1)
+                    [temR(:,:,isoI),temP(:,:,isoI)] = corrcoef( squeeze( crossDataFull{isoI}(timep,:,:) ) ); %Borrow below
+                end
+                %Assembles an N x N x Isomer# matrix of correlations/P values
+                    %i.e. The transect profile inter-fly correlations 
+                    %(Correlation between each fly's transect profile)
+
+                temR( temR == 1 ) = NaN;
+                temp = nanmean( temR, [2] );
+                %temp = nansum( temR, [2] );
+
+                %[B,I] = sort( abs(temp), 3, 'descend' ); %INCORRECT; IMPLIES THAT A STRONG WILL TO SHIFT IS EQUIVALENT TO A STRONG WILL TO REMAIN
+                [B,I] = sort( abs(temp), 3, 'descend' ); 
+                %Sort isomers by whether they more strongly wish to be in their original (Iso # matches sort index) or switch (vice versa)
+                    %This works because temp represents the correlation strength between profiles and every other profile for that isomer
+                        %Thus, if an profile has respective values of -0.6 and 0.3, it more strongly 'wishes' to change than to stay (...probably)
+
+                        %aaaaaaaa wrong
+
+if transProbDesign
+    verify design
+end
+
+                temp2 = [];
+                for fli = 1:size(I,1)
+                    %[~,thisl] = nanmax( squeeze(I(fli,1,:)) ); %NOTE: INEFFECTIVE FOR TRANSITION PROBABILITIES IE MORE THAN 2 ISOMERS??????
+                    %temp2 = [temp2; thisl ];
+                    temp2 = [temp2, squeeze(I(fli,1,:)) ];
+                end
+                temp2 = temp2';
+                %Theoretically this 'matrix' dictates how isomers should move (i.e. [2,1] means Isomer 1 -> 2 to be happier, and 1 -> 2 etc
+
+                %Preallocate
+                crossDataFullActual = cell(size(crossDataFull));
+                for isoi = 1:size(crossDataFull,1) %Preallocate
+                    crossDataFullActual{isoi} = nan( size(crossDataFull{isoi}) );
+                end
+
+                %Re-order
+                for fli = 1:size(I,1)
+                    for isoi = 1:size(crossDataFull,1)
+                        thisOrder = temp2(fli,:);
+                        for ordi = 1:size(thisOrder,2)
+                            crossDataFullActual{ thisOrder(ordi) }( :,:, fli ) = crossDataFull{ ordi }( :,:, fli );
+                        end
+                    end
+                end
+                %Quick QA
+                if nansum( isnan( cell2mat(crossDataFullActual) ) ,'all' ) > 0
+                    ['## Alert: Potential data loss/gain in isomer reordering ##']
+                    crash = yes %Probably implies sorting acted funny for some reason
+                end
+                crossDataFullActual = crossDataFullActual; %Symbolic
+
+                %Reporter figure
+                figure
+                subplot(1,2,1) %Pre
+                hold on
+                for isoi = 1:size(crossDataFull,1)
+                    for fli = 1:size(I,1)
+                        plot( crossDataFull{isoi}(timep,:,fli) , 'Color', isomerColours(isoi,:) )
+                    end 
+                    %plot( nanmean( crossDataFull{isoi}(timep,:,:) ,3) , 'Color', isomerColours(isoi,:) , 'LineWidth', 1.5 ) %Plot no error
+                    errorbar( [nanmean( crossDataFull{isoi}(timep,:,:) ,3)] , [nanstd( crossDataFull{isoi}(timep,:,:), [] ,3) / sqrt(size(I,1))] , 'Color', isomerColours(isoi,:) , 'LineWidth', 1.5 )
+                end
+                xlim([0,nActual+1]) %Might fail for trans prob?
+                xticks([1:nActual])
+                title('Pre ordering')
+
+                subplot(1,2,2) %Post
+                hold on
+                for isoi = 1:size(crossDataFullActual,1)
+                    for fli = 1:size(I,1)
+                        plot( crossDataFullActual{isoi}(timep,:,fli) , 'Color', isomerColours(isoi,:) )
+                        %Cbf giving individuals their original colours, but it's a possibility
+                        %As done here, colours are more representative of how the isomer plots will now turn out
+                    end  
+                    errorbar( [nanmean( crossDataFullActual{isoi}(timep,:,:) ,3)] , [nanstd( crossDataFullActual{isoi}(timep,:,:), [] ,3) / sqrt(size(I,1))] , 'Color', isomerColours(isoi,:) , 'LineWidth', 1.5 )
+                end
+                xlim([0,nActual+1]) %Might fail for trans prob?
+                xticks([1:nActual])
+                title('Re ordering')
+
+                disp(['Isomers reordered according to correlation'])
+                disp(char(10))
+                disp(num2str(squeeze( temp )))
+                disp(char(10))
+                disp(num2str(I))
+
+
+            else
+
+                crossDataFullActual = crossDataFull;
+
+            end
+
+
             %isoIndiv = struct; %Beginnings of an extension of isomax to invdividual flies
             %a = 1;
             for timep = 1:nTimepoints %Unlike above do for *all* timepoints (Mostly to support animated plot)
@@ -851,8 +991,10 @@ if size(chosenFlies,2) > 1
                 tempSEM = [];
                 tempTrueTime = [];
                 data = [];
-                for isoI = 1:size(crossDataFull,1)
-                    temp = squeeze( crossDataFull{isoI}(timep,:,:) ); %More cautious method of obtaining data used due to increased complexity of architecture
+                %for isoI = 1:size(crossDataFull,1)
+                for isoI = 1:size(crossDataFullActual,1)
+                    %temp = squeeze( crossDataFull{isoI}(timep,:,:) ); %More cautious method of obtaining data used due to increased complexity of architecture
+                    temp = squeeze( crossDataFullActual{isoI}(timep,:,:) ); %More cautious method of obtaining data used due to increased complexity of architecture; Use potentially reordered structure
                     data{isoI} = temp; %Store for later use; Arranged in Seq x Dataset (Nested within cell for Isomer)
                     tempMean = [tempMean; nanmean(temp,2)'];
                     tempSEM = [tempSEM; nanstd(temp,[],2)' ./ sqrt(size(temp,2))];
@@ -924,6 +1066,9 @@ if size(chosenFlies,2) > 1
                 titleStr = ['T:',num2str(isomTime(subl).timep),char(10),' (',num2str(isomTime(subl).trueTime,2),'s)'];
                 if subl == timeLimit && (timeLimit ~= size(isomTime,2))
                     titleStr = [titleStr,' [+',num2str( size(isomTime,2) - timeLimit),' times exc.]'];
+                end
+                if useDynamicIsomerAllocation
+                    titleStr = [titleStr,' [RO]']; %RO for ReOrdered
                 end
                 hold off
                 title(titleStr)

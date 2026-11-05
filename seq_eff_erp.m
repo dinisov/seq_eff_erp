@@ -19,7 +19,7 @@ addpath('..\Scripts\Toolboxes\basefindpeaks\');
 focusPeak = 10;
 
 % whether to perform time-frequency analysis (takes a long time)
-timeFrequency = 1;
+timeFrequency = 0;
 
 %% toggles
 
@@ -95,7 +95,7 @@ overrideChannel = []; %If non-empty will override the fly_record LFPChannel for 
 fitModel = 0; %Note: Incompatible with transition probabilities analysis
 
 %Suppress ANOVA calcs
-suppressANOVA = 0;
+suppressANOVA = 1;
 
 % plot individual flies?
 plotIndividualFlies = 1;
@@ -177,7 +177,7 @@ switch selectionMode
         % filter in keywords
         %filterIn = {'tsh/wichr','255','no atr','baseline'}; %Matt local testing default
         %filterIn = {'sleepdep1','104y'}; %Must be cell array
-        filterIn = {'W+ R23E10 / Cholinergic, Male, Transition Probabilities 2, 60/40'}; %Mae
+        filterIn = {'W+ R23E10 / Cholinergic','Female','50/50','Blue SE, Final'}; %Mae
 
         if ~isempty(filterIn)
             for i = 1:length(filterIn)
@@ -193,7 +193,7 @@ switch selectionMode
         % filter out keywords
         %filter out example: {'wiChr','baseline','255'};
         % cell array of keywords
-        filterOut = {}; %Matt default
+        filterOut = {'Transition'}; %Matt default
         %filterOut = {'dodgy','wichr'}; %Note: Must be cell array, for below
         
         %fly_record = fly_record(~contains(fly_record.Comments,filterOut,'IgnoreCase',true),:); %OG method
@@ -239,10 +239,10 @@ switch selectionMode
         %chosenBlocks = {[2]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
-        chosenFlies = [134]; %Trans prob 4 stim
-        chosenBlocks = {[20]}; %Trans prob 4 stim
-        %chosenFlies = [102]; %SEs, presumably
-        %chosenBlocks = {[20]}; %SEs, presumably
+        %chosenFlies = [134]; %Trans prob 4 stim
+        %chosenBlocks = {[20]}; %Trans prob 4 stim
+        chosenFlies = [147]; %SEs, presumably
+        chosenBlocks = {[22]}; %SEs, presumably
 
 
         %QA
@@ -402,7 +402,8 @@ if additionalIsomerPlots
         'patchMethod','lowestP', 'n_back',n_back,'reOrder',reOrder,'plotSelector',plotSelector,...
         'plotIndividualFlies',plotIndividualFlies, ...
         'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',1, 'extraFigSubplots',2, 'customSaveName', [cell2mat(filterIn),'_'],...
-        'limitIsomTime',[], 'doCorrPlots',1,'useBootlegBonff',0, 'manualMultiCorrectValue', 8, 'crossIsomerSeqCorrTime',[]);
+        'limitIsomTime',[], 'doCorrPlots',1,'useBootlegBonff',0, 'manualMultiCorrectValue', 8, 'crossIsomerSeqCorrTime',[],...
+        'isomDispMode','isomer','useDynamicIsomerAllocation',0);
 end
 
 %% Report about potential scrambling

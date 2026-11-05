@@ -64,7 +64,7 @@ else
 
 end
 
-
+seqColours = jet(numel(exLabels));
 
 resultsDirectory = [resultsDirectory '\Transect\'];
 if exist(resultsDirectory) ~= 7
@@ -121,7 +121,8 @@ for fly = 1:size(chosenFlies,2)
         subplot(3,1,1)
         hold on
         for seq = 1:size(thisFlyData.meanERPs,2)
-            plot(thisFlyData.meanERPs(:,seq),'LineWidth',1.25)
+            %plot(thisFlyData.meanERPs(:,seq),'LineWidth',1.25)
+            plot(thisFlyData.meanERPs(:,seq),'LineWidth',1.25,'Color',seqColours(seq,:))  %Custom colours
         end
         %legend(exLabels,'Orientation','horizontal','Location','NorthWest')
         legend(exLabels,'FontSize',6)
@@ -197,7 +198,8 @@ for fly = 1:size(chosenFlies,2)
         hold on
         for seq = 1:size(thisFlyData.meanERPs,2)
             %plot(thisFlyData.meanERPs(:,seq))
-            plot(thisFlyData.meanERPs(:,seq),"LineWidth",1.5)
+            %plot(thisFlyData.meanERPs(:,seq),"LineWidth",1.5)
+            plot(thisFlyData.meanERPs(:,seq),"LineWidth",1.5, 'Color', seqColours(seq,:))
         end
         legend(exLabels, 'AutoUpdate','off')
         yLim = get(gca,'YLim');

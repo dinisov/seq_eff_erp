@@ -215,6 +215,15 @@ for b = 1:length(blocks)
                 multiLOCS( photi, thisLOCS(phote) ) = multiLOCS( photi, thisLOCS(phote) ) + 1; %Unambiguously denote this channel as having occurred here
             end
         end
+        
+        %QA in case of accidental analysis of SEs as trans prob
+        %temp = find( nansum( multiLOCS,1 ) == 1);
+        if size( LOCS_PHOT3 , 2 ) > 1.5*size( LOCS_PHOT1 , 2 ) && size( LOCS_PHOT3 , 2 ) > 1.5*size( LOCS_PHOT2 , 2 )
+            input(['-# Caution: Potentially excessive # of phot 3 events (',num2str(size( LOCS_PHOT3 , 2 )),') detected versus 1 and 2 (',num2str(size( LOCS_PHOT1 , 2 )),', ',num2str(size( LOCS_PHOT2 , 2 )),'); Has SEs data been selected accidentally? #-'])
+                %This is likely to ping if SEs collected with posDots, which would be aberrantly detected as PHOT3 events
+                    %I cbf implementing a system that checks for 99% simultaneity with phot3 events here and 1/2, which is the simplest sign
+        end
+
         %Reiterate and find simultaneous events/etc
         windowActual = floor(transMergeWindow*ISI*resampleFreq); %Keeps consistency with multiple uses
         allINDS = find( multiLOCS == 1 ); %Note: Linear indicised for multidimensional matrix
@@ -248,7 +257,9 @@ for b = 1:length(blocks)
             thisEngram = nansum( multiLOCS( :, coords ) , 2);
             %Secondary QA
             if any(thisEngram == 2) %Only possible if more than one apparent event of a particular channel found in a window
+                if engramFailureCount <= 10
                 disp( ['-# Phot merge engram failure #-'] )
+                end
                 %crash = yes
                 engramFailureCount = engramFailureCount + 1;
                 continue
@@ -258,7 +269,9 @@ for b = 1:length(blocks)
             %Tertiary QA
                 %Note: This is basically the only QA standing between 'fake' engram finding and data being correct
             if yen == 0 || numel(ind) > 1
+                if engramFailureCount <= 10
                 disp( ['-# Alert: Engram under/overfind in phot possibility index #-'] )
+                end
                 %crash = yes %Likely if index badly specified or data case unknown
                 %Note: May actually be possible with minor anomalies etc?
                 engramFailureCount = engramFailureCount + 1;
