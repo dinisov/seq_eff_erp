@@ -179,21 +179,116 @@ for fly = 1:size(chosenFlies,2)
     if numIsomers > 2 && numIsomers <= 7 %Not (current) normal
         %isomerColours = jet(isomerCount);
         isomerColours = orderedcolors("gem"); %Only has 7 elements
+        isomerColours = isomerColours(1:numIsomers,:); %Trim, to reduce confusion
     elseif numIsomers > 7
         isomerColours = jet(isomerCount); %Theoretically infinite
     else
         isomerColours = [0,0,1;... %Blue for Isomer 1
                          1,0,0]; %Red for Isomer 2
     end
-    fullColours = jet( numel(labelsFull) ); %Needed in case 'separate' is used for isomDispMode
+    %fullColours = jet( numel(labelsFull) ); %Needed in case 'separate' is used for isomDispMode
+    fullColours = jet( nanmax( size(labelsFull) ) ); %Lazy way of guaranteeing seq number across possible transposition
+    seqColours = parula( nActual ); %May sometimes (e.g. Trans prob) be same # as isomers
 
+    %Find names
+    isoNames = fieldnames( thisFlyData.ISOMER );
 
     %Plot isomer ERPs for convenience
+    figure
+    hold on
+    legList = [];
+    for isoI = 1:size(isoNames,1)
+        thisIsoData = thisFlyData.ISOMER.(isoNames{isoI});
+
+        switch isomDispMode
+            case 'isomer' %All ERPs of one isomer are given the same colour
     
+                %{
+                for seq = 1:size(firstIsomer.meanERPs,2)
+                    plot(firstIsomer.meanERPs(:,seq),'Color','b', 'LineWidth',1.5)
+                end
+                for seq = 1:size(secondIsomer.meanERPs,2)
+                    plot(secondIsomer.meanERPs(:,seq),'Color','r', 'LineWidth',1.5)
+                end
+                %}
+
+                for seq = 1:size(thisIsoData.meanERPs,2)
+                    plot(thisIsoData.meanERPs(:,seq),'Color',isomerColours(isoI,:), 'LineWidth',1.5)
+                    legList = [legList,{labelsFull( thisIsoData.indices(seq) , : )}];
+                end
+    
+            case 'separate' %Every ERP has a unique colour (across isomer)
+    
+                if ~transProbDesign
+    
+                    %legList = [];
+                    %{
+                    for seq = 1:size(firstIsomer.indices,2)
+                        %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
+                        %plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5 )
+                        plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
+                        legList = [legList,{[firstIsomer.name,'-',labelsFull{firstIsomer.indices(seq)}]}];
+                    end
+                    for seq = 1:size(secondIsomer.indices,2)
+                        %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
+                        %plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5 )
+                        plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) )
+                        legList = [legList,{[secondIsomer.name,'-',labelsFull{secondIsomer.indices(seq)}]}];
+                    end
+                    %}
+                    for seq = 1:size(thisIsoData.meanERPs,2)
+                        %plot( thisIsoData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
+                        plot( thisIsoData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', fullColours(seq + (isoI-1)*nActual,:) )
+                        legList = [legList, [strcat( isoNames{isoI},'-', {labelsFull{ seq }} ) ] ];
+                    end
+    
+                else
+    
+                    %{
+                    legList = [];
+                    for seq = 1:size(firstIsomer.indices,2)
+                        %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
+                        plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
+                        legList = [legList,{[firstIsomer.name,'-',labelsFull(firstIsomer.indices(seq),:)]}]; 
+                    end
+                    for seq = 1:size(secondIsomer.indices,2)
+                        %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
+                        plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) ) %nActual validity not checked for trans prob
+                        legList = [legList,{[secondIsomer.name,'-',labelsFull(secondIsomer.indices(seq),:)]}];
+                    end
+                    %}
+
+                    for seq = 1:size(thisIsoData.meanERPs,2)
+                        plot( thisIsoData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', fullColours(thisIsoData.indices(seq),:) )
+                        legList = [legList,{labelsFull( thisIsoData.indices(seq) , : )}]; %Note: Potentially unstable system/Only safe for trans prob
+                        %legList = [legList,{strcat( exLabels{ seq },'-',isoNames{isoI} )}]; 
+                    end
+    
+                end
+
+            case 'sequence' %Each sequence within an isomer has a unique colour
+
+                for seq = 1:size(thisIsoData.meanERPs,2)
+                    plot(thisIsoData.meanERPs(:,seq),'Color',seqColours(seq,:), 'LineWidth',1.5)
+                    if ~transProbDesign
+                        legList = [legList, [strcat( isoNames{isoI},'-', {labelsFull{ seq }} ) ] ]; %Borrowed from Separate
+                    else
+                        legList = [legList,{labelsFull( thisIsoData.indices(seq) , : )}];
+                    end
+                end
+    
+        end
+
+    end
+    h = legend(legList);
+    %set(h,'FontSize',6);
+    xlim([1,size(thisIsoData.meanERPs,1)])
+    yLim = get(gca,'YLim');
+    title(['(#',num2str(thisFly),') ',thisFlyData.date,' - B',num2str(thisFlyData.block),' mean ERPs'])
+    clear thisIsoData
 
 
     %Find all potential (unique) isomer combinations
-    isoNames = fieldnames( thisFlyData.ISOMER );
     isoCombs = nchoosek([1:size( isoNames , 1)],2); %Only support for 2-back isomer comparison btw
 
     superUniqueness = nan( numIsomers , numIsomers ); %Same as uniqueNess below, but at a meta level
@@ -276,7 +371,7 @@ for fly = 1:size(chosenFlies,2)
     
         %Profile/s for sig over time
         sigProfiles = {};
-        if numSig > 0
+        %if numSig > 0
             for sigpa = 1:nanmax(sigPatches)
                 meanData = [];
                 switch patchMethod
@@ -338,7 +433,11 @@ for fly = 1:size(chosenFlies,2)
             if plotIndividualFlies
                 %Display of sig across time
                 figure
-                subplot(2,numSig,[1:numSig]) %subplot across first row
+                if numSig > 0
+                    subplot(2,numSig,[1:numSig]) %subplot across first row
+                else
+                    subplot(2,1,[1])
+                end
                 hold on
                 %{
                 %Blindly plot all ERPs
@@ -365,33 +464,64 @@ for fly = 1:size(chosenFlies,2)
                                 %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
                                 %plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5 )
                                 plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
-                                legList = [legList,{[firstIsomer.name,'-',labelsFull{firstIsomer.indices(seq)}]}];
+                                %legList = [legList,{[firstIsomer.name,'-',labelsFull{firstIsomer.indices(seq)}]}]; %Probably incorrect, based on empirical salting
+                                legList = [legList,{[firstIsomer.name,'-',exLabels{seq}]}];
                             end
                             for seq = 1:size(secondIsomer.indices,2)
                                 %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
                                 %plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5 )
                                 plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) )
-                                legList = [legList,{[secondIsomer.name,'-',labelsFull{secondIsomer.indices(seq)}]}];
+                                %legList = [legList,{[secondIsomer.name,'-',labelsFull{secondIsomer.indices(seq)}]}]; %Ditto
+                                legList = [legList,{[secondIsomer.name,'-',exLabels{seq}]}];
                             end
 
                         else
-
+                            %unfixed
                             legList = [];
                             for seq = 1:size(firstIsomer.indices,2)
                                 %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5 )
-                                plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
-                                legList = [legList,{[firstIsomer.name,'-',labelsFull(firstIsomer.indices(seq),:)]}]; 
+                                %plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5, 'Color', fullColours(seq,:) )
+                                plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5, 'Color', fullColours( seq + ( (thisIsoComb(1)-1) * nActual ) ,:) )
+                                legList = [legList,{[firstIsomer.name,' - ',labelsFull(firstIsomer.indices(seq),:)]}]; %Choosing to believe in labelsFull x Trans prob correctness
                             end
                             for seq = 1:size(secondIsomer.indices,2)
                                 %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5 )
-                                plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) ) %nActual validity not checked for trans prob
-                                legList = [legList,{[secondIsomer.name,'-',labelsFull(secondIsomer.indices(seq),:)]}];
+                                %plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5, 'Color', fullColours(seq+nActual,:) ) %nActual validity not checked for trans prob
+                                plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5, 'Color', fullColours( seq + ( (thisIsoComb(2)-1) * nActual ) ,:) )
+                                legList = [legList,{[secondIsomer.name,' - ',labelsFull(secondIsomer.indices(seq),:)]}];
+                            end
+
+                        end
+
+                    case 'sequence'
+
+                        if ~transProbDesign
+
+                            legList = [];
+                            for seq = 1:size(firstIsomer.indices,2)
+                                plot( thisFlyData.meanERPs(:, seq ), 'LineWidth',1.5, 'Color', seqColours(seq,:) )
+                                legList = [legList,{[firstIsomer.name,'-',exLabels{seq}]}];
+                            end
+                            for seq = 1:size(secondIsomer.indices,2)
+                                plot( thisFlyData.meanERPs(:, seq ) , 'LineWidth', 1.5, 'Color', seqColours(seq,:) ) 
+                                legList = [legList,{[secondIsomer.name,'-',exLabels{seq}]}];
+                            end
+
+                        else
+                            legList = [];
+                            for seq = 1:size(firstIsomer.indices,2)
+                                plot( thisFlyData.meanERPs(:, firstIsomer.indices(seq) ), 'LineWidth',1.5, 'Color', seqColours(seq,:) )
+                                legList = [legList,{[firstIsomer.name,' - ',labelsFull(firstIsomer.indices(seq),:)]}]; %Choosing to believe in labelsFull x Trans prob correctness
+                            end
+                            for seq = 1:size(secondIsomer.indices,2)
+                                plot( thisFlyData.meanERPs(:, secondIsomer.indices(seq) ) , 'LineWidth', 1.5, 'Color', seqColours(seq,:) )
+                                legList = [legList,{[secondIsomer.name,' - ',labelsFull(secondIsomer.indices(seq),:)]}];
                             end
 
                         end
 
                 end
-                if isequal( isomDispMode, 'separate' )
+                if isequal( isomDispMode, 'separate' ) || isequal( isomDispMode, 'sequence' )
                     legend(legList,'AutoUpdate','off');
                 end
                 xlim([1,size(firstIsomer.meanERPs,1)*1.3])
@@ -417,7 +547,7 @@ for fly = 1:size(chosenFlies,2)
                     ylim([min(yLim),safeAlt])
                 end
                 %Sig profiles
-                %if numSig > 0
+                if numSig > 0
                 for sigpa = 1:numSig
                     subplot(2,numSig,numSig+sigpa)
                     %errorbar(sigProfiles{sigpa}{1},sigProfiles{sigpa}{2})
@@ -434,12 +564,12 @@ for fly = 1:size(chosenFlies,2)
                     %legend({['R1'],['R2']})
                     legend({[firstIsomer.name],[secondIsomer.name]})
                 end
-                %end
+                end
                 %saveas(gcf,[ resultsDirectory '/' 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%saveas(gcf,[ resultsDirectory '/' customSaveName 'RCoeffSigWIsom' '_fly' num2str(thisFly) '.png']);
             end
     
-        end
+        %end %numSig end
     
         %masses
     

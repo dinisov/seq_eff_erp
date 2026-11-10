@@ -104,8 +104,13 @@ end
             c = 1;
         end
 
-        %input('Salting of 3->2 to a factor of 5 will be performed') %Enable this to perform 'salting' of specific transition probability sequence (Relatively easily expanded to SEs)
-        
+        %{
+        saltseq = 7;
+        saltval = -2;
+        input(['Salting of seq ',num2str(saltseq),' to a factor of ',num2str(saltval),' will be performed']) %Enable this to perform 'salting' of specific transition probability sequence (Relatively easily expanded to SEs)
+        saltcount = 0;
+        %}
+
         for n = nBackActual:sequenceLength
 
             %Pre-check to make sure not attempting to acquire LFP data from after end  of experiment (i.e. If stimuli still occurring at end)
@@ -157,11 +162,26 @@ end
             if ~arrowMode
                 theseLOCInds = LOCS(n) + window(1) : LOCS(n) + window(2);
 
+                %Unsalted
                 ERPS(:, seq, n) = LFP( theseLOCInds );
 
-                %if seq == 7 %Salting
-                %    ERPS(:, seq, n) = ERPS(:, seq, n)*5;
-                %end
+                %Salted
+                %{
+                if seq == saltseq %Salting
+                    %ERPS(:, seq, n) = ERPS(:, seq, n)*1;
+                    ERPS(:, seq, n) = LFP( theseLOCInds ) * saltval;
+                    saltcount = saltcount + 1;
+                    if saltcount == 1
+                        if ~transProbDesign
+                            SEQS{1,seq}
+                        else
+                            STIMS{1,seq}
+                        end
+                    end
+                else
+                    ERPS(:, seq, n) = LFP( theseLOCInds );
+                end
+                %}
 
                 if ~transProbDesign
                     seqPHOT(:, seq, n) = normalize(PHOT(2-randomSequence(n), theseLOCInds )); %seqPHOT is a rather sneaky use of randomSequence to pull applicable PHOT channel
@@ -274,6 +294,13 @@ end
             end
 
         end
+        %saltcount
+
+        %Quick QA
+        if nansum( ~isnan(ERPS), 'all' ) == 0
+            ['## Alert: No non-NaN data collected ##']
+            %crash = yes %Not really feasible unless something terrible has occurred
+        end
 
         % matrix with all ERPs irrespective of sequence
         %all_erps = squeeze(sum(ERPS,2));% squeeze removes first dimension
@@ -300,6 +327,8 @@ end
         end
 
         n_sd = 4;
+        %%n_sd = Inf; %Allows for salted sequences to break through
+        %%input('Outlier detection disabled for salting')
 
         % remove ERPs beyond n_sd (broadcasting here)
         outliers = all_erps < (meanERP - n_sd*STDs) | all_erps > (meanERP + n_sd*STDs);

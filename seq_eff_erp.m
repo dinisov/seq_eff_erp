@@ -239,10 +239,12 @@ switch selectionMode
         %chosenBlocks = {[2]}; %Specify one block per fly (e.g. {[13],[17]}
             %...theoretically all aspects of this system support multiple blocks per fly (e.g. {[13,18],[1,3,5]}), but Dinis' analysis does not
                 % ^ Mildly incorrect; groupBlocks (via analyseSequentialEffects) seems to support multiple blocks
-        %chosenFlies = [134]; %Trans prob 4 stim
-        %chosenBlocks = {[20]}; %Trans prob 4 stim
-        chosenFlies = [147]; %SEs, presumably
-        chosenBlocks = {[22]}; %SEs, presumably
+        chosenFlies = [134]; %Trans prob 4 stim
+        chosenBlocks = {[20]}; %Trans prob 4 stim
+        %chosenFlies = [102]; %SEs
+        %chosenBlocks = {[20]}; %SEs
+        %chosenFlies = [100]; %SEs
+        %chosenBlocks = {[10]}; %SEs
 
 
         %QA
@@ -403,7 +405,7 @@ if additionalIsomerPlots
         'plotIndividualFlies',plotIndividualFlies, ...
         'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',1, 'extraFigSubplots',2, 'customSaveName', [cell2mat(filterIn),'_'],...
         'limitIsomTime',[], 'doCorrPlots',1,'useBootlegBonff',0, 'manualMultiCorrectValue', 8, 'crossIsomerSeqCorrTime',[],...
-        'isomDispMode','isomer','useDynamicIsomerAllocation',0);
+        'isomDispMode','sequenceg','useDynamicIsomerAllocation',0);
 end
 
 %% Report about potential scrambling

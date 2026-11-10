@@ -19,7 +19,7 @@ close all
 %% Load all paths here.. 
 %-------------------------------------------------
 %Params (Mostly)
-networkMode = 0; %Whether to load data from network rather than local
+networkMode = 1; %Whether to load data from network rather than local
 if networkMode == 0
     %dataPath = 'D:\group_swinderen\Bruno\Data\'
     %outPath = 'D:\group_swinderen\Bruno\Processed\'
@@ -28,8 +28,8 @@ if networkMode == 0
     %dataPath = 'D:\group_swinderen\Matthew\TDTs\Data\'
     %outPath = 'D:\group_swinderen\Matthew\TDTs\Processed\'
 else
-    dataPath = 'I:\PHDMVDP002-Q1471\LFP\Analysis\Data\';
-    outPath = 'I:\PHDMVDP002-Q1471\LFP\Analysis\Processed\';
+    dataPath = 'I:\BVS2026TWCF-Q9201\Jeong\SEdata\';
+    outPath = 'I:\BVS2026TWCF-Q9201\Jeong\SEoutput\';
 end
 %-----------------------------------------------
 %Flags (Mostly)
@@ -279,7 +279,7 @@ for fly_number = 1:length(fly_list)
         allsetPath = [dataPath, datasetname, filesep, allsetname]; %Removed filesep because terminal filesep already existing in dataPath
 
         detExpName = strrep(allsetname, datasetname, ''); %Determine experiment title
-        while nanmin(strfind(detExpName,'_')) == 1
+        while min(strfind(detExpName,'_')) == 1
             detExpName(1) = ''; %Remove proximal underscores
         end
 
@@ -428,8 +428,13 @@ for fly_number = 1:length(fly_list)
             tic
             while tdt_dur_load == 0 && a < 5
                 try
-                    %[timeduration, info] = TDTduration(blockpath);
-                    [timeduration, info] = TDTduration(blockPathFull);
+                 %[timeduration, info] = TDTduration(blockpath);
+                    %[timeduration, info] = TDTduration(blockPathFull);
+                    header = TDTbin2mat(blockPathFull, 'HEADERS', 1);
+                    info = header;
+                    info.headerstarttime = header.startTime;   % 실제 필드명은 확인 후 맞춰야 함
+                    info.headerstoptime = header.stopTime;     % 실제 필드명은 확인 후 맞춰야 함
+                    timeduration = info.headerstoptime - info.headerstarttime;
                     disp('TDTduration read successful.');
                     tdt_dur_load = 1;
                 catch
@@ -450,7 +455,7 @@ for fly_number = 1:length(fly_list)
             end
             if tdt_dur_load == 0
                 ['## Alert: TDT duration could not be successfully read ##']
-                crash = yes
+                crash = yes;
             end
             
             disp(['TDTduration performed in ',num2str(toc),'s'])
