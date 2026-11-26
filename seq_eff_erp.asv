@@ -47,7 +47,6 @@ scramLevel = 0; %What stage to scramble sequences at (0 - None, 1 - Raw sequence
 arrowMode = 0; %Whether to apply 'Arrow of Time' control to data (Collection of data from immediately before stimuli)
     %arrowMode = 1 - randomSequence read backwards, data collected from 'behind' and is backwards (e.g. n1:5 is read as 5:1, and window is 0:1 etc)
     %arrowMode = 1.5 - As above, but LFP/PHOT/Times are reflipped to return them to their 'true' orientation
-firstLastPlot = 1; %Whether to do an arrow-associated plot of the first/last capture
 
 %Ordering for plots
 %reOrder = [9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8]; %Reorders plots (and labels ofc) 
@@ -85,6 +84,17 @@ if isempty(reOrder)
     end
 end
 
+saveLoadRun = 1; %Whether to do nothing (0), save this 'run' for potential use later (1), or load a previous run for comparison in very specific scripts (2)
+if saveLoadRun == 1
+
+    runSaveName = 'transProbTest'; %What name this data will be saved under
+
+elseif saveLoadRun == 2
+
+    runLoadName = 'transProbTest'; %Name of data to load 
+
+end
+
 %Whether to artificially 'shift' all ERP data above zero, to assist with certain metrics
 zeroShiftMode = 1; %1 - Add the abs of the literal minimum to all elements
 
@@ -113,6 +123,8 @@ additionalIsomerPlots = 1; %Whether to calculate isomer correlations across time
 % whether to plot auxiliary plots (some are always plotted)
 aux_plots = 1;
 rawDataPlot = 1;
+
+firstLastPlot = 1; %Whether to do an arrow-associated plot of the first/last capture
 
 %%
 
@@ -356,8 +368,11 @@ for fly = chosenFlies
        chosenBlocks( empInds ) = [];
        chosenFind( empInds ) = [];
    end
+
+   clear R thisFlyFlyBlocks %To reduce likelihood of simple mistake
    
 end
+
 
 %% fit individual flies (can easily be expanded to include fits not just to amplitude)
 if fitModel
@@ -405,7 +420,46 @@ if additionalIsomerPlots
         'plotIndividualFlies',plotIndividualFlies, ...
         'timeStep',20, 'doAnimatedPlot',0, 'saveFigVid',1, 'extraFigSubplots',2, 'customSaveName', [cell2mat(filterIn),'_'],...
         'limitIsomTime',[], 'doCorrPlots',1,'useBootlegBonff',0, 'manualMultiCorrectValue', 8, 'crossIsomerSeqCorrTime',[],...
-        'isomDispMode','separate','useDynamicIsomerAllocation',0);
+        'isomDispMode','isomer','useDynamicIsomerAllocation',0);
+end
+
+%% Saving, if requested
+
+if saveLoadRun == 1
+
+    disp(['---- Saving run ----'])
+
+    params = who; %Get list of all parameters
+
+    overStruct = struct;
+    overStruct.chosenFlies = chosenFlies;
+    overStruct.chosenBlocks = chosenBlocks;
+    overStruct.chosenOnes = chosenOnes;
+    overStruct.FLIES = FLIES;
+    overStruct.n_back = n_back;
+
+    %{
+    overStruct.ancillary.selectionMode = selectionMode;
+    overStruct.ancillary.frequency = frequency;
+    overStruct.ancillary.filterIn = filterIn;
+    overStruct.ancillary.filterOut = filterOut;
+    overStruct.ancillary.plotSelector = plotSelector;
+    overStruct.ancillary.scramLevel = scramLevel;
+    %}
+
+    excludeParams = {'BLOCKS','CROSSISOMER', 'FLIES', 'R', 'thisFlyBlocks'}; %Don't include actual data in params saving
+    for i = 1:size(params,1)
+        thisParam = params{i};
+        if ~ismember(thisParam, excludeParams)
+            %overStruct.params.(thisParam) = eval('thisParam');
+            eval([' overStruct.params.(thisParam) = ',thisParam,';']);
+        end
+    end
+
+    %And save
+    saveName = [resultsDirectory,runSaveName,'.mat']; %Note that resultsDirectory has a terminal backslash...usually
+    save([saveName],'overStruct','-v7.3'); %Slightly less memory efficient to use 7.3, but necessary if data v big 
+
 end
 
 %% Report about potential scrambling

@@ -156,6 +156,14 @@ if useDynamicIsomerAllocation && transProbDesign
     crash = yes
 end
 
+switch isomDispMode
+    case {'isomer', 'separate', 'sequence'}
+        disp(['-- Using isomer display mode of ',isomDispMode,' --'])
+    otherwise
+        ['## Unknown isomDispMode request ##']
+        crash = yes
+end
+
 %%
 
 %All Timepoint ANOVA
@@ -214,7 +222,11 @@ for fly = 1:size(chosenFlies,2)
 
                 for seq = 1:size(thisIsoData.meanERPs,2)
                     plot(thisIsoData.meanERPs(:,seq),'Color',isomerColours(isoI,:), 'LineWidth',1.5)
-                    legList = [legList,{labelsFull( thisIsoData.indices(seq) , : )}];
+                    if ~transProbDesign
+                        legList = [legList,{labelsFull{ thisIsoData.indices(seq)}}];
+                    else
+                        legList = [legList,{labelsFull( thisIsoData.indices(seq) , : )}];
+                    end
                 end
     
             case 'separate' %Every ERP has a unique colour (across isomer)
